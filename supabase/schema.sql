@@ -137,7 +137,7 @@ create table if not exists referrals (
   referred_agency_id uuid references agencies(id) on delete cascade,
   referral_code text unique not null,
   status text default 'pending',
-  commission_percent numeric default 20,
+  commission_percent numeric default 10,
   created_at timestamptz default now()
 );
 
