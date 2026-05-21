@@ -9,7 +9,9 @@ const navLinks = [
   { label: 'Fonctionnalités', href: '#features' },
   { label: 'Tarifs', href: '#pricing' },
   { label: 'À propos', href: '/about' },
+  { label: 'Documentation', href: '/docs' },
   { label: 'FAQ', href: '/faq' },
+  { label: 'Contact', href: '/contact' },
   { label: 'Affiliation', href: '/affiliation' },
 ]
 

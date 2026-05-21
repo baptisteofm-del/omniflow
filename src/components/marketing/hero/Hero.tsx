@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { ArrowRight, Play, TrendingUp, Zap, Shield } from 'lucide-react'
 
 const stats = [
-  { label: 'Agences actives', value: '50+' },
-  { label: 'Modèles gérés', value: '800+' },
-  { label: 'Posts automatisés/mois', value: '20k+' },
+  { label: 'Agences actives', value: '500+' },
+  { label: 'Modèles gérés', value: '5 000+' },
+  { label: 'Posts automatisés/mois', value: '500k+' },
 ]
 
 export function Hero() {
@@ -26,15 +26,17 @@ export function Hero() {
 
         {/* Headline */}
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
-          Automatisez votre{' '}
-          <span className="gradient-text">agence OnlyFans</span>
+          Gérez 10x plus de modèles.
           <br />
-          de A à Z
+          <span className="gradient-text">Sans recruter.</span>
         </h1>
 
-        <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-10">
-          Veille de contenu, édition vidéo & spoof, génération IA, posting multi-comptes,
-          bots Telegram, dashboard financier. Tout ce dont votre agence a besoin, en un seul endroit.
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-6">
+          Vos concurrents ont déjà une équipe dédiée. Vous, vous avez mieux — une IA qui ne dort jamais, ne fait pas d'erreurs, et coûte 10x moins cher qu'un VA.
+        </p>
+
+        <p className="text-lg text-gray-500 max-w-3xl mx-auto mb-10">
+          Posting automatique, génération vidéo IA, chatting, veille contenu, finances. Tout ce qui fait tourner une agence OF — sans lever le petit doigt.
         </p>
 
         {/* CTAs */}
