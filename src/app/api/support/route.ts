@@ -1,35 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json()
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
+// ID Telegram de l'admin (Baptiste) — à configurer
+const ADMIN_TELEGRAM_ID = process.env.SUPPORT_TELEGRAM_CHAT_ID!
 
-    // Validate required fields
-    if (!data.name || !data.email || !data.subject || !data.message) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+export async function POST(req: NextRequest) {
+  const { name, subject, message } = await req.json()
+
+  if (!name || !message) {
+    return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
+  }
+
+  const text = `🆕 *Nouveau message support Omniflow*\n\n` +
+    `👤 *De :* ${name}\n` +
+    `📌 *Sujet :* ${subject || 'Non précisé'}\n\n` +
+    `💬 *Message :*\n${message}\n\n` +
+    `⏰ ${new Date().toLocaleString('fr-FR')}`
+
+  try {
+    // Envoyer via le bot Telegram
+    if (TELEGRAM_BOT_TOKEN && ADMIN_TELEGRAM_ID) {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: ADMIN_TELEGRAM_ID,
+          text,
+          parse_mode: 'Markdown',
+        }),
+      })
     }
 
-    // Log the support message (in a real app, you'd store this in a database)
-    console.log('New support message:', {
-      timestamp: new Date().toISOString(),
-      ...data,
-    })
-
-    // You could add email notification logic here
-    // Example: send email to support@omniflowapp.ai
-
-    return NextResponse.json(
-      { success: true, message: 'Support message received' },
-      { status: 200 }
-    )
-  } catch (error) {
-    console.error('Error processing support request:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ success: true }) // On répond toujours OK côté client
   }
 }
