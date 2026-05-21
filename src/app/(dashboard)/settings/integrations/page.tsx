@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Loader2, Settings, Plus } from 'lucide-react'
+import { Check, X, Loader2, Settings, Plus, ExternalLink } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Integration {
@@ -11,19 +11,17 @@ interface Integration {
   api_url?: string
 }
 
-interface TestResult {
-  success: boolean
-  message: string
-}
-
 interface FormData {
   [key: string]: {
     api_key: string
     api_url?: string
+    secret_key?: string
+    [key: string]: string | undefined
   }
 }
 
 const integrations = [
+  // Content Posting
   {
     id: 'adspower',
     name: 'AdsPower',
@@ -31,6 +29,7 @@ const integrations = [
     icon: '🌐',
     requiresUrl: true,
     defaultUrl: 'http://local.adspower.net:50325',
+    category: 'posting',
   },
   {
     id: 'geelark',
@@ -38,6 +37,7 @@ const integrations = [
     description: 'Navigateur Android cloud pour TikTok/Instagram',
     icon: '☁️',
     requiresUrl: false,
+    category: 'posting',
   },
   {
     id: 'telegram',
@@ -45,7 +45,52 @@ const integrations = [
     description: 'Poster directement via bot Telegram',
     icon: '📱',
     requiresUrl: false,
+    category: 'posting',
   },
+  // Creator Platforms
+  {
+    id: 'onlyfans',
+    name: 'OnlyFans',
+    description: 'Connectez vos comptes OnlyFans pour analyser les fans',
+    icon: '🔥',
+    requiresUrl: false,
+    category: 'platforms',
+    fields: ['userId', 'authId', 'sess', 'bcTokens', 'userAgent'],
+  },
+  {
+    id: 'mym',
+    name: 'MYM.fans',
+    description: 'Plateforme française - accédez aux messages et gains',
+    icon: '👑',
+    requiresUrl: false,
+    category: 'platforms',
+    fields: ['api_key'],
+  },
+  // Finance & Crypto
+  {
+    id: 'binance',
+    name: 'Binance',
+    description: 'Synchronisez vos transactions crypto et soldes USDT',
+    icon: '🪙',
+    requiresUrl: false,
+    category: 'crypto',
+    fields: ['api_key', 'secret_key'],
+  },
+  {
+    id: 'coinbase',
+    name: 'Coinbase',
+    description: 'Connectez votre portefeuille Coinbase',
+    icon: '🏢',
+    requiresUrl: false,
+    category: 'crypto',
+    fields: ['api_key'],
+  },
+]
+
+const categories = [
+  { id: 'posting', label: '📤 Automatisation du Posting', icon: '📤' },
+  { id: 'platforms', label: '🎬 Plateformes Creator', icon: '🎬' },
+  { id: 'crypto', label: '💰 Finance & Crypto', icon: '💰' },
 ]
 
 export default function IntegrationsPage() {
@@ -78,17 +123,23 @@ export default function IntegrationsPage() {
   }
 
   const handleSave = async (toolId: string) => {
-    if (!form[toolId]?.api_key) {
-      toast.error('Clé API requise')
+    const integration = integrations.find(i => i.id === toolId)
+    if (!integration) return
+
+    // Check required fields
+    const fields = integration.fields || ['api_key']
+    const missingFields = fields.filter(f => !form[toolId]?.[f])
+    
+    if (missingFields.length > 0) {
+      toast.error(`Champs requis manquants: ${missingFields.join(', ')}`)
       return
     }
 
     setTesting({ ...testing, [toolId]: true })
     try {
-      const payload = {
+      const payload: any = {
         tool: toolId,
-        api_key: form[toolId].api_key,
-        ...(form[toolId].api_url && { api_url: form[toolId].api_url }),
+        ...form[toolId],
       }
 
       // Test la connexion
@@ -118,7 +169,7 @@ export default function IntegrationsPage() {
       if (!saveRes.ok) throw new Error('Save failed')
 
       await loadIntegrations()
-      toast.success(`${integrations.find(i => i.id === toolId)?.name} configuré ✅`)
+      toast.success(`${integration.name} configuré ✅`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erreur')
     } finally {
@@ -130,6 +181,23 @@ export default function IntegrationsPage() {
     return connected[toolId]?.is_active === true
   }
 
+  const getFieldLabel = (toolId: string, field: string): string => {
+    const labels: Record<string, Record<string, string>> = {
+      onlyfans: {
+        userId: 'ID Utilisateur',
+        authId: 'Cookie auth_id',
+        sess: 'Cookie sess',
+        bcTokens: 'Cookie bc-tokens-p11',
+        userAgent: 'User Agent',
+      },
+      binance: {
+        api_key: 'API Key',
+        secret_key: 'Secret Key',
+      },
+    }
+    return labels[toolId]?.[field] || field
+  }
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -138,7 +206,7 @@ export default function IntegrationsPage() {
           <Settings size={28} className="text-purple-400" />
           <h1 className="text-2xl font-bold">Intégrations</h1>
         </div>
-        <p className="text-gray-400">Connectez vos outils pour l'automatisation du posting</p>
+        <p className="text-gray-400">Connectez vos outils pour l'automatisation, l'analyse et la finance</p>
       </div>
 
       {/* Loading state */}
@@ -147,145 +215,188 @@ export default function IntegrationsPage() {
           <Loader2 className="animate-spin text-purple-400" size={32} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {integrations.map(integration => {
-            const isConnected = isIntegrationConnected(integration.id)
-            const formData = form[integration.id] || {
-              api_key: '',
-              api_url: integration.defaultUrl || '',
-            }
-
+        <>
+          {/* Sections by category */}
+          {categories.map((category) => {
+            const categoryIntegrations = integrations.filter(i => i.category === category.id)
             return (
-              <div key={integration.id} className="glass rounded-2xl p-6 border border-purple-500/10">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{integration.icon}</span>
-                    <div>
-                      <h2 className="font-bold text-lg">{integration.name}</h2>
-                      <p className="text-sm text-gray-400">{integration.description}</p>
-                    </div>
-                  </div>
-                  <div
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                      isConnected
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-red-500/20 text-red-400'
-                    }`}
-                  >
-                    {isConnected ? (
-                      <>
-                        <Check size={14} /> Connecté
-                      </>
-                    ) : (
-                      <>
-                        <X size={14} /> Pas connecté
-                      </>
-                    )}
-                  </div>
-                </div>
+              <div key={category.id} className="mb-10">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="text-xl">{category.icon}</span>
+                  {category.label}
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {categoryIntegrations.map(integration => {
+                    const isConnected = isIntegrationConnected(integration.id)
+                    const formData = form[integration.id] || {
+                      api_key: '',
+                      api_url: integration.defaultUrl || '',
+                    }
 
-                {/* Form */}
-                <div className="space-y-4">
-                  {integration.requiresUrl && (
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1.5">URL API</label>
-                      <input
-                        type="url"
-                        value={formData.api_url || integration.defaultUrl || ''}
-                        onChange={e =>
-                          setForm({
-                            ...form,
-                            [integration.id]: {
-                              ...formData,
-                              api_url: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder={integration.defaultUrl || 'https://...'}
-                        className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60"
-                      />
-                    </div>
-                  )}
+                    const fields = integration.fields || ['api_key']
 
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1.5">
-                      {integration.id === 'telegram' ? 'Bot Token' : 'Clé API'}
-                    </label>
-                    <input
-                      type="password"
-                      value={formData.api_key}
-                      onChange={e =>
-                        setForm({
-                          ...form,
-                          [integration.id]: {
-                            ...formData,
-                            api_key: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder={
-                        integration.id === 'telegram'
-                          ? '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'
-                          : 'Clé API secrète'
-                      }
-                      className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 font-mono text-sm"
-                    />
-                  </div>
+                    return (
+                      <div key={integration.id} className="glass rounded-2xl p-6 border border-purple-500/10">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-3xl">{integration.icon}</span>
+                            <div>
+                              <h2 className="font-bold text-lg">{integration.name}</h2>
+                              <p className="text-sm text-gray-400">{integration.description}</p>
+                            </div>
+                          </div>
+                          <div
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${
+                              isConnected
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {isConnected ? (
+                              <>
+                                <Check size={14} /> Connecté
+                              </>
+                            ) : (
+                              <>
+                                <X size={14} /> Pas connecté
+                              </>
+                            )}
+                          </div>
+                        </div>
 
-                  {/* Help text */}
-                  {integration.id === 'adspower' && (
-                    <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                      💡 URL locale : l'agent AdsPower doit tourner sur votre PC. Port par défaut: 50325
-                    </p>
-                  )}
-                  {integration.id === 'geelark' && (
-                    <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                      💡 Obtenez votre clé API dans le panneau GeeLark
-                    </p>
-                  )}
-                  {integration.id === 'telegram' && (
-                    <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                      💡 Créez un bot avec @BotFather sur Telegram et copiez le token
-                    </p>
-                  )}
+                        {/* Form */}
+                        <div className="space-y-4">
+                          {integration.requiresUrl && (
+                            <div>
+                              <label className="block text-sm text-gray-400 mb-1.5">URL API</label>
+                              <input
+                                type="url"
+                                value={formData.api_url || integration.defaultUrl || ''}
+                                onChange={e =>
+                                  setForm({
+                                    ...form,
+                                    [integration.id]: {
+                                      ...formData,
+                                      api_url: e.target.value,
+                                    },
+                                  })
+                                }
+                                placeholder={integration.defaultUrl || 'https://...'}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60"
+                              />
+                            </div>
+                          )}
 
-                  {/* Save button */}
-                  <button
-                    onClick={() => handleSave(integration.id)}
-                    disabled={testing[integration.id] || !formData.api_key}
-                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                  >
-                    {testing[integration.id] ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Test de connexion...
-                      </>
-                    ) : isConnected ? (
-                      <>
-                        <Check size={16} />
-                        Mettre à jour
-                      </>
-                    ) : (
-                      <>
-                        <Plus size={16} />
-                        Connecter
-                      </>
-                    )}
-                  </button>
+                          {/* Dynamic fields */}
+                          {fields.map((field) => (
+                            <div key={field}>
+                              <label className="block text-sm text-gray-400 mb-1.5">
+                                {getFieldLabel(integration.id, field)}
+                              </label>
+                              <input
+                                type={field.includes('secret') || field.includes('token') || field.includes('auth') ? 'password' : 'text'}
+                                value={formData[field] || ''}
+                                onChange={e =>
+                                  setForm({
+                                    ...form,
+                                    [integration.id]: {
+                                      ...formData,
+                                      [field]: e.target.value,
+                                    },
+                                  })
+                                }
+                                placeholder={`Entrez votre ${getFieldLabel(integration.id, field).toLowerCase()}`}
+                                className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 font-mono text-sm"
+                              />
+                            </div>
+                          ))}
+
+                          {/* Help text */}
+                          {integration.id === 'adspower' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 URL locale : l'agent AdsPower doit tourner sur votre PC. Port par défaut: 50325
+                            </p>
+                          )}
+                          {integration.id === 'geelark' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Obtenez votre clé API dans le panneau GeeLark
+                            </p>
+                          )}
+                          {integration.id === 'telegram' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Créez un bot avec @BotFather sur Telegram et copiez le token
+                            </p>
+                          )}
+                          {integration.id === 'onlyfans' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 <strong>Guide:</strong> Ouvrez OnlyFans → F12 → Application → Cookies
+                              <br/>Copiez les valeurs de: auth_id, sess, bc-tokens-p11
+                            </p>
+                          )}
+                          {integration.id === 'mym' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Bearer token disponible dans les paramètres de développeur MYM
+                            </p>
+                          )}
+                          {integration.id === 'binance' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Créez une clé API read-only sur{' '}
+                              <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">
+                                Binance Account
+                              </a>
+                            </p>
+                          )}
+                          {integration.id === 'coinbase' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Générez une clé API sur{' '}
+                              <a href="https://coinbase.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">
+                                Coinbase Settings
+                              </a>
+                            </p>
+                          )}
+
+                          {/* Save button */}
+                          <button
+                            onClick={() => handleSave(integration.id)}
+                            disabled={testing[integration.id] || fields.some(f => !form[integration.id]?.[f])}
+                            className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                          >
+                            {testing[integration.id] ? (
+                              <>
+                                <Loader2 size={16} className="animate-spin" />
+                                Test de connexion...
+                              </>
+                            ) : isConnected ? (
+                              <>
+                                <Check size={16} />
+                                Mettre à jour
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={16} />
+                                Connecter
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )
           })}
-        </div>
+        </>
       )}
 
       {/* Tip */}
       <div className="mt-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl text-sm text-gray-300">
-        <p className="font-medium mb-1">💡 Conseils:</p>
+        <p className="font-medium mb-2">💡 Conseils de sécurité:</p>
         <ul className="text-xs space-y-1 text-gray-400">
-          <li>• Vérifiez que chaque service est accessible avant de sauvegarder</li>
           <li>• Les clés API sont chiffrées et stockées de façon sécurisée</li>
+          <li>• Utilisez des clés API read-only quand possible (Binance, Coinbase)</li>
+          <li>• Vérifiez que chaque service est accessible avant de sauvegarder</li>
           <li>• Vous pouvez mettre à jour les clés à tout moment</li>
         </ul>
       </div>

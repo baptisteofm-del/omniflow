@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   AlertTriangle, Lightbulb, Flame, TrendingUp, MessageSquare,
   DollarSign, Target, Zap, ArrowUpRight, ArrowDownRight
@@ -15,10 +16,22 @@ export default function ChattingPage() {
   const [reports, setReports] = useState<any>(null)
   const [insights, setInsights] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [hasIntegrations, setHasIntegrations] = useState(true)
 
   const fetchData = async () => {
     try {
       setLoading(true)
+      
+      // Check integrations first
+      const integRes = await fetch('/api/integrations')
+      if (integRes.ok) {
+        const integData = await integRes.json()
+        const hasOForMYM = integData.integrations?.some(
+          (i: any) => (i.tool === 'onlyfans' || i.tool === 'mym') && i.is_active
+        )
+        setHasIntegrations(hasOForMYM)
+      }
+
       const [reportsRes, insightsRes] = await Promise.all([
         fetch('/api/chatting/reports'),
         fetch('/api/chatting/insights'),
@@ -60,6 +73,20 @@ export default function ChattingPage() {
         <h1 className="text-3xl font-bold">Rapports Chatting</h1>
         <p className="text-gray-400 mt-1">Analyse complète de vos interactions et performances</p>
       </div>
+
+      {/* Integration banner */}
+      {!hasIntegrations && (
+        <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start gap-3">
+          <Lightbulb className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+          <div>
+            <p className="font-medium text-blue-300">Connectez OnlyFans ou MYM pour analyser vos vrais fans</p>
+            <p className="text-sm text-blue-300/70 mt-1">Importez automatiquement vos messages, fans et gains pour des insights détaillés.</p>
+            <Link href="/settings/integrations" className="inline-block mt-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-sm font-medium text-blue-300 transition-all">
+              Aller aux intégrations →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* KPIs */}
       <ChattingKPIs reports={reports} />

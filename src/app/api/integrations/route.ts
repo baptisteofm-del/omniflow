@@ -69,6 +69,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Store all fields as JSON in api_key for complex integrations
+    let storedKey = api_key
+    if (tool === 'onlyfans' || tool === 'binance' || tool === 'coinbase') {
+      // For complex credentials, store the entire object as JSON
+      storedKey = JSON.stringify(body)
+    }
+
     // Upsert integration
     const { data: integration, error } = await supabase
       .from('agency_integrations')
@@ -76,7 +83,7 @@ export async function POST(request: NextRequest) {
         {
           agency_id: profile.agency_id,
           tool,
-          api_key,
+          api_key: storedKey,
           api_url: api_url || null,
           is_active: is_active !== false,
         },
