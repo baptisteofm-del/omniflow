@@ -1,8 +1,8 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
-import { CreditCard, Check, ArrowUpRight, X, Calendar, AlertCircle } from 'lucide-react'
-import { SkeletonBillingPage, SkeletonCard } from '@/components/ui/Skeleton'
+import { CreditCard, Check, ArrowUpRight, X, Calendar, AlertCircle, BarChart3, Clock, Zap, Download } from 'lucide-react'
+import { SkeletonBillingPage } from '@/components/ui/Skeleton'
 import { getPlanById, PLANS } from '@/lib/plans'
 import type { PlanId } from '@/types'
 
@@ -19,6 +19,15 @@ interface BillingData {
   plan: ReturnType<typeof getPlanById>
   subscription?: unknown
   invoices: unknown[]
+  usage?: {
+    models: number
+    postsScheduled: number
+    aiGenerations: number
+    teamMembers: number
+    contentWatches: number
+    telegramBots: number
+    accountsLinked: number
+  }
 }
 
 function BillingContent() {
@@ -26,6 +35,7 @@ function BillingContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState<'card' | 'crypto' | null>(null)
 
   useEffect(() => {
     const fetchBilling = async () => {
@@ -44,13 +54,17 @@ function BillingContent() {
     fetchBilling()
   }, [])
 
-  const handleChangePlan = async (priceId: string) => {
+  const handleChangePlan = async (planId: string, method: 'card' | 'crypto' = 'card') => {
     setActionLoading(true)
     try {
       const res = await fetch('/api/settings/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'checkout', priceId }),
+        body: JSON.stringify({
+          action: 'checkout',
+          priceId: `price_${planId}`,
+          method,
+        }),
       })
 
       if (!res.ok) throw new Error('Failed to initiate checkout')
@@ -123,6 +137,23 @@ function BillingContent() {
   const currentPlan = billingData.plan
   const isTrialing = billingData.agency.subscriptionStatus === 'trialing'
   const isCanceled = billingData.agency.subscriptionStatus === 'canceled'
+  const usage = billingData.usage || {}
+
+  // Get plan limits
+  const limits = currentPlan?.limits || {}
+  const getUsagePercent = (key: keyof typeof limits): number => {
+    const limit = limits[key] as number
+    const used = usage[key as keyof typeof usage] as number || 0
+    if (!limit || limit === -1) return 0
+    return Math.min((used / limit) * 100, 100)
+  }
+
+  const cryptoPaymentMethods = [
+    { name: 'Bitcoin', symbol: '₿', color: 'from-orange-600 to-yellow-600' },
+    { name: 'Ethereum', symbol: 'Ξ', color: 'from-blue-600 to-purple-600' },
+    { name: 'USDT', symbol: '$', color: 'from-green-600 to-emerald-600' },
+    { name: 'Solana', symbol: '◎', color: 'from-purple-600 to-pink-600' },
+  ]
 
   return (
     <div className="p-8 space-y-8">
@@ -146,6 +177,13 @@ function BillingContent() {
             <p className="text-xs text-purple-300/70">
               Votre essai gratuit prend fin le {new Date(billingData.agency.trialEndsAt!).toLocaleDateString('fr-FR')}
             </p>
+            {/* Trial progress bar */}
+            <div className="mt-3 w-full bg-purple-900/30 rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
+                style={{ width: `${Math.max((billingData.agency.trialDaysRemaining / 7) * 100, 0)}%` }}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -222,6 +260,71 @@ function BillingContent() {
         </div>
       )}
 
+      {/* Usage & Limits Section */}
+      {Object.keys(usage).length > 0 && (
+        <div className="glass rounded-2xl overflow-hidden">
+          <div className="p-5 border-b border-white/5 flex items-center gap-2">
+            <BarChart3 size={18} className="text-cyan-400" />
+            <h2 className="font-semibold text-white">Limites & Utilisation</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-6">
+              {[
+                { key: 'models', label: 'Modèles gérées', icon: '👤' },
+                { key: 'postsScheduled', label: 'Posts schedulés', icon: '📅' },
+                { key: 'aiGenerations', label: 'Générations IA', icon: '✨' },
+                { key: 'teamMembers', label: 'Membres équipe', icon: '👥' },
+                { key: 'contentWatches', label: 'Veilles contenu', icon: '👀' },
+                { key: 'telegramBots', label: 'Bots Telegram', icon: '🤖' },
+              ].map(item => {
+                const usageKey = item.key as keyof typeof usage
+                const limitKey = (item.key === 'postsScheduled' ? 'postSchedules' :
+                                  item.key === 'aiGenerations' ? 'aiGenerations' :
+                                  item.key === 'teamMembers' ? 'teamMembers' :
+                                  item.key === 'contentWatches' ? 'contentWatches' :
+                                  item.key === 'telegramBots' ? 'telegramBots' :
+                                  'models') as keyof typeof limits
+                const limit = limits[limitKey] as number
+                const used = usage[usageKey] as number || 0
+
+                if (limit === undefined) return null
+
+                const percent = limit === -1 ? 0 : (used / limit) * 100
+                const isUnlimited = limit === -1
+                const isWarning = percent > 80 && percent < 100
+                const isMax = percent >= 100
+
+                return (
+                  <div key={item.key}>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                        <span>{item.icon}</span>
+                        {item.label}
+                      </label>
+                      <span className={`text-sm font-semibold ${
+                        isMax ? 'text-red-400' : isWarning ? 'text-yellow-400' : 'text-gray-300'
+                      }`}>
+                        {used}/{isUnlimited ? '∞' : limit}
+                      </span>
+                    </div>
+                    {!isUnlimited && (
+                      <div className="w-full bg-gray-700/30 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            isMax ? 'bg-red-500' : isWarning ? 'bg-yellow-500' : 'bg-gradient-to-r from-cyan-500 to-purple-500'
+                          }`}
+                          style={{ width: `${Math.min(percent, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Plan comparison */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Explorer les plans</h3>
@@ -264,16 +367,87 @@ function BillingContent() {
               </div>
 
               {plan.id !== currentPlan?.id && (
-                <button
-                  onClick={() => handleChangePlan(`price_${plan.id}`)}
-                  disabled={actionLoading}
-                  className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 text-sm"
-                >
-                  {actionLoading ? 'Chargement...' : 'Sélectionner'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleChangePlan(plan.id, 'card')}
+                    disabled={actionLoading}
+                    className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 text-sm"
+                  >
+                    {actionLoading ? 'Chargement...' : 'Choisir ce plan'}
+                  </button>
+                </div>
+              )}
+              {plan.id === currentPlan?.id && (
+                <div className="w-full py-2 px-4 bg-green-500/20 text-green-400 text-center font-semibold rounded-lg text-sm">
+                  ✓ Plan actuel
+                </div>
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      <div className="glass rounded-2xl overflow-hidden">
+        <div className="p-5 border-b border-white/5">
+          <h2 className="font-semibold text-white">Mode de paiement</h2>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card Payment */}
+            <button
+              onClick={() => {
+                setSelectedMethod('card')
+                alert('Redirection vers Paddle pour paiement par carte...')
+              }}
+              className="flex items-center gap-4 p-4 glass rounded-xl border border-purple-500/30 hover:border-purple-500/60 transition-all group"
+            >
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center">
+                <CreditCard size={24} className="text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-white">Payer par carte</p>
+                <p className="text-xs text-gray-400">Visa, Mastercard, Amex</p>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-400 group-hover:text-purple-400 transition-colors" />
+            </button>
+
+            {/* Crypto Payment */}
+            <button
+              onClick={() => setSelectedMethod('crypto')}
+              className="flex items-center gap-4 p-4 glass rounded-xl border border-yellow-500/30 hover:border-yellow-500/60 transition-all group"
+            >
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-600 to-orange-600 flex items-center justify-center">
+                <Zap size={24} className="text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-white">Payer en crypto</p>
+                <p className="text-xs text-gray-400">BTC, ETH, USDT, SOL</p>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
+            </button>
+          </div>
+
+          {/* Crypto methods expansion */}
+          {selectedMethod === 'crypto' && (
+            <div className="mt-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-sm text-gray-300 mb-4">Choisissez une cryptomonnaie :</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {cryptoPaymentMethods.map(method => (
+                  <button
+                    key={method.name}
+                    onClick={() => {
+                      alert(`Redirection vers NOWPayments pour ${method.name}...`)
+                    }}
+                    className={`p-4 rounded-lg bg-gradient-to-br ${method.color} text-white font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all`}
+                  >
+                    <div className="text-xl mb-1">{method.symbol}</div>
+                    {method.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -286,7 +460,21 @@ function BillingContent() {
 
         {billingData.invoices && billingData.invoices.length > 0 ? (
           <div className="space-y-2">
-            {/* Would display invoices here when available from Paddle API */}
+            {billingData.invoices.map((invoice: any, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                <div className="flex-1">
+                  <p className="font-medium text-white">{invoice.description || 'Facture'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{new Date(invoice.date).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div className="text-right mr-4">
+                  <p className="font-semibold text-white">{invoice.amount}€</p>
+                  <p className="text-xs text-gray-400 capitalize">{invoice.status || 'payée'}</p>
+                </div>
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-all">
+                  <Download size={18} className="text-gray-400 hover:text-white" />
+                </button>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-sm text-gray-400 text-center py-8">

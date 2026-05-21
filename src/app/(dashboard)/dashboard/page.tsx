@@ -40,7 +40,7 @@ function StatsGrid() {
 
 export default function DashboardPage() {
   return (
-    <div className="p-8">
+    <div className="p-8" data-tutorial="dashboard">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Bonjour 👋</h1>

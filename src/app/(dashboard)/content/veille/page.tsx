@@ -112,7 +112,7 @@ export default function VeillePage() {
   const otherTrends = trends.slice(5)
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-8 space-y-8" data-tutorial="trends-page">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -146,6 +146,7 @@ export default function VeillePage() {
             ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
             : 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:opacity-90'
         )}
+        data-tutorial="trends-refresh"
       >
         {refreshing ? (
           <>
@@ -163,7 +164,7 @@ export default function VeillePage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar: Filtres */}
         <div className="lg:col-span-1">
-          <div className="glass rounded-2xl p-6 sticky top-8">
+          <div className="glass rounded-2xl p-6 sticky top-8" data-tutorial="trends-filters">
             <h2 className="font-semibold text-white mb-6">Filtres</h2>
             <TrendFilters
               platforms={PLATFORMS}

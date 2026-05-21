@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createCheckoutSession, getSubscription } from '@/lib/paddle/client'
 import { getPlanById } from '@/lib/plans'
 
-// GET /api/settings/billing — Fetch current billing info & invoices
+// GET /api/settings/billing — Fetch current billing info, invoices, and usage
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -55,6 +55,67 @@ export async function GET(req: NextRequest) {
       trialDaysRemaining = Math.max(0, daysRemaining)
     }
 
+    // === Fetch Usage Data ===
+    // Count models
+    const { count: modelsCount } = await supabase
+      .from('models')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+
+    // Count scheduled posts
+    const { count: postsCount } = await supabase
+      .from('scheduled_posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+
+    // Count AI generations (placeholder - depends on your schema)
+    const { count: aiCount } = await supabase
+      .from('content')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+      .eq('spoofed', true)
+
+    // Count team members (from profiles with same agency)
+    const { count: membersCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+
+    // Count content watches
+    const { count: watchesCount } = await supabase
+      .from('trends')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+
+    // Count Telegram bots (placeholder - depends on your integrations schema)
+    let botsCount = 0
+    try {
+      const { count } = await supabase
+        .from('models')
+        .select('*', { count: 'exact', head: true })
+        .eq('agency_id', agency.id)
+        .eq('platform', 'telegram')
+      botsCount = count || 0
+    } catch {
+      botsCount = 0
+    }
+
+    // Count linked accounts
+    const { count: accountsCount } = await supabase
+      .from('models')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+
+    const usage = {
+      models: modelsCount || 0,
+      postsScheduled: postsCount || 0,
+      aiGenerations: aiCount || 0,
+      teamMembers: membersCount || 0,
+      contentWatches: watchesCount || 0,
+      telegramBots: botsCount,
+      accountsLinked: accountsCount || 0,
+    }
+
     return NextResponse.json({
       agency: {
         id: agency.id,
@@ -67,6 +128,7 @@ export async function GET(req: NextRequest) {
       },
       plan,
       subscription: subscriptionData,
+      usage,
       // Placeholder for invoices — fetch from Paddle API if available
       invoices: [],
     })
@@ -83,7 +145,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { action, priceId } = await req.json()
+    const { action, priceId, method } = await req.json()
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -116,7 +178,16 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // Create checkout session with Paddle
+      // Handle crypto payments (NOWPayments)
+      if (method === 'crypto') {
+        // This is a placeholder — in production, you'd call NOWPayments API
+        // to create a payment request for the specified plan
+        return NextResponse.json({
+          checkoutUrl: `https://nowpayments.io/payment/?iid=${agency.id}`,
+        })
+      }
+
+      // Create checkout session with Paddle (default method: card)
       const checkoutSession = await createCheckoutSession({
         priceId,
         customerId: agency.paddle_customer_id,

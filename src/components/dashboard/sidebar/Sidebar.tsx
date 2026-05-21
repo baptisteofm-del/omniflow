@@ -85,11 +85,14 @@ export function Sidebar() {
       )}
 
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed lg:sticky top-0 left-0 w-64 h-screen flex flex-col glass border-r border-purple-500/20 z-40 transition-transform duration-300",
-        "lg:translate-x-0 lg:flex-shrink-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <aside 
+        className={cn(
+          "fixed lg:sticky top-0 left-0 w-64 h-screen flex flex-col glass border-r border-purple-500/20 z-40 transition-transform duration-300",
+          "lg:translate-x-0 lg:flex-shrink-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        data-tutorial="sidebar"
+      >
         {/* Logo */}
         <div className="p-6 border-b border-purple-500/20">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl" onClick={closeSidebar}>
@@ -104,7 +107,10 @@ export function Sidebar() {
         <nav className="flex-1 overflow-y-auto p-4 space-y-6">
           {navItems.map((section) => (
             <div key={section.section}>
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 px-2">
+              <p 
+                className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 px-2"
+                data-tutorial={section.section === 'Paramètres' ? 'settings-integrations' : undefined}
+              >
                 {section.section}
               </p>
               <ul className="space-y-1">
@@ -174,6 +180,12 @@ export function Sidebar() {
                               ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
                               : 'text-gray-400 hover:text-white hover:bg-white/5'
                           )}
+                          data-tutorial={
+                            item.label === 'Comptes & Modèles' ? 'accounts' :
+                            item.label === 'Posting auto' ? 'posting' :
+                            item.label === 'Dashboard' ? 'dashboard' :
+                            undefined
+                          }
                         >
                           <item.icon size={17} className={active ? 'text-purple-400' : ''} />
                           {item.label}

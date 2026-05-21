@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Sidebar } from '@/components/dashboard/sidebar/Sidebar'
 import { NotificationBell } from '@/components/dashboard/header/NotificationBell'
+import { TutorialProvider, TutorialTooltip, TutorialButton } from '@/components/dashboard/tutorial'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,17 +35,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router, supabase])
 
   return (
-    <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header with notifications */}
-        <header className="h-14 lg:h-16 border-b border-purple-500/20 flex items-center justify-end px-4 lg:px-8 bg-white/5 backdrop-blur">
-          <NotificationBell />
-        </header>
-        <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
-          {children}
-        </main>
+    <TutorialProvider>
+      <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header with notifications */}
+          <header className="h-14 lg:h-16 border-b border-purple-500/20 flex items-center justify-end px-4 lg:px-8 bg-white/5 backdrop-blur gap-4">
+            <TutorialButton />
+            <NotificationBell />
+          </header>
+          <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+      <TutorialTooltip />
+    </TutorialProvider>
   )
 }
