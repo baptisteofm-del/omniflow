@@ -34,7 +34,12 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mb-3">6. Programme de parrainage</h2>
+            <h2 className="text-xl font-semibold text-white mb-3">6. Commission Chatting IA</h2>
+            <p>L'utilisation du module Chatting IA (disponible dans le plan Agency) est soumise à une commission de <strong>10% sur les ventes générées par l'IA</strong>. Cette commission est calculée mensuellement sur la base des revenus déclarés ou trackés via les intégrations connectées. Elle est prélevée en complément de l'abonnement mensuel. L'activation du Chatting IA vaut acceptation de ces conditions de commission.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-white mb-3">8. Programme de parrainage</h2>
             <p>Le programme de parrainage offre une commission de 10% sur le montant hors taxes des abonnements des filleuls, versée mensuellement, tant que le filleul reste abonné. Les commissions sont versées via virement bancaire ou cryptomonnaie au choix du parrain. Omniflow se réserve le droit de modifier ou d'interrompre ce programme avec un préavis de 30 jours.</p>
           </section>
 

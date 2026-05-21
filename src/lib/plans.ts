@@ -1,5 +1,8 @@
 import type { Plan } from '@/types'
 
+// Commission Omniflow sur les ventes générées par le Chatting IA
+export const AI_CHATTING_COMMISSION_PERCENT = 10 // 10% des ventes IA
+
 export const PLANS: Plan[] = [
   {
     id: 'starter',
@@ -26,7 +29,7 @@ export const PLANS: Plan[] = [
       { name: 'Bot Telegram', included: true },
       { name: 'Dashboard financier', included: true },
       { name: 'Rapports chatting', included: false },
-      { name: 'Chatting IA', included: false },
+      { name: 'Chatting IA (+ 10% sur ventes)', included: false },
       { name: 'Prospection modèles', included: false },
       { name: 'Support prioritaire', included: false },
     ],
@@ -57,7 +60,7 @@ export const PLANS: Plan[] = [
       { name: 'Bots Telegram', included: true },
       { name: 'Dashboard financier', included: true },
       { name: 'Rapports chatting', included: true },
-      { name: 'Chatting IA', included: false },
+      { name: 'Chatting IA (+ 10% sur ventes)', included: false },
       { name: 'Prospection modèles', included: false },
       { name: 'Support prioritaire', included: true },
     ],
@@ -87,7 +90,7 @@ export const PLANS: Plan[] = [
       { name: 'Bots Telegram illimités', included: true },
       { name: 'Dashboard financier avancé', included: true },
       { name: 'Rapports chatting', included: true },
-      { name: 'Chatting IA', included: true },
+      { name: 'Chatting IA (+ 10% sur ventes)', included: true },
       { name: 'Prospection modèles', included: true },
       { name: 'Support dédié 24/7', included: true },
     ],
