@@ -53,7 +53,7 @@ export default function ContactPage() {
               Parlez directement à notre équipe sur Telegram. Réponse garantie en moins d'1h pendant les heures ouvrées.
             </p>
             <a
-              href="https://t.me/omniflowsupport"
+              href="https://t.me/omniflowapp_bot"
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl font-medium text-blue-300 transition-all"
