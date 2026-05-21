@@ -1,7 +1,11 @@
+'use client'
+
+import { Suspense } from 'react'
 import {
   TrendingUp, Users, Calendar, BarChart3,
   Eye, Film, Bot, ArrowUpRight, Zap
 } from 'lucide-react'
+import { SkeletonStat } from '@/components/ui/Skeleton'
 
 const stats = [
   { label: 'Modèles actifs', value: '8', change: '+2 ce mois', icon: Users, color: 'text-purple-400' },
@@ -17,6 +21,23 @@ const recentActivity = [
   { action: 'Veille trends', model: 'Tous', time: 'Il y a 2h', icon: Eye, color: 'text-pink-400' },
 ]
 
+function StatsGrid() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {stats.map((s) => (
+        <div key={s.label} className="glass rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <s.icon size={20} className={s.color} />
+            <span className="text-xs text-gray-500">{s.change}</span>
+          </div>
+          <div className="text-2xl font-bold mb-1">{s.value}</div>
+          <div className="text-sm text-gray-400">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   return (
     <div className="p-8">
@@ -26,19 +47,14 @@ export default function DashboardPage() {
         <p className="text-gray-400 mt-1">Voici ce qui se passe dans votre agence aujourd'hui</p>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((s) => (
-          <div key={s.label} className="glass rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <s.icon size={20} className={s.color} />
-              <span className="text-xs text-gray-500">{s.change}</span>
-            </div>
-            <div className="text-2xl font-bold mb-1">{s.value}</div>
-            <div className="text-sm text-gray-400">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      {/* Stats grid with Suspense */}
+      <Suspense fallback={
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => <SkeletonStat key={i} />)}
+        </div>
+      }>
+        <StatsGrid />
+      </Suspense>
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

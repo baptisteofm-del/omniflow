@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import {
   TrendingUp, TrendingDown, Plus, Filter, Download,
   AlertCircle, Zap, Target, Users
@@ -9,6 +9,7 @@ import { RevenueChart } from '@/components/dashboard/finance/RevenueChart'
 import { ModelsTable } from '@/components/dashboard/finance/ModelsTable'
 import { RecentTransactions } from '@/components/dashboard/finance/RecentTransactions'
 import { AddTransactionModal } from '@/components/dashboard/finance/AddTransactionModal'
+import { SkeletonCard, SkeletonTable } from '@/components/ui/Skeleton'
 import toast from 'react-hot-toast'
 
 export default function FinancePage() {
@@ -51,8 +52,18 @@ export default function FinancePage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="text-center text-gray-400">Chargement...</div>
+      <div className="p-8 space-y-8">
+        <div>
+          <div className="h-8 w-32 bg-gradient-to-r from-white/5 to-white/10 rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-64 bg-gradient-to-r from-white/5 to-white/10 rounded-lg animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2"><SkeletonCard /></div>
+          <SkeletonCard />
+        </div>
       </div>
     )
   }
@@ -85,23 +96,32 @@ export default function FinancePage() {
       </div>
 
       {/* KPIs */}
-      <FinanceKPIs summary={summary} />
+      <Suspense fallback={
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      }>
+        <FinanceKPIs summary={summary} />
+      </Suspense>
 
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         {/* Charts and Tables */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Revenue Chart */}
-          <RevenueChart transactions={transactions} />
+          <Suspense fallback={<SkeletonCard />}>
+            <RevenueChart transactions={transactions} />
+          </Suspense>
 
-          {/* Models Table */}
-          <ModelsTable transactions={transactions} />
+          <Suspense fallback={<SkeletonTable rows={5} />}>
+            <ModelsTable transactions={transactions} />
+          </Suspense>
         </div>
 
         {/* Right sidebar */}
         <div className="space-y-6">
-          {/* Recent transactions */}
-          <RecentTransactions transactions={transactions} />
+          <Suspense fallback={<SkeletonCard />}>
+            <RecentTransactions transactions={transactions} />
+          </Suspense>
         </div>
       </div>
 

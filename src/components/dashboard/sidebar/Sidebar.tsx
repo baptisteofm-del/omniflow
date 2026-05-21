@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
-  Zap, ChevronRight, CreditCard
+  Zap, ChevronRight, CreditCard, User
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -41,6 +41,7 @@ const navItems = [
   {
     section: 'Paramètres',
     items: [
+      { label: 'Profil', href: '/settings/profile', icon: User },
       { label: 'Abonnement', href: '/settings/billing', icon: CreditCard },
       { label: 'Équipe', href: '/settings/team', icon: Users },
       { label: 'Intégrations', href: '/settings/integrations', icon: Settings },

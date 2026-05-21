@@ -17,10 +17,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Omniflow',
     description: 'La plateforme tout-en-un pour les agences OnlyFans',
-    url: 'https://omniflow.co',
+    url: 'https://omniflowapp.ai',
     siteName: 'Omniflow',
     locale: 'fr_FR',
     type: 'website',
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'Omniflow - La plateforme #1 des agences OnlyFans' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/og'],
   },
 }
 

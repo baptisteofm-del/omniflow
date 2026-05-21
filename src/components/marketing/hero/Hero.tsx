@@ -1,11 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { ArrowRight, Play, TrendingUp, Zap, Shield } from 'lucide-react'
+import { AnimatedCounter } from './AnimatedCounter'
 
 const stats = [
-  { label: 'Agences actives', value: '50+' },
-  { label: 'Modèles gérés', value: '500+' },
-  { label: 'Posts automatisés/mois', value: '10k+' },
+  { label: 'Agences actives', target: 50, suffix: '+' },
+  { label: 'Modèles gérés', target: 500, suffix: '+' },
+  { label: 'Posts automatisés/mois', target: 10000, suffix: '+' },
 ]
 
 export function Hero() {
@@ -54,10 +55,7 @@ export function Hero() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mb-16">
           {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="text-3xl font-bold gradient-text">{s.value}</div>
-              <div className="text-sm text-gray-500 mt-1">{s.label}</div>
-            </div>
+            <AnimatedCounter key={s.label} target={s.target} suffix={s.suffix} label={s.label} />
           ))}
         </div>
 
