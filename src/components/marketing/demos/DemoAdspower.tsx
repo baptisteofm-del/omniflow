@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { Check } from 'lucide-react'
 
-const tweetText = 'Rejoins ma communauté VIP exclusive pour du contenu premium et des interactions personnalisées. Lien en bio 🔥'
+const tweetText = "can't stop thinking about last night... 🌛 you know what I mean 😘 link in bio for more"
 
 export function DemoAdspower() {
   const [displayedText, setDisplayedText] = useState('')
@@ -80,8 +80,8 @@ export function DemoAdspower() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600" />
             <div>
-              <div className="font-bold text-white">Leelou</div>
-              <div className="text-gray-500 text-sm">@leelou_of</div>
+              <div className="font-bold text-white">Carla</div>
+              <div className="text-gray-500 text-sm">@carla.of</div>
             </div>
           </div>
 
@@ -143,9 +143,9 @@ export function DemoAdspower() {
       {/* Text */}
       <div className="text-center">
         <h3 className="text-xl font-semibold text-white mb-1">
-          100 profils gérés, zéro VA
+          Postez sur X/Twitter sans limites
         </h3>
-        <p className="text-gray-400 text-sm">AdsPower — Multi-compte sans limites</p>
+        <p className="text-gray-400 text-sm">AdsPower — 100 profils gérés, zéro ban</p>
       </div>
     </motion.div>
   )

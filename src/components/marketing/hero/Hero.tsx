@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { ArrowRight, Play, TrendingUp, Zap, Shield } from 'lucide-react'
 
 const stats = [
-  { label: 'Agences actives', value: '200+' },
-  { label: 'Modèles gérés', value: '1 500+' },
-  { label: 'Posts automatisés/mois', value: '50k+' },
+  { label: 'Agences actives', value: '50+' },
+  { label: 'Modèles gérés', value: '800+' },
+  { label: 'Posts automatisés/mois', value: '20k+' },
 ]
 
 export function Hero() {
@@ -46,10 +46,10 @@ export function Hero() {
             Démarrer l'essai gratuit 7 jours
             <ArrowRight size={20} />
           </Link>
-          <button className="flex items-center gap-2 px-8 py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">
+          <a href="#demos" className="flex items-center gap-2 px-8 py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">
             <Play size={18} className="text-purple-400" />
             Voir la démo
-          </button>
+          </a>
         </div>
 
         {/* Stats */}
@@ -66,11 +66,11 @@ export function Hero() {
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
           <div className="flex items-center gap-2">
             <Shield size={16} className="text-green-400" />
-            Sans carte bancaire
+            Essai 7j sans engagement
           </div>
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-purple-400" />
-            Setup en 5 minutes
+            Setup rapide
           </div>
           <div className="flex items-center gap-2">
             <Zap size={16} className="text-cyan-400" />

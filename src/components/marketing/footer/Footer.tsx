@@ -5,7 +5,9 @@ const links = {
   Produit: [
     { label: 'Fonctionnalités', href: '#features' },
     { label: 'Tarifs', href: '#pricing' },
-    { label: 'Roadmap', href: '/roadmap' },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Affiliation', href: '/affiliation' },
+    { label: 'À propos', href: '/about' },
   ],
   Légal: [
     { label: 'CGU', href: '/legal/terms' },

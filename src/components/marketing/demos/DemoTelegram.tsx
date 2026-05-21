@@ -5,17 +5,17 @@ import { useState, useEffect } from 'react'
 const messages = [
   {
     id: 1,
-    text: '🔥 Contenu exclusif VIP mis à jour',
+    text: 'nouvelle vidéo vient de drop 🔥',
     time: '14:23',
   },
   {
     id: 2,
-    text: '💎 Rejoins la communauté premium pour plus de contenu',
+    text: 'vous avez vu mes dernières photos ? 👀',
     time: '14:25',
   },
   {
     id: 3,
-    text: '✨ Nouveau set photo disponible',
+    text: 'lien exclusif pour ce soir seulement 💋',
     time: '14:27',
   },
 ]
@@ -63,11 +63,11 @@ export function DemoTelegram() {
         <div className="bg-blue-800/80 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center font-bold text-blue-900">
-              L
+              C
             </div>
             <div>
-              <div className="font-bold text-white text-sm">🔥 Leelou OF VIP</div>
-              <div className="text-blue-300 text-xs">3 247 members</div>
+              <div className="font-bold text-white text-sm">🔥 Carla VIP</div>
+              <div className="text-blue-300 text-xs">2 543 members</div>
             </div>
           </div>
           <div className="text-white text-lg">⋮</div>
@@ -130,9 +130,9 @@ export function DemoTelegram() {
       {/* Text */}
       <div className="text-center">
         <h3 className="text-xl font-semibold text-white mb-1">
-          Vos canaux Telegram actifs 24h/24 sans intervention
+          Votre Telegram 24h/24 sans intervention
         </h3>
-        <p className="text-gray-400 text-sm">Bots Telegram — Automatisation complète</p>
+        <p className="text-gray-400 text-sm">Bot Telegram — Vos fans engagés automatiquement</p>
       </div>
     </motion.div>
   )

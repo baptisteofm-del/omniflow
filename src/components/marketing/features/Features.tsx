@@ -28,7 +28,7 @@ const features = [
   {
     icon: Calendar,
     title: 'Posting multi-comptes',
-    description: 'Schedulez et publiez automatiquement sur tous vos comptes. Fini les VA pour la gestion des posts. 100% automatique.',
+    description: 'Publiez sur Instagram, TikTok et plus via **GeeLark** (cloud Android) et **AdsPower** (anti-detect browser). 100 profils gérés simultanément. Zéro VA, zéro ban.',
     color: 'from-orange-500 to-amber-700',
     tag: 'MVP',
   },
@@ -42,28 +42,28 @@ const features = [
   {
     icon: BarChart3,
     title: 'Dashboard financier',
-    description: 'Centralisez toutes vos recettes et dépenses. Suivez la performance financière de chaque modèle en temps réel.',
+    description: 'Toutes vos recettes et dépenses centralisées. Suivi par modèle, par plateforme, par période. Vos finances d\'agence en un coup d\'œil — plus besoin de tableaux Excel.',
     color: 'from-green-500 to-emerald-700',
     tag: 'Ops',
   },
   {
     icon: MessageSquare,
-    title: 'Rapports chatting',
-    description: 'Recevez chaque jour les rapports de vos chatters : messages envoyés, revenus générés, taux de conversion.',
+    title: 'Analyse fans & opportunités',
+    description: 'Bien plus qu\'un rapport : notre IA identifie les fans mécontents avant qu\'ils partent, les opportunités de vente manquées, et les heures de pic de conversion. Données actionnables, pas juste des chiffres.',
     color: 'from-violet-500 to-purple-700',
     tag: 'Pro',
   },
   {
     icon: Brain,
-    title: 'Chatting IA',
-    description: 'Remplacez partiellement vos chatters par une IA entraînée sur le style de vos modèles. Conversions améliorées.',
+    title: 'Chatting 100% IA',
+    description: 'Fini les chatters humains. Notre IA remplace intégralement votre équipe de chatting — répond aux fans, convertit, relance. Disponible 24h/24, sans fatigue, sans erreur.',
     color: 'from-fuchsia-500 to-pink-700',
     tag: 'Agency',
   },
   {
     icon: Users,
     title: 'Prospection de modèles',
-    description: 'Identifiez et approchez de nouveaux modèles potentiels automatiquement. Pipeline de recrutement intégré.',
+    description: 'Notre agent IA scrape les réseaux, identifie des créatrices à fort potentiel, et initie le contact en votre nom. Un pipeline de recrutement automatique qui tourne en fond.',
     color: 'from-teal-500 to-cyan-700',
     tag: 'Agency',
   },
@@ -88,12 +88,10 @@ export function Features() {
             Toutes les fonctionnalités
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Tout ce dont votre agence{' '}
-            <span className="gradient-text">a besoin</span>
+            Tous vos outils réunis en <span className="gradient-text">1 seule plateforme</span>. Plus de VAs, plus de perte de temps. Juste des résultats.
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Omniflow remplace 5 outils différents et 2 VAs. Une seule plateforme,
-            une seule facture, zéro friction.
+            
           </p>
         </div>
 

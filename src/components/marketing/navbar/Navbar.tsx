@@ -9,6 +9,8 @@ const navLinks = [
   { label: 'Fonctionnalités', href: '#features' },
   { label: 'Tarifs', href: '#pricing' },
   { label: 'À propos', href: '/about' },
+  { label: 'FAQ', href: '/faq' },
+  { label: 'Affiliation', href: '/affiliation' },
 ]
 
 export function Navbar() {

@@ -18,7 +18,7 @@ export function PricingSection() {
             Choisissez votre <span className="gradient-text">formule</span>
           </h2>
           <p className="text-gray-400 text-lg mb-8">
-            7 jours d'essai gratuit. Sans carte bancaire. Annulation à tout moment.
+            7 jours d'essai. Résiliez quand vous voulez.
           </p>
 
           {/* Billing toggle */}
@@ -99,7 +99,7 @@ export function PricingSection() {
                     : 'glass border border-purple-500/30 hover:border-purple-500/60 hover:text-white'
                 )}
               >
-                Démarrer l'essai gratuit
+                Essai gratuit 7 jours
               </Link>
 
               {/* Features */}
@@ -124,7 +124,7 @@ export function PricingSection() {
         {/* Crypto payment note */}
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            💳 Carte bancaire · 🪙 Crypto (BTC, ETH, USDT, SOL) · 🔄 Parrainage disponible
+            ✓ Période d'essai 7 jours · Aucun engagement · Annulation en 1 clic
           </p>
         </div>
       </div>

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Check } from 'lucide-react'
 
 const profiles = [
-  { name: 'Leelou', status: 'active' },
-  { name: 'Victoria', status: 'active' },
-  { name: 'Mia', status: 'active' },
+  { name: 'Carla', status: 'active' },
+  { name: 'Carla', status: 'active' },
+  { name: 'Carla', status: 'active' },
 ]
 
 export function DemoGeelark() {
@@ -56,9 +56,9 @@ export function DemoGeelark() {
         {/* Screen content */}
         <div className="w-full h-full bg-white flex flex-col">
           {/* Status bar */}
-          <div className="h-8 bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-between px-4 text-white text-xs font-semibold pt-2">
+          <div className="h-8 bg-gradient-to-r from-purple-600 to-cyan-600 flex items-center justify-between px-4 text-white text-xs font-semibold pt-2">
             <span>9:41</span>
-            <span className="text-cyan-200">GeeLark Cloud</span>
+            <span className="text-white">GeeLark Cloud</span>
           </div>
 
           {/* Instagram interface */}
@@ -67,15 +67,15 @@ export function DemoGeelark() {
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
               <div className="flex-1">
-                <div className="text-sm font-semibold">leelou_of</div>
-                <div className="text-xs text-gray-500">5 min ago</div>
+                <div className="text-sm font-semibold">Carla_official</div>
+                <div className="text-xs text-gray-500">Just now</div>
               </div>
             </div>
 
             {/* Video preview */}
             <div className="aspect-square bg-gradient-to-br from-cyan-500 to-purple-500 rounded-lg flex items-center justify-center">
               <div className="text-white text-center">
-                <div className="text-3xl mb-1">▶️</div>
+                <div className="text-3xl mb-1">🎬</div>
                 <div className="text-xs">Reel Video</div>
               </div>
             </div>
@@ -103,7 +103,7 @@ export function DemoGeelark() {
                 className="flex items-center gap-2 text-green-600 text-sm font-semibold"
               >
                 <Check size={16} />
-                Publié ✓
+                En cours de publication...
               </motion.div>
             )}
           </div>
@@ -130,9 +130,9 @@ export function DemoGeelark() {
       {/* Text */}
       <div className="text-center">
         <h3 className="text-xl font-semibold text-white mb-1">
-          Postez sur Instagram sans toucher à votre téléphone
+          Enjoying the view ✨ link in bio 🔗
         </h3>
-        <p className="text-gray-400 text-sm">GeeLark Cloud — Automatisation complète</p>
+        <p className="text-gray-400 text-sm">GeeLark Cloud — 100 profils gérés simultanément</p>
       </div>
     </motion.div>
   )

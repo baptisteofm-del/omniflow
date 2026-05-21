@@ -68,7 +68,7 @@ export function DemoKling() {
             <label className="text-gray-300 text-sm font-medium">Prompt</label>
             <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
               <p className="text-white text-sm leading-relaxed">
-                Glamorous woman at a luxury penthouse rooftop, golden hour, cinematic lighting, 4K quality, professional photography
+                Beautiful woman in a luxury penthouse, golden hour sunset, natural lighting, 4K cinematic
               </p>
             </div>
           </div>
@@ -100,7 +100,7 @@ export function DemoKling() {
               className="flex items-center gap-2 text-green-400 text-sm font-semibold"
             >
               <Check size={16} />
-              3 vidéos prêtes à poster
+              3 vidéos générées avec succès
             </motion.div>
           )}
 
@@ -140,7 +140,7 @@ export function DemoKling() {
 
                   {/* Ready badge */}
                   <div className="absolute top-2 right-2 bg-green-500/90 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    Prête
+                    Prêt ✓
                   </div>
                 </motion.div>
               ))}
@@ -152,9 +152,9 @@ export function DemoKling() {
       {/* Text */}
       <div className="text-center">
         <h3 className="text-xl font-semibold text-white mb-1">
-          Des Reels IA prêts à poster en 3 minutes
+          Carla • Reel • Prêt ✓
         </h3>
-        <p className="text-gray-400 text-sm">Kling — Génération vidéo IA ultra-rapide</p>
+        <p className="text-gray-400 text-sm">Kling AI — Vidéos cinématiques en 3 minutes</p>
       </div>
     </motion.div>
   )

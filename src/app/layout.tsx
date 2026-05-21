@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description:
     'Automatisez votre agence OnlyFans : veille contenu, édition vidéo, génération IA, posting multi-comptes, bots Telegram, et dashboard financier. Tout en un.',
   keywords: ['onlyfans agency', 'automatisation agence', 'of management', 'content creator tools'],
+  icons: {
+    icon: '/logo-icon.svg',
+    shortcut: '/logo-icon.svg',
+  },
   openGraph: {
     title: 'Omniflow',
     description: 'La plateforme tout-en-un pour les agences OnlyFans',
