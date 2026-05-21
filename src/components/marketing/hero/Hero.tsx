@@ -26,9 +26,10 @@ export function Hero() {
 
         {/* Headline */}
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
-          Gagnez du temps.
+          Automatisez votre{' '}
+          <span className="gradient-text">agence OnlyFans</span>
           <br />
-          <span className="gradient-text">Gagnez de l'argent.</span>
+          de A à Z
         </h1>
 
         <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-10">
