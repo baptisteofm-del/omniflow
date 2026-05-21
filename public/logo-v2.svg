@@ -1,0 +1,20 @@
+<svg width="220" height="52" viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="gtext" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <!-- Carré arrondi avec dégradé -->
+  <rect x="2" y="2" width="48" height="48" rx="14" fill="url(#g1)"/>
+  <!-- OF stylisé -->
+  <text x="9" y="34" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="26" font-weight="800" fill="white" letter-spacing="-2">OF</text>
+  <!-- Wordmark -->
+  <text x="62" y="35" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.8" fill="url(#gtext)">Omniflow</text>
+  <!-- Point accent -->
+  <circle cx="210" cy="14" r="5" fill="#06b6d4" opacity="0.8"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg width="220" height="52" viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon: O avec éclair intégré -->
+  <circle cx="26" cy="26" r="22" stroke="url(#g1)" stroke-width="3" fill="none"/>
+  <path d="M28 10 L18 28 L25 28 L22 42 L36 24 L29 24 L32 10 Z" fill="url(#g1)"/>
+  <!-- Wordmark -->
+  <text x="58" y="34" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.5" fill="white">omni</text>
+  <text x="117" y="34" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="24" font-weight="300" letter-spacing="-0.5" fill="url(#g2)">flow</text>
+</svg>

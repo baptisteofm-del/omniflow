@@ -1,0 +1,23 @@
+<svg width="230" height="52" viewBox="0 0 230 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="gw" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Hexagone -->
+  <polygon points="26,4 46,15 46,37 26,48 6,37 6,15" fill="url(#g1)" filter="url(#glow)"/>
+  <!-- Éclair -->
+  <path d="M28 14 L20 29 L26 29 L24 38 L34 23 L28 23 L30 14Z" fill="white" opacity="0.95"/>
+  <!-- Wordmark moderne -->
+  <text x="58" y="30" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="800" letter-spacing="2" fill="white">OMNI</text>
+  <text x="58" y="46" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="300" letter-spacing="6" fill="url(#gw)">FLOW</text>
+</svg>
