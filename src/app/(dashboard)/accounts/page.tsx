@@ -272,19 +272,38 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {/* Plateforme */}
+              {/* Plateforme — multi-sélection pills */}
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Plateforme</label>
-                <select
-                  value={form.platform}
-                  onChange={e => setForm({ ...form, platform: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[#1a1a2e] border border-purple-500/20 rounded-xl text-white focus:outline-none focus:border-purple-500/60"
-                >
-                  <option value="onlyfans">OnlyFans</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="telegram">Telegram</option>
-                </select>
+                <label className="block text-sm text-gray-400 mb-2">Plateformes <span className="text-gray-600">(plusieurs choix possibles)</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'onlyfans', label: 'OnlyFans', color: 'from-blue-500 to-blue-700' },
+                    { id: 'mym', label: 'MYM', color: 'from-pink-500 to-pink-700' },
+                    { id: 'instagram', label: 'Instagram', color: 'from-purple-500 to-pink-600' },
+                    { id: 'tiktok', label: 'TikTok', color: 'from-gray-700 to-gray-900' },
+                    { id: 'telegram', label: 'Telegram', color: 'from-blue-400 to-blue-600' },
+                  ].map(p => {
+                    const selected = form.platform.split(',').includes(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          const current = form.platform ? form.platform.split(',').filter(Boolean) : []
+                          const next = selected ? current.filter(x => x !== p.id) : [...current, p.id]
+                          setForm({ ...form, platform: next.join(',') || 'onlyfans' })
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          selected
+                            ? `bg-gradient-to-r ${p.color} border-transparent text-white shadow-lg scale-105`
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-purple-500/40 hover:text-white'
+                        }`}
+                      >
+                        {selected && '✓ '}{p.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Outil */}
@@ -355,15 +374,15 @@ export default function AccountsPage() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-2.5 glass rounded-xl text-gray-400 hover:text-white transition-colors"
+                  className="flex-1 py-3 rounded-xl font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90"
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-xl font-semibold text-white hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/20"
                 >
-                  Créer
+                  ✓ Créer le modèle
                 </button>
               </div>
             </form>
