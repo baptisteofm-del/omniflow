@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Users, TrendingUp, CreditCard, Activity, ArrowUpRight } from 'lucide-react'
 
 export default async function AdminPage() {
@@ -8,18 +8,19 @@ export default async function AdminPage() {
 
   if (!user) redirect('/login')
 
-  // Vérifier si admin
-  const { data: admin } = await supabase.from('admins').select('id').eq('id', user.id).single()
+  // Vérifier si admin — utilise le client service role pour bypasser RLS
+  const adminClient = await createAdminClient()
+  const { data: admin } = await adminClient.from('admins').select('id').eq('id', user.id).single()
   if (!admin) redirect('/dashboard')
 
   // Récupérer les stats globales
-  const { data: agencies } = await supabase
+  const { data: agencies } = await adminClient
     .from('agencies')
     .select('id, name, plan_id, subscription_status, trial_ends_at, created_at')
     .order('created_at', { ascending: false })
 
-  const { count: modelsCount } = await supabase.from('models').select('*', { count: 'exact', head: true })
-  const { count: postsCount } = await supabase.from('scheduled_posts').select('*', { count: 'exact', head: true })
+  const { count: modelsCount } = await adminClient.from('models').select('*', { count: 'exact', head: true })
+  const { count: postsCount } = await adminClient.from('scheduled_posts').select('*', { count: 'exact', head: true })
 
   const totalAgencies = agencies?.length || 0
   const activeAgencies = agencies?.filter(a => a.subscription_status === 'active').length || 0
