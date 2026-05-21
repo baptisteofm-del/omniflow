@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Sidebar } from '@/components/dashboard/sidebar/Sidebar'
 import { NotificationBell } from '@/components/dashboard/header/NotificationBell'
 import { TutorialProvider, TutorialTooltip, TutorialButton } from '@/components/dashboard/tutorial'
+import { SupportChat } from '@/components/shared/SupportChat'
+import { InstallPWA } from '@/components/shared/InstallPWA'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -50,6 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
       <TutorialTooltip />
+      <SupportChat />
+      <InstallPWA />
     </TutorialProvider>
   )
 }

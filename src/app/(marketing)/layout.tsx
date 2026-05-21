@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/marketing/navbar/Navbar'
 import { Footer } from '@/components/marketing/footer/Footer'
 import { AuthRedirect } from '@/components/shared/AuthRedirect'
+import { SupportChat } from '@/components/shared/SupportChat'
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const jsonLd = {
@@ -59,6 +60,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <Navbar />
       <main>{children}</main>
       <Footer />
+      <SupportChat />
     </>
   )
 }

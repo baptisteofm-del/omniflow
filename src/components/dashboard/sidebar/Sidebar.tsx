@@ -5,7 +5,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
-  Zap, ChevronRight, CreditCard, User, Gift, Menu, X
+  Zap, ChevronRight, CreditCard, User, Gift, Menu, X, Clapperboard
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -23,6 +23,7 @@ const navItems = [
       { label: 'Veille trends', href: '/content/veille', icon: Eye },
       { label: 'Éditeur & Spoof', href: '/content/editor', icon: Film },
       { label: 'Génération IA', href: '/content/ai-generation', icon: Sparkles },
+      { label: 'Banque de médias', href: '/media', icon: Clapperboard },
     ],
   },
   {

@@ -37,3 +37,6 @@ Quand un manager s'abonne → il reçoit automatiquement des tutos pour chaque f
 ## Autres idées notées
 - [ ] Notification email drip post-inscription
 - [ ] Badge "Nouveau" sur les features récentes dans la sidebar
+
+## ❌ Abandonné
+- White-label → remplacé par le parrainage (10% récurrent, plus simple, même effet)

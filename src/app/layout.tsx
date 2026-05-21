@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
+import { PWARegister } from '@/components/shared/PWARegister'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -64,8 +65,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className="scroll-smooth">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#8b5cf6" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="OmniFlow" />
+        <link rel="apple-touch-icon" href="/logo-icon.svg" />
+      </head>
       <body className={`${inter.className} bg-[#0a0a0f] text-white antialiased`}>
         {children}
+        <PWARegister />
         <Toaster
           position="top-right"
           toastOptions={{

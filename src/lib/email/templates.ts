@@ -724,6 +724,135 @@ export const invoiceTemplate = (month?: string, amount?: string, invoiceUrl?: st
 })
 
 /**
+ * Email 7: Weekly Report
+ * Subject: "📊 Votre rapport OmniFlow — Semaine du [date]"
+ */
+export const weeklyReportTemplate = (
+  agencyName: string,
+  stats: {
+    postsPublished: number
+    revenue: number
+    newFans: number
+    aiGenerations: number
+    riskFans: number
+    previousRevenue?: number
+  }
+): EmailTemplate => {
+  const revenueGrowth = stats.previousRevenue
+    ? ((stats.revenue - stats.previousRevenue) / stats.previousRevenue) * 100
+    : 0
+  const isGrowth = revenueGrowth >= 0
+
+  return {
+    subject: `📊 Votre rapport OmniFlow — Semaine du ${new Date().toLocaleDateString('fr-FR')}`,
+    html: `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>${baseStyles}</style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">OMNIFLOW</div>
+            <h1 class="header-title">Votre bilan de la semaine 📊</h1>
+          </div>
+          
+          <div class="content">
+            <p class="subtitle">Bonjour <strong>${agencyName}</strong>, voici votre récapitulatif detaillé pour la semaine.</p>
+            
+            <!-- Stats Cards -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0;">
+              <div class="stat-box">
+                <div style="color: #a0a0b0; font-size: 12px; margin-bottom: 8px;">📤 Posts publiés</div>
+                <div class="stat-number">${stats.postsPublished}</div>
+              </div>
+              <div class="stat-box">
+                <div style="color: #a0a0b0; font-size: 12px; margin-bottom: 8px;">💰 Revenus générés</div>
+                <div class="stat-number">${stats.revenue.toLocaleString('fr-FR')} €</div>
+                <div class="stat-label" style="color: ${isGrowth ? '#06b6d4' : '#ef4444'};">
+                  ${isGrowth ? '↑' : '↓'} ${Math.abs(revenueGrowth).toFixed(1)}% vs semaine dernière
+                </div>
+              </div>
+              <div class="stat-box">
+                <div style="color: #a0a0b0; font-size: 12px; margin-bottom: 8px;">👥 Nouveaux fans</div>
+                <div class="stat-number">${stats.newFans}</div>
+              </div>
+              <div class="stat-box">
+                <div style="color: #a0a0b0; font-size: 12px; margin-bottom: 8px;">🤖 Générations IA</div>
+                <div class="stat-number">${stats.aiGenerations}</div>
+              </div>
+            </div>
+            
+            <!-- Details Card -->
+            <div class="card">
+              <h3>Détails de votre semaine</h3>
+              <div class="table-row">
+                <div class="table-label">📤 Posts publiés</div>
+                <div class="table-value">${stats.postsPublished} posts</div>
+              </div>
+              <div class="table-row">
+                <div class="table-label">💰 Revenus</div>
+                <div class="table-value">${stats.revenue.toLocaleString('fr-FR')} €</div>
+              </div>
+              <div class="table-row">
+                <div class="table-label">👥 Fans gagnés</div>
+                <div class="table-value">+${stats.newFans}</div>
+              </div>
+              <div class="table-row">
+                <div class="table-label">🤖 Contenus générés (IA)</div>
+                <div class="table-value">${stats.aiGenerations} vidéos</div>
+              </div>
+              <div class="table-row">
+                <div class="table-label">⚠️ Fans à risque</div>
+                <div class="table-value" style="color: ${stats.riskFans > 5 ? '#ef4444' : '#06b6d4'};">${stats.riskFans} fans</div>
+              </div>
+            </div>
+            
+            <!-- Risk Alert -->
+            ${stats.riskFans > 5
+              ? `
+            <div style="background: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444; padding: 16px; border-radius: 6px; margin: 20px 0;">
+              <p style="color: #a0a0b0; font-size: 13px; margin: 0;">⚠️ <strong>Attention:</strong> Vous avez ${stats.riskFans} fans à risque. Nous vous recommandons de vérifier vos contenus et d'engager rapidement.</p>
+            </div>
+            `
+              : ''
+            }
+            
+            <!-- CTA -->
+            <div class="cta-container">
+              <a href="https://omniflowapp.ai/dashboard" class="cta-button">Voir le dashboard complet →</a>
+            </div>
+            
+            <!-- Tip Card -->
+            <div class="card">
+              <h3>💡 Conseil de la semaine</h3>
+              <p style="color: #a0a0b0; font-size: 14px; margin: 0;">
+                ${stats.postsPublished > 20
+                  ? 'Bravo! Vous postez plus que la moyenne. Maintienez ce rythme pour maximiser vos revenus.'
+                  : 'Augmentez votre fréquence de posts. Les agences qui postent 20+ fois par semaine génèrent 3x plus de revenus.'}
+              </p>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p class="footer-text">© 2026 OmniFlow — Omniflowapp.ai</p>
+            <p class="footer-text">
+              <a href="https://omniflowapp.ai/dashboard" class="footer-link">Dashboard</a> • 
+              <a href="https://omniflowapp.ai/contact" class="footer-link">Support</a>
+            </p>
+            <p class="footer-text">Rapport généré automatiquement chaque lundi</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }
+}
+
+/**
  * Export all templates for easy access
  */
 export const emailTemplates = {
@@ -733,4 +862,5 @@ export const emailTemplates = {
   trialEnding: trialEndingTemplate,
   paymentConfirmed: paymentConfirmedTemplate,
   invoice: invoiceTemplate,
+  weeklyReport: weeklyReportTemplate,
 }
