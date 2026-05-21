@@ -1,5 +1,6 @@
 import { Hero } from '@/components/marketing/hero/Hero'
 import { Features } from '@/components/marketing/features/Features'
+import { DemosSection } from '@/components/marketing/demos/DemosSection'
 import { PricingSection } from '@/components/marketing/pricing/PricingSection'
 
 export default function HomePage() {
@@ -7,6 +8,7 @@ export default function HomePage() {
     <>
       <Hero />
       <Features />
+      <DemosSection />
       <PricingSection />
     </>
   )

@@ -1,8 +1,9 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { cn } from '@/lib/utils/cn'
-import { Menu, X, Zap } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const navLinks = [
   { label: 'Fonctionnalités', href: '#features' },
@@ -18,11 +19,8 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-              <Zap size={18} className="text-white" />
-            </div>
-            <span className="gradient-text">Omniflow</span>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.svg" alt="Omniflow" width={140} height={34} priority />
           </Link>
 
           {/* Desktop nav */}

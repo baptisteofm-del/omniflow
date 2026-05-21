@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
+import Image from 'next/image'
 
 const links = {
   Produit: [
@@ -27,10 +27,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-                <Zap size={18} className="text-white" />
-              </div>
-              <span className="gradient-text">Omniflow</span>
+              <Image src="/logo.svg" alt="Omniflow" width={130} height={32} />
             </Link>
             <p className="text-gray-500 text-sm leading-relaxed">
               La plateforme tout-en-un pour automatiser et scaler votre agence OnlyFans.
