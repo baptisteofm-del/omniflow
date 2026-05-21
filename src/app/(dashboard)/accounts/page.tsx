@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Loader2, Download, Trash2, Settings, Users } from 'lucide-react'
+import { Plus, Loader2, Download, Trash2, Settings, Users, MessageSquare, Share2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface ModelProfile {
@@ -10,12 +10,14 @@ interface ModelProfile {
   profile_name: string
   platform: string
   tool: string
+  category: 'chatting' | 'social'
 }
 
 interface Model {
   id: string
   name: string
-  platform: string
+  chatting_platforms?: string[] // ['onlyfans', 'mym']
+  social_networks?: string[] // ['instagram', 'tiktok', 'telegram', 'twitter']
   status: string
   profiles?: ModelProfile[]
 }
@@ -32,14 +34,13 @@ export default function AccountsPage() {
   const [importing, setImporting] = useState<Record<string, boolean>>({})
   const [showImportModal, setShowImportModal] = useState(false)
   const [importingTool, setImportingTool] = useState<'adspower' | 'geelark' | ''>('')
+  const [importCategory, setImportCategory] = useState<'chatting' | 'social' | ''>('')
   const [importedProfiles, setImportedProfiles] = useState<ImportedProfile[]>([])
 
   const [form, setForm] = useState({
     name: '',
-    platform: 'onlyfans',
-    tool: 'adspower',
-    profile_id: '',
-    profile_name: '',
+    chatting_platforms: [] as string[],
+    social_networks: [] as string[],
   })
 
   useEffect(() => {
@@ -60,8 +61,9 @@ export default function AccountsPage() {
     }
   }
 
-  const handleImportProfiles = async (tool: 'adspower' | 'geelark') => {
+  const handleImportProfiles = async (tool: 'adspower' | 'geelark', category: 'chatting' | 'social') => {
     setImportingTool(tool)
+    setImportCategory(category)
     setImporting({ ...importing, [tool]: true })
     try {
       const res = await fetch('/api/accounts/profiles/import', {
@@ -70,6 +72,7 @@ export default function AccountsPage() {
         body: JSON.stringify({
           model_id: form.name || 'temp',
           tool,
+          category,
         }),
       })
 
@@ -85,11 +88,8 @@ export default function AccountsPage() {
   }
 
   const handleSelectProfile = (profile: ImportedProfile) => {
-    setForm({
-      ...form,
-      profile_id: profile.id,
-      profile_name: profile.name,
-    })
+    // Profile selection is now context-aware via importCategory
+    // This will be handled in the API layer
     setShowImportModal(false)
   }
 
@@ -100,16 +100,19 @@ export default function AccountsPage() {
       return
     }
 
+    if (form.chatting_platforms.length === 0 && form.social_networks.length === 0) {
+      toast.error('Sélectionnez au moins une plateforme')
+      return
+    }
+
     try {
       const res = await fetch('/api/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
-          platform: form.platform,
-          profile_id: form.profile_id || null,
-          profile_tool: form.tool,
-          profile_name: form.profile_name || null,
+          chatting_platforms: form.chatting_platforms,
+          social_networks: form.social_networks,
         }),
       })
 
@@ -118,10 +121,8 @@ export default function AccountsPage() {
       setShowForm(false)
       setForm({
         name: '',
-        platform: 'onlyfans',
-        tool: 'adspower',
-        profile_id: '',
-        profile_name: '',
+        chatting_platforms: [],
+        social_networks: [],
       })
       toast.success('Modèle créé ✅')
     } catch (error) {
@@ -144,6 +145,19 @@ export default function AccountsPage() {
     }
   }
 
+  const chattingPlatforms = [
+    { id: 'onlyfans', label: '🔵 OnlyFans', icon: '🔵' },
+    { id: 'mym', label: '🩷 MYM', icon: '🩷' },
+  ]
+
+  const socialNetworks = [
+    { id: 'instagram', label: '📸 Instagram', icon: '📸' },
+    { id: 'tiktok', label: '🎵 TikTok', icon: '🎵' },
+    { id: 'telegram', label: '✈️ Telegram', icon: '✈️' },
+    { id: 'twitter', label: '🐦 Twitter/X', icon: '🐦' },
+    { id: 'reddit', label: '🟠 Reddit', icon: '🟠' },
+  ]
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -153,7 +167,7 @@ export default function AccountsPage() {
             <Users size={28} className="text-purple-400" />
             <h1 className="text-2xl font-bold">Comptes Modèles</h1>
           </div>
-          <p className="text-gray-400">Gérez vos profils AdsPower/GeeLark par modèle</p>
+          <p className="text-gray-400">Gérez vos modèles et leurs plateformes (chatting IA + réseaux sociaux)</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -185,7 +199,7 @@ export default function AccountsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {models.map(model => (
             <div key={model.id} className="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all group">
-              {/* Header with colorful avatar */}
+              {/* Header with avatar */}
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
@@ -193,7 +207,6 @@ export default function AccountsPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg group-hover:text-cyan-300 transition-colors">{model.name}</h3>
-                    <p className="text-sm text-gray-400 capitalize">💱 {model.platform}</p>
                   </div>
                 </div>
                 <button
@@ -205,7 +218,7 @@ export default function AccountsPage() {
               </div>
 
               {/* Quick stats */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="grid grid-cols-2 gap-2 mb-5">
                 <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
                   <p className="text-2xl font-bold text-cyan-400">3.2K</p>
                   <p className="text-xs text-gray-400 mt-1">Revenus mois</p>
@@ -216,33 +229,51 @@ export default function AccountsPage() {
                 </div>
               </div>
 
-              {/* Profils */}
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2 font-semibold">Connexions:</p>
-                {model.profiles && model.profiles.length > 0 ? (
-                  <div className="space-y-2">
-                    {model.profiles.map(profile => (
-                      <div
-                        key={profile.id}
-                        className="p-3 bg-white/5 rounded-lg border border-white/10 hover:border-purple-500/30 transition-all"
-                      >
-                        <p className="font-medium text-gray-200 text-sm">{profile.profile_name}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 rounded text-purple-300 text-xs font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                            {profile.tool.toUpperCase()}
-                          </span>
-                          <span className="px-2.5 py-1 bg-cyan-500/20 rounded text-cyan-300 text-xs font-semibold">
-                            {profile.platform.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+              {/* Chatting Platforms */}
+              {model.chatting_platforms && model.chatting_platforms.length > 0 && (
+                <div className="mb-4 pb-4 border-b border-white/10">
+                  <p className="text-xs text-gray-500 mb-2 font-semibold flex items-center gap-1.5">
+                    <MessageSquare size={14} /> CHATTING IA
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {model.chatting_platforms.map(platform => {
+                      const platformInfo = chattingPlatforms.find(p => p.id === platform)
+                      return (
+                        <span
+                          key={platform}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-300 text-xs font-semibold"
+                        >
+                          <span>{platformInfo?.icon}</span>
+                          {platform.toUpperCase()}
+                        </span>
+                      )
+                    })}
                   </div>
-                ) : (
-                  <p className="text-xs text-gray-500 italic px-3 py-2 bg-white/3 rounded-lg">Pas de connexion configurée</p>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Social Networks */}
+              {model.social_networks && model.social_networks.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2 font-semibold flex items-center gap-1.5">
+                    <Share2 size={14} /> RÉSEAUX SOCIAUX
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {model.social_networks.map(network => {
+                      const networkInfo = socialNetworks.find(n => n.id === network)
+                      return (
+                        <span
+                          key={network}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs font-semibold"
+                        >
+                          <span>{networkInfo?.icon}</span>
+                          {network.toUpperCase()}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Settings button */}
               <button className="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-600/40 to-cyan-600/40 hover:from-purple-600/60 hover:to-cyan-600/60 rounded-lg text-purple-300 transition-all font-medium">
@@ -257,9 +288,9 @@ export default function AccountsPage() {
       {/* Modal formulaire */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="glass rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-5">Ajouter un modèle</h2>
-            <form onSubmit={handleCreateModel} className="space-y-4">
+            <form onSubmit={handleCreateModel} className="space-y-6">
               {/* Nom du modèle */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">Nom du modèle</label>
@@ -272,105 +303,78 @@ export default function AccountsPage() {
                 />
               </div>
 
-              {/* Plateforme — multi-sélection pills */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Plateformes <span className="text-gray-600">(plusieurs choix possibles)</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: 'onlyfans', label: 'OnlyFans', color: 'from-blue-500 to-blue-700' },
-                    { id: 'mym', label: 'MYM', color: 'from-pink-500 to-pink-700' },
-                    { id: 'instagram', label: 'Instagram', color: 'from-purple-500 to-pink-600' },
-                    { id: 'tiktok', label: 'TikTok', color: 'from-gray-700 to-gray-900' },
-                    { id: 'telegram', label: 'Telegram', color: 'from-blue-400 to-blue-600' },
-                  ].map(p => {
-                    const selected = form.platform.split(',').includes(p.id)
+              {/* SECTION 1 — Plateformes Chatting IA */}
+              <div className="border-t border-white/10 pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare size={18} className="text-purple-400" />
+                  <label className="block text-sm font-semibold text-gray-300">Plateformes pour Chatting IA</label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">Sélectionnez où vos clients discuteront avec l'IA</p>
+                <div className="flex flex-wrap gap-3">
+                  {chattingPlatforms.map(p => {
+                    const selected = form.chatting_platforms.includes(p.id)
                     return (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => {
-                          const current = form.platform ? form.platform.split(',').filter(Boolean) : []
-                          const next = selected ? current.filter(x => x !== p.id) : [...current, p.id]
-                          setForm({ ...form, platform: next.join(',') || 'onlyfans' })
+                          setForm({
+                            ...form,
+                            chatting_platforms: selected
+                              ? form.chatting_platforms.filter(x => x !== p.id)
+                              : [...form.chatting_platforms, p.id],
+                          })
                         }}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                           selected
-                            ? `bg-gradient-to-r ${p.color} border-transparent text-white shadow-lg scale-105`
-                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-purple-500/40 hover:text-white'
+                            ? 'bg-purple-500/30 border-purple-400 text-purple-200'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-purple-500/30'
                         }`}
                       >
-                        {selected && '✓ '}{p.label}
+                        {p.label}
                       </button>
                     )
                   })}
                 </div>
               </div>
 
-              {/* Outil */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Outil d'automatisation</label>
-                <select
-                  value={form.tool}
-                  onChange={e => setForm({ ...form, tool: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-[#1a1a2e] border border-purple-500/20 rounded-xl text-white focus:outline-none focus:border-purple-500/60"
-                >
-                  <option value="adspower">AdsPower</option>
-                  <option value="geelark">GeeLark</option>
-                  <option value="none">Aucun</option>
-                </select>
+              {/* SECTION 2 — Réseaux Sociaux */}
+              <div className="border-t border-white/10 pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Share2 size={18} className="text-cyan-400" />
+                  <label className="block text-sm font-semibold text-gray-300">Réseaux sociaux (pour le posting)</label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">Sélectionnez où poster votre contenu via AdsPower/GeeLark</p>
+                <div className="flex flex-wrap gap-3">
+                  {socialNetworks.map(n => {
+                    const selected = form.social_networks.includes(n.id)
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => {
+                          setForm({
+                            ...form,
+                            social_networks: selected
+                              ? form.social_networks.filter(x => x !== n.id)
+                              : [...form.social_networks, n.id],
+                          })
+                        }}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                          selected
+                            ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-cyan-500/30'
+                        }`}
+                      >
+                        {n.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Profil */}
-              {form.tool !== 'none' && (
-                <>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1.5">Profil</label>
-                    {form.profile_name ? (
-                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-green-400">{form.profile_name}</p>
-                          <p className="text-xs text-green-300/60">{form.profile_id}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm({
-                              ...form,
-                              profile_id: '',
-                              profile_name: '',
-                            })
-                          }
-                          className="text-sm text-green-400 hover:text-green-300"
-                        >
-                          Changer
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleImportProfiles(form.tool as 'adspower' | 'geelark')}
-                        disabled={importing[form.tool]}
-                        className="w-full py-2.5 px-4 flex items-center justify-center gap-2 bg-white/5 border border-purple-500/30 rounded-xl text-purple-400 hover:bg-white/10 disabled:opacity-50 transition-all"
-                      >
-                        {importing[form.tool] ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" />
-                            Import...
-                          </>
-                        ) : (
-                          <>
-                            <Download size={16} />
-                            Importer depuis {form.tool.toUpperCase()}
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-
               {/* Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
@@ -386,37 +390,6 @@ export default function AccountsPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Sélectionner un profil</h2>
-            <div className="space-y-2">
-              {importedProfiles.length === 0 ? (
-                <p className="text-gray-400 text-center py-4">Aucun profil trouvé</p>
-              ) : (
-                importedProfiles.map(profile => (
-                  <button
-                    key={profile.id}
-                    onClick={() => handleSelectProfile(profile)}
-                    className="w-full p-4 text-left bg-white/5 hover:bg-white/10 border border-purple-500/20 rounded-xl transition-all group"
-                  >
-                    <p className="font-medium group-hover:text-purple-400">{profile.name}</p>
-                    <p className="text-xs text-gray-500 font-mono mt-1">{profile.id}</p>
-                  </button>
-                ))
-              )}
-            </div>
-            <button
-              onClick={() => setShowImportModal(false)}
-              className="w-full mt-4 py-2.5 glass rounded-xl text-gray-400 hover:text-white transition-colors"
-            >
-              Fermer
-            </button>
           </div>
         </div>
       )}

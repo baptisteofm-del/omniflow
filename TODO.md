@@ -40,3 +40,8 @@ Quand un manager s'abonne → il reçoit automatiquement des tutos pour chaque f
 
 ## ❌ Abandonné
 - White-label → remplacé par le parrainage (10% récurrent, plus simple, même effet)
+
+## 📱 Réseaux sociaux à ajouter (priorité)
+- ✅ Reddit — à ajouter maintenant dans la sélection réseaux sociaux des modèles
+- ⏳ Snapchat — à ajouter plus tard
+- ⏳ YouTube — à ajouter plus tard

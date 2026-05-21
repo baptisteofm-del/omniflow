@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, platform, profile_id, profile_tool, profile_name } = body
+    const { name, chatting_platforms, social_networks } = body
 
     if (!name) {
       return NextResponse.json(
@@ -88,36 +88,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create model
+    if ((!chatting_platforms || chatting_platforms.length === 0) && 
+        (!social_networks || social_networks.length === 0)) {
+      return NextResponse.json(
+        { error: 'At least one platform must be selected' },
+        { status: 400 }
+      )
+    }
+
+    // Create model with both platform types
     const { data: model, error: modelError } = await supabase
       .from('models')
       .insert({
         agency_id: profile.agency_id,
         name,
-        platform: platform || 'onlyfans',
+        chatting_platforms: chatting_platforms || [],
+        social_networks: social_networks || [],
         status: 'active',
       })
       .select()
       .single()
 
     if (modelError) throw modelError
-
-    // Create profile association if provided
-    if (profile_id && profile_tool && profile_tool !== 'none') {
-      const { error: profileError } = await supabase
-        .from('model_profiles')
-        .insert({
-          model_id: model.id,
-          agency_id: profile.agency_id,
-          tool: profile_tool,
-          profile_id,
-          profile_name: profile_name || `${profile_tool}_${profile_id}`,
-          platform: platform || 'onlyfans',
-          is_active: true,
-        })
-
-      if (profileError) throw profileError
-    }
 
     return NextResponse.json({
       success: true,

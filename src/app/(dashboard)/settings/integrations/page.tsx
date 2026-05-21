@@ -21,11 +21,30 @@ interface FormData {
 }
 
 const integrations = [
-  // Content Posting
+  // CHATTING IA - Creator Platforms
+  {
+    id: 'onlyfans',
+    name: 'OnlyFans',
+    description: 'Connectez vos comptes OnlyFans pour le chatting IA',
+    icon: '🔵',
+    requiresUrl: false,
+    category: 'chatting',
+    fields: ['userId', 'authId', 'sess', 'bcTokens', 'userAgent'],
+  },
+  {
+    id: 'mym',
+    name: 'MYM.fans',
+    description: 'Plateforme française - accédez aux messages avec l\'IA',
+    icon: '🩷',
+    requiresUrl: false,
+    category: 'chatting',
+    fields: ['api_key'],
+  },
+  // POSTING - Anti-detect Browsers & Platform Connectors
   {
     id: 'adspower',
     name: 'AdsPower',
-    description: 'Anti-detect browser avec profils locaux',
+    description: 'Anti-detect browser avec profils locaux pour le posting',
     icon: '🌐',
     requiresUrl: true,
     defaultUrl: 'http://local.adspower.net:50325',
@@ -34,39 +53,21 @@ const integrations = [
   {
     id: 'geelark',
     name: 'GeeLark',
-    description: 'Navigateur Android cloud pour TikTok/Instagram',
+    description: 'Navigateur Android cloud pour TikTok/Instagram posting',
     icon: '☁️',
     requiresUrl: false,
     category: 'posting',
   },
   {
-    id: 'telegram',
-    name: 'Telegram Bot',
-    description: 'Poster directement via bot Telegram',
-    icon: '📱',
+    id: 'reddit',
+    name: 'Reddit API',
+    description: 'Connectez votre compte Reddit pour poster automatiquement',
+    icon: '🟠',
     requiresUrl: false,
     category: 'posting',
+    fields: ['client_id', 'client_secret', 'refresh_token'],
   },
-  // Creator Platforms
-  {
-    id: 'onlyfans',
-    name: 'OnlyFans',
-    description: 'Connectez vos comptes OnlyFans pour analyser les fans',
-    icon: '🔥',
-    requiresUrl: false,
-    category: 'platforms',
-    fields: ['userId', 'authId', 'sess', 'bcTokens', 'userAgent'],
-  },
-  {
-    id: 'mym',
-    name: 'MYM.fans',
-    description: 'Plateforme française - accédez aux messages et gains',
-    icon: '👑',
-    requiresUrl: false,
-    category: 'platforms',
-    fields: ['api_key'],
-  },
-  // Finance & Crypto
+  // FINANCE & CRYPTO
   {
     id: 'binance',
     name: 'Binance',
@@ -88,8 +89,8 @@ const integrations = [
 ]
 
 const categories = [
-  { id: 'posting', label: '📤 Automatisation du Posting', icon: '📤' },
-  { id: 'platforms', label: '🎬 Plateformes Creator', icon: '🎬' },
+  { id: 'chatting', label: '💬 Chatting IA - Plateformes Creator', icon: '💬' },
+  { id: 'posting', label: '📤 Posting - Navigateurs & Réseaux', icon: '📤' },
   { id: 'crypto', label: '💰 Finance & Crypto', icon: '💰' },
 ]
 
@@ -206,7 +207,7 @@ export default function IntegrationsPage() {
           <Settings size={28} className="text-purple-400" />
           <h1 className="text-2xl font-bold">Intégrations</h1>
         </div>
-        <p className="text-gray-400">Connectez vos outils pour l'automatisation, l'analyse et la finance</p>
+        <p className="text-gray-400">Connectez vos outils pour le chatting IA, le posting automatisé et la finance</p>
       </div>
 
       {/* Loading state */}
@@ -221,10 +222,22 @@ export default function IntegrationsPage() {
             const categoryIntegrations = integrations.filter(i => i.category === category.id)
             return (
               <div key={category.id} className="mb-10">
-                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="text-xl">{category.icon}</span>
-                  {category.label}
-                </h2>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">{category.icon}</span>
+                  <h2 className="text-lg font-bold">{category.label}</h2>
+                </div>
+                
+                {/* Category description */}
+                {category.id === 'chatting' && (
+                  <p className="text-sm text-gray-400 mb-4">Connectez vos comptes creator pour que l'IA réponde aux messages de vos fans</p>
+                )}
+                {category.id === 'posting' && (
+                  <p className="text-sm text-gray-400 mb-4">Connectez vos navigateurs anti-détection pour automatiser le posting sur les réseaux sociaux</p>
+                )}
+                {category.id === 'crypto' && (
+                  <p className="text-sm text-gray-400 mb-4">Synchronisez vos portefeuilles crypto pour le suivi financier</p>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {categoryIntegrations.map(integration => {
                     const isConnected = isIntegrationConnected(integration.id)
@@ -323,11 +336,6 @@ export default function IntegrationsPage() {
                               💡 Obtenez votre clé API dans le panneau GeeLark
                             </p>
                           )}
-                          {integration.id === 'telegram' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Créez un bot avec @BotFather sur Telegram et copiez le token
-                            </p>
-                          )}
                           {integration.id === 'onlyfans' && (
                             <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
                               💡 <strong>Guide:</strong> Ouvrez OnlyFans → F12 → Application → Cookies
@@ -353,6 +361,15 @@ export default function IntegrationsPage() {
                               <a href="https://coinbase.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">
                                 Coinbase Settings
                               </a>
+                            </p>
+                          )}
+                          {integration.id === 'reddit' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 <strong>Guide:</strong> Allez sur{' '}
+                              <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">
+                                Reddit Apps Settings
+                              </a>
+                              <br/>Créez une "script app" et copiez le client_id, client_secret et refresh_token
                             </p>
                           )}
 
@@ -397,6 +414,7 @@ export default function IntegrationsPage() {
           <li>• Les clés API sont chiffrées et stockées de façon sécurisée</li>
           <li>• Utilisez des clés API read-only quand possible (Binance, Coinbase)</li>
           <li>• Vérifiez que chaque service est accessible avant de sauvegarder</li>
+          <li>• Les intégrations de chatting (OnlyFans, MYM) sont séparées du posting (AdsPower, GeeLark)</li>
           <li>• Vous pouvez mettre à jour les clés à tout moment</li>
         </ul>
       </div>
