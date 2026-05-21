@@ -18,35 +18,28 @@ const navItems = [
     ],
   },
   {
-    section: 'Contenu',
-    items: [
-      { label: 'Veille trends', href: '/content/veille', icon: Eye },
-      { label: 'Éditeur & Spoof', href: '/content/editor', icon: Film },
-      { label: 'Génération IA', href: '/content/ai-generation', icon: Sparkles },
-      { label: 'Banque de médias', href: '/media', icon: Clapperboard },
-    ],
-  },
-  {
-    section: 'Distribution',
-    items: [
-      { label: 'Posting auto', href: '/posting', icon: Calendar },
-      { label: 'Bots Telegram', href: '/telegram', icon: Bot },
-    ],
-  },
-  {
-    section: 'Opérations',
+    section: 'Pilotage',
     items: [
       { label: 'Comptes & Modèles', href: '/accounts', icon: Users },
       { label: 'Finance', href: '/finance', icon: BarChart3 },
-      {
-        label: 'Chatting',
-        href: '/chatting',
-        icon: MessageSquare,
-        submenu: [
-          { label: 'Rapports', href: '/chatting' },
-          { label: 'Chatting IA', href: '/chatting/ai' },
-        ],
-      },
+    ],
+  },
+  {
+    section: 'Chatting',
+    items: [
+      { label: 'Chatting IA', href: '/chatting/ai', icon: Sparkles },
+      { label: 'Rapports', href: '/chatting', icon: MessageSquare },
+    ],
+  },
+  {
+    section: 'Marketing',
+    items: [
+      { label: 'Veille trends', href: '/content/veille', icon: Eye },
+      { label: 'Éditeur & Spoof', href: '/content/editor', icon: Film },
+      { label: 'Génération IA', href: '/content/ai-generation', icon: Zap },
+      { label: 'Posting auto', href: '/posting', icon: Calendar },
+      { label: 'Bots Telegram', href: '/telegram', icon: Bot },
+      { label: 'Banque de médias', href: '/media', icon: Clapperboard },
     ],
   },
   {
