@@ -6,7 +6,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'Omniflow',
+    name: 'OmniFlow',
     applicationCategory: 'BusinessApplication',
     description:
       'La plateforme d\'automatisation #1 pour les agences OnlyFans. Posting multi-comptes, génération vidéo IA, analyse fans, et bien plus.',

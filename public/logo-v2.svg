@@ -14,7 +14,7 @@
   <!-- OF stylisé -->
   <text x="9" y="34" font-family="'SF Pro Display', -apple-system, sans-serif" font-size="26" font-weight="800" fill="white" letter-spacing="-2">OF</text>
   <!-- Wordmark -->
-  <text x="62" y="35" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.8" fill="url(#gtext)">Omniflow</text>
+  <text x="62" y="35" font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.8" fill="url(#gtext)">OmniFlow</text>
   <!-- Point accent -->
   <circle cx="210" cy="14" r="5" fill="#06b6d4" opacity="0.8"/>
 </svg>

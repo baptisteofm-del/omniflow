@@ -34,7 +34,7 @@ export function Hero() {
         </h1>
 
         <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto mb-10 px-2">
-          Moins de gestion d'équipe, plus de scalabilité. Omniflow réduit vos coûts de VA, automatise le posting sur tous vos comptes, et vous donne enfin le temps de faire grandir votre agence.
+          Moins de gestion d'équipe, plus de scalabilité. OmniFlow réduit vos coûts de VA, automatise le posting sur tous vos comptes, et vous donne enfin le temps de faire grandir votre agence.
         </p>
 
         {/* CTAs */}

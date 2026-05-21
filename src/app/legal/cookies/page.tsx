@@ -21,7 +21,7 @@ export default function CookiesPage() {
           {/* Section 2 */}
           <div className="glass p-8 rounded-xl border border-purple-500/20">
             <h2 className="text-2xl font-bold text-white mb-4">2. Cookies que nous utilisons</h2>
-            <p className="text-gray-300 mb-6">Omniflow utilise les cookies suivants pour fonctionner correctement :</p>
+            <p className="text-gray-300 mb-6">OmniFlow utilise les cookies suivants pour fonctionner correctement :</p>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -58,7 +58,7 @@ export default function CookiesPage() {
             <h2 className="text-2xl font-bold text-white mb-4">3. Cookies tiers</h2>
             <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
               <p className="text-cyan-300 text-sm">
-                ✓ <strong>Omniflow ne contient aucun cookie publicitaire ou de tracking tiers.</strong>
+                ✓ <strong>OmniFlow ne contient aucun cookie publicitaire ou de tracking tiers.</strong>
               </p>
               <p className="text-gray-400 text-sm mt-2">
                 Nous respectons votre vie privée et ne partageons aucune donnée avec des tiers à des fins publicitaires.
@@ -89,7 +89,7 @@ export default function CookiesPage() {
             </div>
 
             <p className="text-gray-400 text-sm mt-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-              <strong>⚠️ Attention :</strong> Désactiver les cookies essentiels peut affecter le fonctionnement d'Omniflow. Nous vous recommandons de maintenir les cookies d'authentification activés.
+              <strong>⚠️ Attention :</strong> Désactiver les cookies essentiels peut affecter le fonctionnement d'OmniFlow. Nous vous recommandons de maintenir les cookies d'authentification activés.
             </p>
           </div>
 
@@ -108,7 +108,7 @@ export default function CookiesPage() {
           {/* Last updated */}
           <div className="text-center pt-8 border-t border-purple-500/20">
             <p className="text-gray-500 text-sm">
-              © 2025 Omniflow. Tous droits réservés.
+              © 2025 OmniFlow. Tous droits réservés.
             </p>
           </div>
         </div>

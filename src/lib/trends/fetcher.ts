@@ -333,7 +333,7 @@ async function fetchRedditTrends(): Promise<Trend[]> {
           `https://www.reddit.com/r/${sub}/top.json?t=day&limit=5`,
           {
             headers: {
-              'User-Agent': 'Omniflow-TrendsFetcher/1.0',
+              'User-Agent': 'OmniFlow-TrendsFetcher/1.0',
             },
           }
         )

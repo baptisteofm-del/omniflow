@@ -3,6 +3,10 @@
     {
       "path": "/api/posting/execute",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/chatting/cron",
+      "schedule": "*/2 * * * *"
     }
   ]
 }

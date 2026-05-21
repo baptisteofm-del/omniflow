@@ -72,7 +72,7 @@ export default function ReferralPage() {
     if (!referralLink) return
 
     const encoded = encodeURIComponent(referralLink)
-    const text = encodeURIComponent('Rejoins Omniflow et gère tes comptes OnlyFans facilement!')
+    const text = encodeURIComponent('Rejoins OmniFlow et gère tes comptes OnlyFans facilement!')
 
     const urls: Record<string, string> = {
       twitter: `https://twitter.com/intent/tweet?text=${text}&url=${encoded}`,

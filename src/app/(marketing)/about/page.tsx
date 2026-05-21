@@ -2,8 +2,8 @@ import { ArrowRight, Lightbulb, Zap, Focus } from 'lucide-react'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'À propos | Omniflow',
-  description: 'Omniflow — La plateforme de référence pour les agences OnlyFans',
+  title: 'À propos | OmniFlow',
+  description: 'OmniFlow — La plateforme de référence pour les agences OnlyFans',
 }
 
 export default function AboutPage() {
@@ -33,12 +33,12 @@ export default function AboutPage() {
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-5xl sm:text-6xl font-bold mb-8">
-            On a créé Omniflow parce qu'on en avait <span className="gradient-text">marre</span>
+            On a créé OmniFlow parce qu'on en avait <span className="gradient-text">marre</span>
           </h1>
 
           <div className="space-y-6 text-gray-400 text-lg leading-relaxed">
             <p>
-              Omniflow est né d'une frustration simple : gérer une agence OnlyFans en 2024 demande
+              OmniFlow est né d'une frustration simple : gérer une agence OnlyFans en 2024 demande
               encore trop d'humain pour des tâches que des machines devraient faire. Publier du
               contenu, animer des Telegram, analyser les fans, recruter des modèles — tout ça se
               faisait à la main, avec des VAs, des erreurs, et du temps perdu.
@@ -66,7 +66,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Ce qu'on croit</h2>
-            <p className="text-gray-400 text-lg">Les principes qui guident chaque décision chez Omniflow</p>
+            <p className="text-gray-400 text-lg">Les principes qui guident chaque décision chez OmniFlow</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -95,7 +95,7 @@ export default function AboutPage() {
           <div className="glass rounded-2xl p-12 text-center">
             <h2 className="text-3xl font-bold mb-6">L'équipe</h2>
             <p className="text-gray-300 text-lg leading-relaxed mb-6">
-              Omniflow est construit par des gens qui comprennent le business OF de l'intérieur. On
+              OmniFlow est construit par des gens qui comprennent le business OF de l'intérieur. On
               gère des agences, on connaît les problèmes — et on les résout.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-400">

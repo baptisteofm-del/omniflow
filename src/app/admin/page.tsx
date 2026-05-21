@@ -51,7 +51,7 @@ export default async function AdminPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">A</div>
-            <span className="text-purple-400 text-sm font-medium">Admin Omniflow</span>
+            <span className="text-purple-400 text-sm font-medium">Admin OmniFlow</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Vue globale</h1>
         </div>

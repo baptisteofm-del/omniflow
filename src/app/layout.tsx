@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: {
-    default: 'Omniflow — La plateforme #1 des agences OnlyFans',
-    template: '%s | Omniflow',
+    default: 'OmniFlow — La plateforme #1 des agences OnlyFans',
+    template: '%s | OmniFlow',
   },
   description:
     'Automatisez votre agence OnlyFans : posting multi-comptes, génération vidéo IA, analyse fans, dashboard financier. Économisez sur les VAs, scalez plus vite.',
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     'chatting ia onlyfans',
     'mym agency',
   ],
-  authors: [{ name: 'Omniflow' }],
-  creator: 'Omniflow',
+  authors: [{ name: 'OmniFlow' }],
+  creator: 'OmniFlow',
   metadataBase: new URL('https://omniflowapp.ai'),
   alternates: {
     canonical: '/',
@@ -36,11 +36,11 @@ export const metadata: Metadata = {
     shortcut: '/logo-icon.svg',
   },
   openGraph: {
-    title: 'Omniflow — La plateforme #1 des agences OnlyFans',
+    title: 'OmniFlow — La plateforme #1 des agences OnlyFans',
     description:
       'Automatisez votre agence OnlyFans : posting multi-comptes, génération vidéo IA, analyse fans, dashboard financier. Économisez sur les VAs, scalez plus vite.',
     url: 'https://omniflowapp.ai',
-    siteName: 'Omniflow',
+    siteName: 'OmniFlow',
     locale: 'fr_FR',
     type: 'website',
     images: [
@@ -48,13 +48,13 @@ export const metadata: Metadata = {
         url: '/og',
         width: 1200,
         height: 630,
-        alt: 'Omniflow - La plateforme #1 des agences OnlyFans',
+        alt: 'OmniFlow - La plateforme #1 des agences OnlyFans',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Omniflow',
+    title: 'OmniFlow',
     description:
       'La plateforme d\'automatisation #1 pour les agences OnlyFans',
     images: ['/og'],

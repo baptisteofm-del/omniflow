@@ -29,7 +29,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-4">
-              <Image src="/logo.svg" alt="Omniflow" width={130} height={32} />
+              <Image src="/logo.svg" alt="OmniFlow" width={130} height={32} />
             </Link>
             <p className="text-gray-500 text-sm leading-relaxed">
               La plateforme tout-en-un pour automatiser et scaler votre agence OnlyFans.
@@ -58,7 +58,7 @@ export function Footer() {
 
         <div className="border-t border-purple-500/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-gray-600 text-sm">
-            © 2025 Omniflow. Tous droits réservés.
+            © 2025 OmniFlow. Tous droits réservés.
           </p>
           <p className="text-gray-600 text-sm">
             Fait avec ❤️ pour les agences qui veulent scaler

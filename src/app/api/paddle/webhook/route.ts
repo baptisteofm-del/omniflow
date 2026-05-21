@@ -16,7 +16,7 @@ function verifyPaddleSignature(
   return hash === signature
 }
 
-// Map Paddle price IDs to Omniflow plan IDs
+// Map Paddle price IDs to OmniFlow plan IDs
 function getPlanIdFromPaddlePrice(priceId: string): PlanId | null {
   // Build mapping from env vars
   const priceMapping: Record<string, PlanId> = {}

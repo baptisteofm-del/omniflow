@@ -1,4 +1,4 @@
-export const metadata = { title: 'CGU — Omniflow', description: "Conditions Générales d'Utilisation d'Omniflow" }
+export const metadata = { title: 'CGU — OmniFlow', description: "Conditions Générales d'Utilisation d'OmniFlow" }
 
 export default function TermsPage() {
   return (
@@ -10,7 +10,7 @@ export default function TermsPage() {
         <div className="space-y-8 text-gray-300 leading-relaxed">
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">1. Présentation du service</h2>
-            <p>Omniflow (ci-après "le Service") est une plateforme SaaS éditée par la société Omniflow, dont le siège social est en France. Le Service est accessible à l'adresse <strong>omniflowapp.ai</strong> et permet aux agences de gestion de créateurs de contenu d'automatiser leurs opérations marketing et administratives.</p>
+            <p>OmniFlow (ci-après "le Service") est une plateforme SaaS éditée par la société OmniFlow, dont le siège social est en France. Le Service est accessible à l'adresse <strong>omniflowapp.ai</strong> et permet aux agences de gestion de créateurs de contenu d'automatiser leurs opérations marketing et administratives.</p>
           </section>
 
           <section>
@@ -30,7 +30,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">5. Utilisation du service</h2>
-            <p>L'utilisateur s'engage à utiliser le Service conformément aux lois en vigueur et aux conditions d'utilisation des plateformes tierces intégrées (Instagram, TikTok, Telegram, etc.). Il est interdit d'utiliser le Service pour publier du contenu illégal, offensant, ou violant les droits de tiers. Omniflow se réserve le droit de suspendre tout compte en cas de violation.</p>
+            <p>L'utilisateur s'engage à utiliser le Service conformément aux lois en vigueur et aux conditions d'utilisation des plateformes tierces intégrées (Instagram, TikTok, Telegram, etc.). Il est interdit d'utiliser le Service pour publier du contenu illégal, offensant, ou violant les droits de tiers. OmniFlow se réserve le droit de suspendre tout compte en cas de violation.</p>
           </section>
 
           <section>
@@ -40,22 +40,22 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">8. Programme de parrainage</h2>
-            <p>Le programme de parrainage offre une commission de 10% sur le montant hors taxes des abonnements des filleuls, versée mensuellement, tant que le filleul reste abonné. Les commissions sont versées via virement bancaire ou cryptomonnaie au choix du parrain. Omniflow se réserve le droit de modifier ou d'interrompre ce programme avec un préavis de 30 jours.</p>
+            <p>Le programme de parrainage offre une commission de 10% sur le montant hors taxes des abonnements des filleuls, versée mensuellement, tant que le filleul reste abonné. Les commissions sont versées via virement bancaire ou cryptomonnaie au choix du parrain. OmniFlow se réserve le droit de modifier ou d'interrompre ce programme avec un préavis de 30 jours.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">7. Propriété intellectuelle</h2>
-            <p>Tous les éléments du Service (code, design, marques, logos) sont la propriété exclusive d'Omniflow. L'utilisateur conserve la propriété des contenus qu'il crée et publie via le Service. L'utilisation du Service ne confère aucun droit de propriété sur ses éléments constitutifs.</p>
+            <p>Tous les éléments du Service (code, design, marques, logos) sont la propriété exclusive d'OmniFlow. L'utilisateur conserve la propriété des contenus qu'il crée et publie via le Service. L'utilisation du Service ne confère aucun droit de propriété sur ses éléments constitutifs.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">8. Limitation de responsabilité</h2>
-            <p>Omniflow est une plateforme d'automatisation. L'utilisateur est seul responsable du contenu publié et du respect des CGU des plateformes tierces. Omniflow ne pourra être tenu responsable des suspensions de comptes tierces, des pertes de revenus ou des dommages indirects résultant de l'utilisation du Service.</p>
+            <p>OmniFlow est une plateforme d'automatisation. L'utilisateur est seul responsable du contenu publié et du respect des CGU des plateformes tierces. OmniFlow ne pourra être tenu responsable des suspensions de comptes tierces, des pertes de revenus ou des dommages indirects résultant de l'utilisation du Service.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">9. Résiliation</h2>
-            <p>L'utilisateur peut résilier son abonnement à tout moment depuis les paramètres de son compte. Omniflow peut résilier le contrat sans préavis en cas de violation grave des présentes CGU. Les données sont conservées 30 jours après résiliation puis supprimées définitivement.</p>
+            <p>L'utilisateur peut résilier son abonnement à tout moment depuis les paramètres de son compte. OmniFlow peut résilier le contrat sans préavis en cas de violation grave des présentes CGU. Les données sont conservées 30 jours après résiliation puis supprimées définitivement.</p>
           </section>
 
           <section>

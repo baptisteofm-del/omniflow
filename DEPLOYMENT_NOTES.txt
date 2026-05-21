@@ -1,0 +1,240 @@
+═══════════════════════════════════════════════════════════════════════════════
+  EMAIL DRIP + SEO IMPLEMENTATION — DEPLOYMENT NOTES
+═══════════════════════════════════════════════════════════════════════════════
+
+COMPLETION STATUS: ✅ READY FOR DEPLOYMENT
+
+═══════════════════════════════════════════════════════════════════════════════
+BEFORE DEPLOYMENT (DO THIS FIRST)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. GET RESEND API KEY
+   → Visit: https://resend.com
+   → Sign up (free)
+   → Dashboard → API Keys
+   → Copy key (format: re_xxxxxxxxxxxxxxxxxxxx)
+   → Add to .env.local: RESEND_API_KEY=re_xxxx
+
+2. SET EMAIL CONFIG
+   In .env.local, add:
+   RESEND_API_KEY=re_xxxx
+   FROM_EMAIL=hello@omniflowapp.ai
+   EMAIL_SCHEDULER_SECRET=generate_random_32_char_string
+
+3. CREATE DATABASE TABLE
+   In Supabase SQL Editor, run contents of:
+   supabase/add_email_drip.sql
+   
+   Verify success:
+   SELECT * FROM email_drip_log;
+
+4. TEST LOCALLY
+   npm run dev
+   → Try signup at http://localhost:3000/register
+   → Check email arrives in test inbox
+
+═══════════════════════════════════════════════════════════════════════════════
+DEPLOYMENT COMMAND
+═══════════════════════════════════════════════════════════════════════════════
+
+cd /data/.openclaw/workspace/omniflow
+
+# Verify build (optional but recommended)
+npm run build
+
+# Stage all changes
+git add .
+
+# Commit with message
+git commit -m "✨ Email drip Resend + SEO complet (sitemap, robots, meta, schema.org)"
+
+# Push to main branch
+git push origin clean-main:main --force
+
+═══════════════════════════════════════════════════════════════════════════════
+AFTER DEPLOYMENT (VERIFY)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. CHECK SITEMAP
+   https://omniflowapp.ai/sitemap.xml
+   Should list all pages with priority levels
+
+2. CHECK ROBOTS.TXT
+   https://omniflowapp.ai/robots.txt
+   Should show crawl rules
+
+3. TEST EMAIL ENDPOINT
+   curl -X POST https://omniflowapp.ai/api/email/drip \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test@example.com",
+       "agencyName": "Test Agency",
+       "day": 0
+     }'
+   
+   Response should be:
+   {"message":"Email sent successfully","sent":true}
+
+4. VERIFY EMAIL DELIVERY
+   → Check test email inbox
+   → Check Resend dashboard
+   → Verify no bounces
+
+5. GOOGLE SEARCH CONSOLE
+   → Add property: omniflowapp.ai
+   → Submit sitemap.xml
+   → Check indexing status
+
+═══════════════════════════════════════════════════════════════════════════════
+CONFIGURE EMAIL SCHEDULER (CRON JOB)
+═══════════════════════════════════════════════════════════════════════════════
+
+The email scheduler needs to call the /api/email/scheduled endpoint daily.
+Choose ONE method:
+
+OPTION A: Using n8n (RECOMMENDED)
+─────────────────────────────────
+1. Log into: https://n8n.srv1610420.hstgr.cloud
+2. Create new workflow
+3. Add HTTP Request node
+4. Configure:
+   Method: POST
+   URL: https://omniflowapp.ai/api/email/scheduled
+   Headers: Authorization: Bearer {EMAIL_SCHEDULER_SECRET}
+5. Add Cron node
+6. Schedule: Daily at 09:00 UTC
+7. Deploy
+
+OPTION B: Using Vercel Cron
+───────────────────────────
+1. Create src/app/api/cron/email-drip/route.ts
+2. Add vercel.json cron config
+3. Deploy (auto-runs at schedule)
+
+OPTION C: Using External Service (EasyCron, Zapier, etc.)
+─────────────────────────────────────────────────────────
+1. Create webhook that POSTs to:
+   https://omniflowapp.ai/api/email/scheduled
+2. Add header: Authorization: Bearer {EMAIL_SCHEDULER_SECRET}
+3. Schedule: Daily at preferred time
+
+═══════════════════════════════════════════════════════════════════════════════
+FILES CREATED/MODIFIED
+═══════════════════════════════════════════════════════════════════════════════
+
+CREATED (9 files):
+  src/lib/email/resend.ts
+  src/app/api/email/drip/route.ts
+  src/app/api/email/scheduled/route.ts
+  src/app/sitemap.ts
+  src/app/robots.ts
+  supabase/add_email_drip.sql
+  IMPLEMENTATION_GUIDE.md
+  EMAIL_DRIP_CHECKLIST.md
+  IMPLEMENTATION_SUMMARY.md
+
+MODIFIED (6 files):
+  src/app/layout.tsx
+  src/app/(auth)/register/page.tsx
+  src/app/(marketing)/layout.tsx
+  src/app/(marketing)/faq/page.tsx
+  src/app/(marketing)/affiliation/page.tsx
+  .env.local.example
+
+═══════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Problem: Email not sending
+─────────────────────────
+→ Check Resend API key in .env.local
+→ Check FROM_EMAIL is verified in Resend
+→ Check request body has email, agencyName, day
+→ Check Resend dashboard for API errors
+
+Problem: Build fails
+────────────────────
+→ Verify all imports are correct
+→ Check for TypeScript errors: npm run build
+→ Ensure no missing dependencies
+
+Problem: Cron job not running
+──────────────────────────────
+→ Verify EMAIL_SCHEDULER_SECRET is set
+→ Check Authorization header format
+→ Verify cron endpoint URL is correct
+→ Check service logs (n8n, Vercel, etc.)
+
+═══════════════════════════════════════════════════════════════════════════════
+SUCCESS CRITERIA
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Email drip sends Day 0 on signup
+✅ Scheduled emails send on Days 1, 3, 7
+✅ Sitemap.xml is accessible and valid
+✅ Robots.txt blocks dashboard/admin/api
+✅ Metadata visible in page source
+✅ JSON-LD schema valid
+✅ No duplicate emails sent
+✅ <2% email bounce rate
+✅ >90% email delivery rate
+
+═══════════════════════════════════════════════════════════════════════════════
+QUICK REFERENCE: API ENDPOINTS
+═══════════════════════════════════════════════════════════════════════════════
+
+POST /api/email/drip
+─────────────────────
+Send immediate email
+Body: {email, agencyName, day}
+Returns: {message, sent}
+
+POST /api/email/scheduled
+──────────────────────────
+Send scheduled emails (cron)
+Headers: Authorization: Bearer {EMAIL_SCHEDULER_SECRET}
+Returns: {message, processed}
+
+GET /sitemap.xml
+────────────────
+Auto-generated sitemap
+
+GET /robots.txt
+───────────────
+Robots directives
+
+═══════════════════════════════════════════════════════════════════════════════
+MONITORING AFTER LAUNCH
+═══════════════════════════════════════════════════════════════════════════════
+
+Daily:
+  - Check Resend dashboard for delivery issues
+  - Monitor email bounce rate
+
+Weekly:
+  - Email open rates
+  - Email click rates
+  - Google indexing progress
+  - New signup conversion metrics
+
+Monthly:
+  - Email ROI (Day 7 conversions)
+  - SEO rankings
+  - Organic traffic
+  - Overall conversion funnel
+
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+
+- IMPLEMENTATION_GUIDE.md → Complete setup walkthrough
+- EMAIL_DRIP_CHECKLIST.md → Pre/post deployment checklist
+- IMPLEMENTATION_SUMMARY.md → Executive summary
+- Resend Docs → https://resend.com/docs
+- Next.js Metadata → https://nextjs.org/docs/app/building-your-application/optimizing/metadata
+
+═══════════════════════════════════════════════════════════════════════════════
+DEPLOYMENT DATE: 2026-05-21
+ESTIMATED SETUP TIME: 30-45 minutes
+STATUS: READY FOR PRODUCTION ✅
+═══════════════════════════════════════════════════════════════════════════════

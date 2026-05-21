@@ -223,7 +223,7 @@ function Step1() {
     <div className="text-center space-y-6">
       <div className="text-5xl md:text-6xl mb-6">👋</div>
       <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-        Bienvenue sur Omniflow
+        Bienvenue sur OmniFlow
       </h1>
       <p className="text-xl text-gray-400 leading-relaxed">
         Configurons votre agence en 4 étapes rapides pour commencer à gérer vos créatrices comme un pro.

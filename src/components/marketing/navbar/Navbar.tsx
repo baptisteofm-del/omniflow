@@ -9,7 +9,6 @@ const navLinks = [
   { label: 'Fonctionnalités', href: '#features' },
   { label: 'Tarifs', href: '#pricing' },
   { label: 'À propos', href: '/about' },
-  { label: 'Documentation', href: '/docs' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Contact', href: '/contact' },
   { label: 'Affiliation', href: '/affiliation' },
@@ -24,7 +23,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image src="/logo.svg" alt="Omniflow" width={140} height={34} priority />
+            <Image src="/logo.svg" alt="OmniFlow" width={140} height={34} priority />
           </Link>
 
           {/* Desktop nav */}

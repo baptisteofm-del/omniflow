@@ -89,7 +89,7 @@ export function DemoTelegram() {
               {/* Message bubble */}
               <div className="flex-1">
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-xs font-bold text-blue-200">Omniflow Bot</span>
+                  <span className="text-xs font-bold text-blue-200">OmniFlow Bot</span>
                   <span className="text-xs text-blue-400/60">Bot</span>
                   <span className="text-xs text-blue-400/50 ml-auto">{msg.time}</span>
                 </div>

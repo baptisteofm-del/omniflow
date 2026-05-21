@@ -36,11 +36,11 @@ export function DemosSection() {
             Démonstrations interactives
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Voyez Omniflow en{' '}
+            Voyez OmniFlow en{' '}
             <span className="gradient-text">action</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Tout ce que font vos VAs, Omniflow le fait mieux, plus vite, sans erreur
+            Tout ce que font vos VAs, OmniFlow le fait mieux, plus vite, sans erreur
           </p>
         </div>
 

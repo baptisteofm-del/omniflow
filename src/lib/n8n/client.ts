@@ -14,7 +14,7 @@ async function callWebhook(path: string, payload: N8nWebhookPayload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Omniflow-Secret': N8N_WEBHOOK_SECRET,
+      'X-OmniFlow-Secret': N8N_WEBHOOK_SECRET,
     },
     body: JSON.stringify(payload),
   })

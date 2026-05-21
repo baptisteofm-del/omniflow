@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Get transactions for commission calculation
     const { data: transactions } = await supabase
       .from('transactions')
-      .select('amount')
+      .select('amount, agency_id')
       .in('agency_id', referredIds)
 
     // Combine data

@@ -42,7 +42,7 @@ function buildMYMHeaders(creds: MYMCredentials): Headers {
     'Authorization': `Bearer ${creds.bearerToken}`,
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'User-Agent': 'Omniflow/1.0',
+    'User-Agent': 'OmniFlow/1.0',
   })
   return headers
 }

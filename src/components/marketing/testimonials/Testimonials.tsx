@@ -59,7 +59,7 @@ export function Testimonials() {
             Ce que disent nos <span className="gradient-text">agences</span>
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Des témoignages réels de gérants d'agences qui ont transformé leur workflow avec Omniflow
+            Des témoignages réels de gérants d'agences qui ont transformé leur workflow avec OmniFlow
           </p>
         </div>
 

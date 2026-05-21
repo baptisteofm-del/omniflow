@@ -1,4 +1,4 @@
-export const metadata = { title: 'Politique de confidentialité — Omniflow' }
+export const metadata = { title: 'Politique de confidentialité — OmniFlow' }
 
 export default function PrivacyPage() {
   return (
@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <div className="space-y-8 text-gray-300 leading-relaxed">
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">1. Données collectées</h2>
-            <p>Omniflow collecte les données suivantes :</p>
+            <p>OmniFlow collecte les données suivantes :</p>
             <ul className="list-disc ml-6 mt-2 space-y-1 text-gray-400">
               <li>Informations de compte : email, nom de l'agence, mot de passe (hashé)</li>
               <li>Données de facturation : traitées par Paddle/NOWPayments, non stockées chez nous</li>
@@ -64,12 +64,12 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">6. Cookies</h2>
-            <p>Omniflow utilise uniquement des cookies essentiels au fonctionnement du Service (session d'authentification). Aucun cookie publicitaire ou de tracking tiers n'est utilisé.</p>
+            <p>OmniFlow utilise uniquement des cookies essentiels au fonctionnement du Service (session d'authentification). Aucun cookie publicitaire ou de tracking tiers n'est utilisé.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">7. Contact DPO</h2>
-            <p>Responsable du traitement : Omniflow — <strong>privacy@omniflowapp.ai</strong></p>
+            <p>Responsable du traitement : OmniFlow — <strong>privacy@omniflowapp.ai</strong></p>
           </section>
         </div>
       </div>

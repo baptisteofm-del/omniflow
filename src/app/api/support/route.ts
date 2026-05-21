@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
   }
 
-  const text = `🆕 *Nouveau message support Omniflow*\n\n` +
+  const text = `🆕 *Nouveau message support OmniFlow*\n\n` +
     `👤 *De :* ${name}\n` +
     `📌 *Sujet :* ${subject || 'Non précisé'}\n\n` +
     `💬 *Message :*\n${message}\n\n` +

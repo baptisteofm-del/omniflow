@@ -1,17 +1,17 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
 export async function sendWelcomeEmail(email: string, agencyName: string): Promise<void> {
   try {
     await resend.emails.send({
       from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
       to: email,
-      subject: 'Bienvenue sur Omniflow 🚀 — Votre agence va changer',
+      subject: 'Bienvenue sur OmniFlow 🚀 — Votre agence va changer',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">Bienvenue sur Omniflow 🚀</h1>
+            <h1 style="color: white; margin: 0; font-size: 24px;">Bienvenue sur OmniFlow 🚀</h1>
           </div>
           
           <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
@@ -62,7 +62,7 @@ export async function sendOnboardingEmail(
 ): Promise<void> {
   const emailContent = {
     1: {
-      subject: 'Comment connecter AdsPower à Omniflow (2 min)',
+      subject: 'Comment connecter AdsPower à OmniFlow (2 min)',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
@@ -74,7 +74,7 @@ export async function sendOnboardingEmail(
               Bonjour ${agencyName},
             </p>
             <p style="color: #555; font-size: 14px;">
-              Connecter AdsPower et GeeLark à Omniflow en 2 minutes c'est possible !
+              Connecter AdsPower et GeeLark à OmniFlow en 2 minutes c'est possible !
             </p>
           </div>
           
@@ -118,7 +118,7 @@ export async function sendOnboardingEmail(
               Coucou ${agencyName},
             </p>
             <p style="color: #555; font-size: 14px;">
-              Vous avez exploré Omniflow, connecté vos outils... Et maintenant ? C'est le moment de programmer votre premier post automatique !
+              Vous avez exploré OmniFlow, connecté vos outils... Et maintenant ? C'est le moment de programmer votre premier post automatique !
             </p>
           </div>
           
@@ -159,7 +159,7 @@ export async function sendOnboardingEmail(
               Bonjour ${agencyName},
             </p>
             <p style="color: #555; font-size: 14px;">
-              Vos 7 jours d'essai gratuit se terminent demain. Vous avez découvert la puissance d'Omniflow. Continuons ensemble ?
+              Vos 7 jours d'essai gratuit se terminent demain. Vous avez découvert la puissance d'OmniFlow. Continuons ensemble ?
             </p>
           </div>
           
@@ -176,7 +176,7 @@ export async function sendOnboardingEmail(
           
           <div style="text-align: center; margin-bottom: 20px;">
             <a href="https://omniflowapp.ai/pricing" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-right: 10px;">
-              Continuer avec Omniflow →
+              Continuer avec OmniFlow →
             </a>
           </div>
           

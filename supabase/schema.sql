@@ -129,6 +129,91 @@ create table if not exists chatting_reports (
 );
 
 -- ================================
+-- CHATTING AI — Fan Profiles
+-- ================================
+create table if not exists fan_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  agency_id uuid references agencies(id) on delete cascade not null,
+  model_id uuid references models(id) on delete set null,
+  platform text not null,
+  fan_id text not null,
+  fan_name text,
+  country text,
+  age_estimate int,
+  favorite_topics text[],
+  total_spent numeric default 0,
+  ppv_purchased int default 0,
+  tips_given numeric default 0,
+  engagement_level text default 'cold',
+  last_message_at timestamptz,
+  last_purchase_at timestamptz,
+  notes text,
+  conversation_summary text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(agency_id, platform, fan_id)
+);
+
+-- ================================
+-- CHATTING AI — Chat Scripts
+-- ================================
+create table if not exists chat_scripts (
+  id uuid primary key default uuid_generate_v4(),
+  agency_id uuid references agencies(id) on delete cascade not null,
+  name text not null,
+  category text not null,
+  content text not null,
+  variables text[],
+  ai_score int,
+  ai_suggestions text,
+  usage_count int default 0,
+  conversion_rate numeric default 0,
+  is_active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- ================================
+-- CHATTING AI — Model Personalities
+-- ================================
+create table if not exists model_personalities (
+  id uuid primary key default uuid_generate_v4(),
+  model_id uuid references models(id) on delete cascade not null,
+  agency_id uuid references agencies(id) on delete cascade not null,
+  display_name text not null,
+  personality_type text default 'warm',
+  communication_style text,
+  example_messages text[],
+  languages text[] default '{fr}',
+  topics_to_avoid text[],
+  ppv_price_range text,
+  tips_strategy text,
+  auto_mode boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(model_id)
+);
+
+-- ================================
+-- CHATTING AI — AI Messages
+-- ================================
+create table if not exists ai_messages (
+  id uuid primary key default uuid_generate_v4(),
+  agency_id uuid references agencies(id) on delete cascade not null,
+  model_id uuid references models(id) on delete set null,
+  fan_profile_id uuid references fan_profiles(id) on delete cascade,
+  platform text not null,
+  direction text not null,
+  content text not null,
+  ai_generated boolean default false,
+  script_used uuid references chat_scripts(id) on delete set null,
+  approved boolean,
+  revenue_attributed numeric default 0,
+  sent_at timestamptz default now(),
+  created_at timestamptz default now()
+);
+
+-- ================================
 -- REFERRALS (parrainage)
 -- ================================
 create table if not exists referrals (
@@ -152,6 +237,10 @@ alter table trends enable row level security;
 alter table scheduled_posts enable row level security;
 alter table transactions enable row level security;
 alter table chatting_reports enable row level security;
+alter table fan_profiles enable row level security;
+alter table chat_scripts enable row level security;
+alter table model_personalities enable row level security;
+alter table ai_messages enable row level security;
 alter table referrals enable row level security;
 
 -- Policies : chaque agence ne voit que ses données
@@ -177,6 +266,18 @@ create policy "Transactions by agency" on transactions
   for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
 
 create policy "Reports by agency" on chatting_reports
+  for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
+
+create policy "Fan profiles by agency" on fan_profiles
+  for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
+
+create policy "Chat scripts by agency" on chat_scripts
+  for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
+
+create policy "Model personalities by agency" on model_personalities
+  for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
+
+create policy "AI messages by agency" on ai_messages
   for all using (agency_id in (select id from agencies where owner_id = auth.uid()));
 
 -- ================================

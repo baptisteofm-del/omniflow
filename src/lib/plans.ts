@@ -1,6 +1,6 @@
 import type { Plan } from '@/types'
 
-// Commission Omniflow sur les ventes générées par le Chatting IA
+// Commission OmniFlow sur les ventes générées par le Chatting IA
 export const AI_CHATTING_COMMISSION_PERCENT = 10 // 10% des ventes IA
 
 export const PLANS: Plan[] = [

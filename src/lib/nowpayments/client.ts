@@ -38,7 +38,7 @@ export async function createCryptoInvoice({
       price_currency: currency,
       pay_currency: 'usdttrc20', // USDT TRC20 par défaut
       order_id: orderId,
-      order_description: `Omniflow ${planId} subscription`,
+      order_description: `OmniFlow ${planId} subscription`,
       ipn_callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/nowpayments/webhook`,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?payment=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?payment=cancelled`,

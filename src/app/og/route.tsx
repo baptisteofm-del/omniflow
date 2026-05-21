@@ -83,7 +83,7 @@ export function GET() {
               letterSpacing: '-2px',
             }}
           >
-            Omniflow
+            OmniFlow
           </h1>
 
           {/* Subtitle */}

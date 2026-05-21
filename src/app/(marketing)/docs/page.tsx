@@ -84,7 +84,7 @@ export default function DocsPage() {
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Ouvrez AdsPower sur votre PC</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Allez dans Paramètres → API</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Copiez votre clé API</li>
-                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans Omniflow : Paramètres → Intégrations → AdsPower</li>
+                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans OmniFlow : Paramètres → Intégrations → AdsPower</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Collez votre clé et l'URL locale (http://local.adspower.net:50325)</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Cliquez "Tester la connexion"</li>
                 </ul>
@@ -94,7 +94,7 @@ export default function DocsPage() {
                 <ul className="space-y-2 text-sm">
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Connectez-vous sur geelark.com</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Menu → API → Générer une clé</li>
-                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans Omniflow : Paramètres → Intégrations → GeeLark</li>
+                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans OmniFlow : Paramètres → Intégrations → GeeLark</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Collez votre clé API</li>
                 </ul>
               </div>
@@ -104,7 +104,7 @@ export default function DocsPage() {
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Ouvrez Telegram → cherchez @BotFather</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Tapez /newbot → suivez les instructions</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Copiez le token fourni</li>
-                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans Omniflow : Paramètres → Intégrations → Telegram</li>
+                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Dans OmniFlow : Paramètres → Intégrations → Telegram</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Collez votre token</li>
                 </ul>
               </div>
@@ -144,7 +144,7 @@ export default function DocsPage() {
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Cliquez "Nouveau post"</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Sélectionnez le modèle et la plateforme</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Choisissez la date et l'heure</li>
-                  <li className="flex gap-2"><span className="text-cyan-400">•</span> Omniflow exécute automatiquement le post</li>
+                  <li className="flex gap-2"><span className="text-cyan-400">•</span> OmniFlow exécute automatiquement le post</li>
                 </ul>
               </div>
               <div className="glass p-6 rounded-xl border border-purple-500/20">
@@ -181,7 +181,7 @@ export default function DocsPage() {
             <div className="space-y-6 text-gray-300">
               <div className="glass p-6 rounded-xl border border-purple-500/20">
                 <h3 className="text-lg font-bold text-white mb-4">Dashboard Financier</h3>
-                <p className="mb-4 text-sm">Omniflow vous offre une vue complète de vos revenus et dépenses :</p>
+                <p className="mb-4 text-sm">OmniFlow vous offre une vue complète de vos revenus et dépenses :</p>
                 <ul className="space-y-2 text-sm">
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Revenus OnlyFans en temps réel</li>
                   <li className="flex gap-2"><span className="text-cyan-400">•</span> Frais de plateforme et charges</li>
@@ -203,10 +203,10 @@ export default function DocsPage() {
               </div>
               <div className="glass p-6 rounded-xl border border-purple-500/20">
                 <h4 className="font-bold text-white mb-2">Puis-je programmer mes posts en avance ?</h4>
-                <p className="text-sm">Oui ! Programmez vos posts jusqu'à 30 jours à l'avance avec Omniflow.</p>
+                <p className="text-sm">Oui ! Programmez vos posts jusqu'à 30 jours à l'avance avec OmniFlow.</p>
               </div>
               <div className="glass p-6 rounded-xl border border-purple-500/20">
-                <h4 className="font-bold text-white mb-2">Omniflow fonctionne-t-il 24/7 ?</h4>
+                <h4 className="font-bold text-white mb-2">OmniFlow fonctionne-t-il 24/7 ?</h4>
                 <p className="text-sm">Oui ! Vos posts seront publiés automatiquement même si vous dormez.</p>
               </div>
               <div className="glass p-6 rounded-xl border border-purple-500/20">
@@ -222,7 +222,7 @@ export default function DocsPage() {
             <h2 className="text-3xl font-bold mb-6">Affiliation</h2>
             <div className="space-y-6 text-gray-300">
               <div className="glass p-6 rounded-xl border border-purple-500/20">
-                <h3 className="text-lg font-bold text-white mb-4">Gagnez de l'argent en parlant d'Omniflow</h3>
+                <h3 className="text-lg font-bold text-white mb-4">Gagnez de l'argent en parlant d'OmniFlow</h3>
                 <p className="text-sm mb-4">Notre programme d'affiliation vous permet de gagner 30% de commission à vie sur chaque client référé.</p>
                 <Link
                   href="/affiliation"
@@ -244,8 +244,8 @@ export default function DocsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-5xl font-bold mb-4 gradient-text">Documentation Omniflow</h1>
-          <p className="text-xl text-gray-400">Tout ce dont vous avez besoin pour démarrer et maîtriser Omniflow</p>
+          <h1 className="text-5xl font-bold mb-4 gradient-text">Documentation OmniFlow</h1>
+          <p className="text-xl text-gray-400">Tout ce dont vous avez besoin pour démarrer et maîtriser OmniFlow</p>
         </div>
 
         {/* Mobile sidebar toggle */}

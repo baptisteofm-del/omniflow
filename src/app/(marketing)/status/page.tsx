@@ -1,7 +1,7 @@
 import { Check, AlertCircle } from 'lucide-react'
 
 const services = [
-  { name: 'API Omniflow', status: 'operational' },
+  { name: 'API OmniFlow', status: 'operational' },
   { name: 'Génération IA (Kling)', status: 'operational' },
   { name: 'Posting automatique', status: 'operational' },
   { name: 'Base de données', status: 'operational' },

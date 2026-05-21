@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
           <Zap size={18} className="text-white" />
         </div>
-        <span className="gradient-text">Omniflow</span>
+        <span className="gradient-text">OmniFlow</span>
       </Link>
       {children}
     </div>
