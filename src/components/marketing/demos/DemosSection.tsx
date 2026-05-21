@@ -1,46 +1,69 @@
 'use client'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import { DemoGeelark } from './DemoGeelark'
-import { DemoAdspower } from './DemoAdspower'
-import { DemoTelegram } from './DemoTelegram'
+import { DemoPosting } from './DemoPosting'
 import { DemoKling } from './DemoKling'
-import { TrendingUp } from 'lucide-react'
+import { DemoChatting } from './DemoChatting'
+import { DemoAnalytics } from './DemoAnalytics'
 
 const tabs = [
-  { id: 'instagram', label: 'Instagram', icon: '📸' },
-  { id: 'twitter', label: 'Twitter', icon: '𝕏' },
-  { id: 'telegram', label: 'Telegram', icon: '✈️' },
-  { id: 'kling', label: 'Génération IA', icon: '✨' },
+  { id: 'posting', label: 'Posting IA', icon: '🎬' },
+  { id: 'kling', label: 'Génération Kling', icon: '✨' },
+  { id: 'chatting', label: 'Chatting IA', icon: '💬' },
+  { id: 'analytics', label: 'Analytics', icon: '📊' },
 ]
 
 const demoComponents = {
-  instagram: DemoGeelark,
-  twitter: DemoAdspower,
-  telegram: DemoTelegram,
+  posting: DemoPosting,
   kling: DemoKling,
+  chatting: DemoChatting,
+  analytics: DemoAnalytics,
+}
+
+const tabFeatures = {
+  posting: [
+    '100 profils simultanément',
+    'AdsPower + GeeLark natif',
+    'Zéro ban, zéro détection',
+    'Scheduling intelligent',
+  ],
+  kling: [
+    'Kling v1 / v1.5 / v2',
+    'Format 9:16 pour Reels',
+    'Prêt en 2-4 minutes',
+    '200 générations/mois (Pro)',
+  ],
+  chatting: [
+    'Répond en moins de 30s',
+    'Détecte les opportunités PPV',
+    'Mémoire fan permanente',
+    'Scripts personnalisés importables',
+  ],
+  analytics: [
+    'Dashboard temps réel',
+    'Tracking par modèle',
+    'Commission IA détaillée',
+    'Export PDF automatique',
+  ],
 }
 
 export function DemosSection() {
-  const [activeTab, setActiveTab] = useState<keyof typeof demoComponents>('instagram')
+  const [activeTab, setActiveTab] = useState<keyof typeof demoComponents>('posting')
 
   const ActiveComponent = demoComponents[activeTab]
+  const features = tabFeatures[activeTab]
 
   return (
     <section id="demos" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-purple-500/30 text-sm text-purple-300 mb-6">
-            <TrendingUp size={14} />
-            Démonstrations interactives
-          </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
             Voyez OmniFlow en{' '}
             <span className="gradient-text">action</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Tout ce que font vos VAs, OmniFlow le fait mieux, plus vite, sans erreur
+            Tout ce que font vos VAs, OmniFlow le fait mieux, plus vite, 24h/24
           </p>
         </div>
 
@@ -64,15 +87,39 @@ export function DemosSection() {
           ))}
         </div>
 
-        {/* Demo content */}
-        <div className="flex justify-center">
+        {/* Demo content with features */}
+        <div className="flex gap-8 lg:gap-12 items-stretch">
+          {/* Features list - 30% */}
           <motion.div
-            key={activeTab}
+            key={`features-${activeTab}`}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            className="hidden lg:flex flex-col gap-4 w-1/3"
+          >
+            {features.map((feature, idx) => (
+              <motion.div
+                key={feature}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="flex items-center gap-3"
+              >
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">✓</span>
+                </div>
+                <span className="text-gray-300 font-medium">{feature}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Demo preview - 70% */}
+          <motion.div
+            key={`demo-${activeTab}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="w-full"
+            className="flex-1"
           >
             <ActiveComponent />
           </motion.div>

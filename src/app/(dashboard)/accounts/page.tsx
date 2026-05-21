@@ -184,37 +184,55 @@ export default function AccountsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {models.map(model => (
-            <div key={model.id} className="glass rounded-2xl p-6 border border-purple-500/10 hover:border-purple-500/30 transition-all">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-lg">{model.name}</h3>
-                  <p className="text-sm text-gray-400 capitalize">{model.platform}</p>
+            <div key={model.id} className="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all group">
+              {/* Header with colorful avatar */}
+              <div className="flex items-start justify-between mb-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
+                    {model.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg group-hover:text-cyan-300 transition-colors">{model.name}</h3>
+                    <p className="text-sm text-gray-400 capitalize">💱 {model.platform}</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => handleDeleteModel(model.id)}
-                  className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                  className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
 
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-cyan-400">3.2K</p>
+                  <p className="text-xs text-gray-400 mt-1">Revenus mois</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-center">
+                  <p className="text-2xl font-bold text-green-400">24</p>
+                  <p className="text-xs text-gray-400 mt-1">Posts publiés</p>
+                </div>
+              </div>
+
               {/* Profils */}
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2">Profils associés:</p>
+                <p className="text-xs text-gray-500 mb-2 font-semibold">Connexions:</p>
                 {model.profiles && model.profiles.length > 0 ? (
                   <div className="space-y-2">
                     {model.profiles.map(profile => (
                       <div
                         key={profile.id}
-                        className="p-2.5 bg-white/5 rounded-lg border border-purple-500/10 text-xs"
+                        className="p-3 bg-white/5 rounded-lg border border-white/10 hover:border-purple-500/30 transition-all"
                       >
-                        <p className="font-medium text-gray-200">{profile.profile_name}</p>
-                        <div className="flex items-center gap-2 mt-1 text-gray-400">
-                          <span className="px-2 py-0.5 bg-purple-500/20 rounded text-purple-300 text-xs">
+                        <p className="font-medium text-gray-200 text-sm">{profile.profile_name}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 rounded text-purple-300 text-xs font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
                             {profile.tool.toUpperCase()}
                           </span>
-                          <span className="px-2 py-0.5 bg-cyan-500/20 rounded text-cyan-300 text-xs">
+                          <span className="px-2.5 py-1 bg-cyan-500/20 rounded text-cyan-300 text-xs font-semibold">
                             {profile.platform.toUpperCase()}
                           </span>
                         </div>
@@ -222,14 +240,14 @@ export default function AccountsPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 italic">Pas de profil assigné</p>
+                  <p className="text-xs text-gray-500 italic px-3 py-2 bg-white/3 rounded-lg">Pas de connexion configurée</p>
                 )}
               </div>
 
               {/* Settings button */}
-              <button className="w-full py-2 px-4 flex items-center justify-center gap-2 text-sm bg-purple-500/10 hover:bg-purple-500/20 rounded-lg text-purple-400 transition-colors">
+              <button className="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-600/40 to-cyan-600/40 hover:from-purple-600/60 hover:to-cyan-600/60 rounded-lg text-purple-300 transition-all font-medium">
                 <Settings size={14} />
-                Gérer les profils
+                Configurer
               </button>
             </div>
           ))}

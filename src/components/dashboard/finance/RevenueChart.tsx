@@ -48,31 +48,32 @@ export function RevenueChart({ transactions }: RevenueChartProps) {
         <h2 className="font-semibold">Évolution revenus / dépenses (6 mois)</h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {chartData.map((item, idx) => (
-          <div key={idx}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{item.month}</span>
-              <span className="text-sm font-medium">
-                {item.revenue.toFixed(0)}€ / {item.expense.toFixed(0)}€
-              </span>
+          <div key={idx} className="group">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-sm font-medium text-gray-400 group-hover:text-gray-300 transition-colors">{item.month}</span>
+              <div className="text-right">
+                <p className="text-sm font-bold text-green-400">{item.revenue.toFixed(0)}€</p>
+                <p className="text-xs text-gray-500">{item.expense.toFixed(0)}€ dépenses</p>
+              </div>
             </div>
-            <div className="flex gap-1 h-8">
+            <div className="flex gap-2 h-6">
               {/* Revenue bar */}
               <div
-                className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-sm flex-1"
+                className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-lg transition-all duration-500 hover:shadow-lg hover:shadow-green-500/50"
                 style={{
                   width: `${maxValue > 0 ? (item.revenue / maxValue) * 100 : 0}%`,
-                  minWidth: item.revenue > 0 ? '4px' : '0px',
+                  minWidth: item.revenue > 0 ? '6px' : '0px',
                 }}
                 title={`Revenus: ${item.revenue.toFixed(2)}€`}
               />
               {/* Expense bar */}
               <div
-                className="bg-gradient-to-r from-red-500 to-rose-500 rounded-sm flex-1"
+                className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-lg transition-all duration-500 hover:shadow-lg hover:shadow-red-500/50"
                 style={{
                   width: `${maxValue > 0 ? (item.expense / maxValue) * 100 : 0}%`,
-                  minWidth: item.expense > 0 ? '4px' : '0px',
+                  minWidth: item.expense > 0 ? '6px' : '0px',
                 }}
                 title={`Dépenses: ${item.expense.toFixed(2)}€`}
               />
@@ -81,13 +82,13 @@ export function RevenueChart({ transactions }: RevenueChartProps) {
         ))}
       </div>
 
-      <div className="flex gap-4 mt-6 pt-4 border-t border-white/10">
+      <div className="flex gap-6 mt-8 pt-4 border-t border-white/10">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500" />
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 shadow-lg shadow-green-500/50" />
           <span className="text-sm text-gray-400">Revenus</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-500" />
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-red-500/50" />
           <span className="text-sm text-gray-400">Dépenses</span>
         </div>
       </div>
