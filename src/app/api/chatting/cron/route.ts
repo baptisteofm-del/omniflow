@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       // Get models with auto_mode enabled
       const { data: personalities } = await supabase
         .from('model_personalities')
-        .select('model_id, auto_mode')
+        .select('model_id, auto_mode, response_delay_seconds')
         .eq('agency_id', agency.id)
         .eq('auto_mode', true)
 

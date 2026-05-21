@@ -92,6 +92,10 @@ export async function POST(request: NextRequest) {
     )
 
     // Save message to database
+    // Calculer send_after selon le délai configuré
+    const delaySeconds = (personality as Record<string, unknown> | null)?.response_delay_seconds as number || 60
+    const sendAfter = new Date(Date.now() + delaySeconds * 1000).toISOString()
+
     const { data: messages, error: msgError } = await supabase.from('ai_messages').insert({
       agency_id: agencyId,
       model_id: modelId,
@@ -101,6 +105,7 @@ export async function POST(request: NextRequest) {
       content: response,
       ai_generated: true,
       approved: mode === 'auto' ? true : null,
+      send_after: mode === 'auto' ? sendAfter : null,
     }).select('id')
 
     if (msgError) {

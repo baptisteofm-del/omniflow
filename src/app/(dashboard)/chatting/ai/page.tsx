@@ -69,6 +69,7 @@ export default function ChattingAIPage() {
     ppvPriceRange: string
     tipsStrategy: string
     autoMode: boolean
+    responseDelay: number
   }>({
     displayName: '',
     personalityType: 'warm',
@@ -79,6 +80,7 @@ export default function ChattingAIPage() {
     ppvPriceRange: '',
     tipsStrategy: '',
     autoMode: false,
+    responseDelay: 60,
   })
 
   // Script form
@@ -305,6 +307,7 @@ export default function ChattingAIPage() {
                         ppvPriceRange: existing.ppv_price_range || '',
                         tipsStrategy: existing.tips_strategy || '',
                         autoMode: existing.auto_mode || false,
+                        responseDelay: (existing as unknown as { response_delay_seconds?: number }).response_delay_seconds || 60,
                       })
                     }
                     setShowPersonalityModal(true)
@@ -547,6 +550,36 @@ export default function ChattingAIPage() {
                 <label htmlFor="autoMode" className="text-sm">
                   Mode automatique (sinon: supervisé)
                 </label>
+              </div>
+
+              {/* Délai de réponse */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-3">
+                  Délai de réponse :{' '}
+                  <strong className="text-white">
+                    {personalityForm.responseDelay < 60
+                      ? `${personalityForm.responseDelay}s`
+                      : `${Math.floor(personalityForm.responseDelay / 60)}min${personalityForm.responseDelay % 60 > 0 ? ` ${personalityForm.responseDelay % 60}s` : ''}`}
+                  </strong>
+                  <span className="text-gray-500 font-normal ml-2">(simulation humaine)</span>
+                </label>
+                <input
+                  type="range"
+                  min={30}
+                  max={300}
+                  step={30}
+                  value={personalityForm.responseDelay}
+                  onChange={e => setPersonalityForm({ ...personalityForm, responseDelay: Number(e.target.value) })}
+                  className="w-full accent-purple-500"
+                />
+                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>30s</span>
+                  <span>1min</span>
+                  <span>2min</span>
+                  <span>3min</span>
+                  <span>4min</span>
+                  <span>5min</span>
+                </div>
               </div>
             </div>
 

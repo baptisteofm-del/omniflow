@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       ppvPriceRange,
       tipsStrategy,
       autoMode,
+      responseDelay,
     } = await request.json()
 
     // Check if personality exists
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
           ppv_price_range: ppvPriceRange,
           tips_strategy: tipsStrategy,
           auto_mode: autoMode,
+          response_delay_seconds: responseDelay || 60,
           updated_at: new Date().toISOString(),
         })
         .eq('model_id', modelId)
@@ -118,6 +120,7 @@ export async function POST(request: NextRequest) {
           ppv_price_range: ppvPriceRange,
           tips_strategy: tipsStrategy,
           auto_mode: autoMode,
+          response_delay_seconds: responseDelay || 60,
         })
         .select()
 
