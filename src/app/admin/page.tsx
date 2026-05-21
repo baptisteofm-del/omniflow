@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
+import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { Users, TrendingUp, CreditCard, Activity, ArrowUpRight, AlertTriangle, Wallet, DollarSign } from 'lucide-react'
 
 export default async function AdminPage() {
@@ -8,8 +9,11 @@ export default async function AdminPage() {
 
   if (!user) redirect('/login')
 
-  // Vérifier si admin — utilise le client service role pour bypasser RLS
-  const adminClient = await createAdminClient()
+  // Client direct service role — bypass RLS complet
+  const adminClient = createDirectClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const { data: admin } = await adminClient.from('admins').select('id').eq('id', user.id).single()
   // Debug temporaire - afficher qui est connecté si pas admin
   if (!admin) {
@@ -25,13 +29,17 @@ export default async function AdminPage() {
   }
 
   // Récupérer les stats globales
-  const { data: agencies } = await adminClient
+  const { data: agencies } = await createDirectClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
     .from('agencies')
     .select('id, name, plan_id, subscription_status, trial_ends_at, created_at, updated_at')
     .order('created_at', { ascending: false })
 
-  const { count: modelsCount } = await adminClient.from('models').select('*', { count: 'exact', head: true })
-  const { count: postsCount } = await adminClient.from('scheduled_posts').select('*', { count: 'exact', head: true })
+  const serviceClient = createDirectClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { count: modelsCount } = await serviceClient.from('models').select('*', { count: 'exact', head: true })
+  const { count: postsCount } = await serviceClient.from('scheduled_posts').select('*', { count: 'exact', head: true })
 
   const totalAgencies = agencies?.length || 0
   const activeAgencies = agencies?.filter(a => a.subscription_status === 'active').length || 0
