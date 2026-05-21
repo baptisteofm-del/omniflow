@@ -13,6 +13,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(callbackUrl)
   }
 
+  // Capture referral code from ?ref= parameter
+  const ref = searchParams.get('ref')
+  if (ref) {
+    const response = NextResponse.next()
+    // Store referral code in cookie for 30 days
+    response.cookies.set('referral_code', ref, {
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/',
+    })
+    return response
+  }
+
   return NextResponse.next()
 }
 

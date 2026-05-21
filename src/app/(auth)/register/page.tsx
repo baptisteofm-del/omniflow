@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +10,7 @@ function RegisterForm() {
   const router = useRouter()
   const params = useSearchParams()
   const plan = params.get('plan') || 'starter'
+  const [referralCode, setReferralCode] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -18,6 +19,16 @@ function RegisterForm() {
     email: '',
     password: '',
   })
+
+  useEffect(() => {
+    // Get referral code from cookie
+    const cookies = document.cookie.split(';')
+    const refCookie = cookies.find(c => c.trim().startsWith('referral_code='))
+    if (refCookie) {
+      const code = refCookie.split('=')[1]
+      setReferralCode(code)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,10 +42,28 @@ function RegisterForm() {
           data: {
             agency_name: form.agencyName,
             plan_id: plan,
+            referred_by: referralCode || null,
           },
         },
       })
       if (error) throw error
+
+      // Send welcome email via drip
+      try {
+        await fetch('/api/email/drip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email,
+            agencyName: form.agencyName,
+            day: 0,
+          }),
+        })
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError)
+        // Don't block signup if email fails
+      }
+
       toast.success('Compte créé ! Vérifiez votre email.')
       router.push('/dashboard')
     } catch (err: any) {

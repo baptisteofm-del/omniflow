@@ -1,3 +1,17 @@
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Programme Affiliation — Gagnez 10% à vie | Omniflow',
+  description:
+    'Rejoignez le programme d\'affiliation Omniflow. 10% de commission récurrente à vie pour chaque agence référée. Gagnez jusqu\'au 249€ par vente.',
+  keywords: [
+    'affiliation omniflow',
+    'programme affiliation',
+    'commission affiliation',
+    'devenir partenaire omniflow',
+  ],
+}
+
 'use client'
 import { useState } from 'react'
 import { ArrowRight, Zap } from 'lucide-react'

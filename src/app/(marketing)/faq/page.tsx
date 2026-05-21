@@ -1,3 +1,18 @@
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'FAQ — Questions fréquentes | Omniflow',
+  description:
+    'Toutes les réponses sur Omniflow : intégrations AdsPower/GeeLark, chatting IA, génération vidéo, tarifs, annulation.',
+  keywords: [
+    'omniflow faq',
+    'questions omniflow',
+    'adspower omniflow',
+    'geelark omniflow',
+    'pricing omniflow',
+  ],
+}
+
 'use client'
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
