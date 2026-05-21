@@ -63,10 +63,13 @@ export function TrendCard({
   const generateLink = `/content/ai-generation?trend=${encodeURIComponent(title)}&platform=${platform}&category=${category}`
 
   return (
-    <div className={cn(
-      'group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105',
-      isTopTrend && 'ring-2 ring-purple-500/50 shadow-lg shadow-purple-500/20'
-    )}>
+    <div 
+      className={cn(
+        'group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105',
+        isTopTrend && 'ring-2 ring-purple-500/50 shadow-lg shadow-purple-500/20'
+      )}
+      data-tutorial="trend-card"
+    >
       {/* Animated gradient border for top trends */}
       {isTopTrend && (
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-cyan-500 to-purple-500 rounded-2xl p-0.5 -z-10 animate-pulse"></div>
@@ -121,6 +124,7 @@ export function TrendCard({
             href={generateLink}
             className="p-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full hover:opacity-90 transition-all"
             title="Generate with AI"
+            data-tutorial="trend-ai-generate"
           >
             <Sparkles size={20} className="text-white" />
           </Link>

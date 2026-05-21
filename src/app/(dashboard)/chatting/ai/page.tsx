@@ -273,7 +273,7 @@ export default function ChattingAIPage() {
 
 
   return (
-    <div className="p-8">
+    <div className="p-8" data-tutorial="chatting-page">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Chatting IA</h1>
         <p className="text-gray-400 mt-1">Gérez les réponses automatiques et les personnalités de vos modèles</p>
@@ -313,6 +313,7 @@ export default function ChattingAIPage() {
                     setShowPersonalityModal(true)
                   }}
                   className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-sm font-medium text-blue-300 transition-all"
+                  data-tutorial="chatting-configure"
                 >
                   <Settings size={16} className="inline mr-1" />
                   Configurer
@@ -373,7 +374,7 @@ export default function ChattingAIPage() {
       )}
 
       {/* Scripts */}
-      <section className="mb-12">
+      <section className="mb-12" data-tutorial="chatting-scripts">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Scripts</h2>
           <button
@@ -539,7 +540,7 @@ export default function ChattingAIPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-tutorial="chatting-auto-mode">
                 <input
                   type="checkbox"
                   id="autoMode"
