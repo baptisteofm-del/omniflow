@@ -26,51 +26,51 @@ export function Hero() {
         </div>
 
         {/* Headline */}
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+        <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
           Automatisez votre{' '}
           <span className="gradient-text">agence OnlyFans</span>
           <br />
           de A à Z
         </h1>
 
-        <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-10">
+        <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto mb-10 px-2">
           Moins de gestion d'équipe, plus de scalabilité. Omniflow réduit vos coûts de VA, automatise le posting sur tous vos comptes, et vous donne enfin le temps de faire grandir votre agence.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <div className="flex flex-col w-full sm:flex-row items-center justify-center gap-3 mb-12 px-4 sm:px-0">
           <Link
             href="/register"
-            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-semibold text-lg hover:opacity-90 transition-all glow"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-semibold text-base sm:text-lg hover:opacity-90 transition-all glow"
           >
             Démarrer l'essai gratuit 7 jours
-            <ArrowRight size={20} />
+            <ArrowRight size={18} className="hidden sm:inline" />
           </Link>
-          <a href="#demos" className="flex items-center gap-2 px-8 py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">
-            <Play size={18} className="text-purple-400" />
+          <a href="#demos" className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">
+            <Play size={16} className="text-purple-400" />
             Voir la démo
           </a>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 max-w-2xl mx-auto mb-12 px-4">
           {stats.map((s) => (
             <AnimatedCounter key={s.label} target={s.target} suffix={s.suffix} label={s.label} />
           ))}
         </div>
 
         {/* Trust badges */}
-        <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-500 px-4">
           <div className="flex items-center gap-2">
-            <Shield size={16} className="text-green-400" />
+            <Shield size={14} className="text-green-400" />
             Essai 7j sans engagement
           </div>
           <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-purple-400" />
+            <TrendingUp size={14} className="text-purple-400" />
             Setup rapide
           </div>
           <div className="flex items-center gap-2">
-            <Zap size={16} className="text-cyan-400" />
+            <Zap size={14} className="text-cyan-400" />
             Annulation à tout moment
           </div>
         </div>
