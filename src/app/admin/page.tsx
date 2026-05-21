@@ -15,18 +15,7 @@ export default async function AdminPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   const { data: admin } = await adminClient.from('admins').select('id').eq('id', user.id).single()
-  // Debug temporaire - afficher qui est connecté si pas admin
-  if (!admin) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="glass rounded-2xl p-8 text-center max-w-md">
-          <p className="text-red-400 mb-2">❌ Non admin</p>
-          <p className="text-gray-400 text-sm">User ID: {user.id}</p>
-          <p className="text-gray-400 text-sm">Email: {user.email}</p>
-        </div>
-      </div>
-    )
-  }
+  if (!admin) redirect('/dashboard')
 
   // Récupérer les stats globales
   const { data: agencies } = await createDirectClient(
