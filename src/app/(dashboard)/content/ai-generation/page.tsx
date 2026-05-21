@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, Play, Download, Clock, CheckCircle2, XCircle, Loader2, Zap, Film } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
+import { generatePromptFromTrend } from '@/lib/trends/fetcher'
 
 interface Generation {
   taskId: string
@@ -28,8 +30,10 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; lab
 }
 
 export default function AIGenerationPage() {
+  const searchParams = useSearchParams()
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
+  const [trendSource, setTrendSource] = useState<{ title: string; platform: string; category: string } | null>(null)
   const [form, setForm] = useState({
     prompt: '',
     negativePrompt: '',
@@ -37,6 +41,36 @@ export default function AIGenerationPage() {
     aspectRatio: '9:16',
     model: 'kling-v1-5',
   })
+
+  // Pré-remplir depuis un trend si les params sont présents
+  useEffect(() => {
+    const trendTitle = searchParams?.get('trend')
+    const platform = searchParams?.get('platform')
+    const category = searchParams?.get('category')
+
+    if (trendTitle && platform && category) {
+      setTrendSource({ title: trendTitle, platform, category })
+      
+      // Générer un prompt basé sur le trend
+      const categoryPrompts: Record<string, string> = {
+        fitness: 'showing an effective workout or body transformation moment',
+        beauty: 'showcasing a makeup transformation or skincare routine',
+        lifestyle: 'depicting a luxurious or aspirational lifestyle moment',
+        fashion: 'displaying high-end fashion styling or a clothing haul',
+        wellness: 'capturing a peaceful wellness or meditation moment',
+        glamour: 'presenting a glamorous and elegant styled moment',
+        dance: 'choreography and dancing in a trendy style',
+        travel: 'showcasing a beautiful travel destination',
+        music: 'creating content around trending music',
+        motivation: 'inspiring and motivational personal development content',
+      }
+
+      const specific = categoryPrompts[category] || 'creating engaging trending content'
+      const generatedPrompt = `Inspired by the trend "${trendTitle}" on ${platform}, ${specific}. Professional quality, trending aesthetics, high engagement potential, cinematic lighting.`
+      
+      setForm(f => ({ ...f, prompt: generatedPrompt }))
+    }
+  }, [searchParams])
 
   // Polling des générations en cours
   const pollGenerations = useCallback(async () => {
@@ -93,6 +127,11 @@ export default function AIGenerationPage() {
           Génération IA
         </h1>
         <p className="text-gray-400 mt-1">Crée des vidéos avec Kling AI — le meilleur modèle vidéo du marché</p>
+        {trendSource && (
+          <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-sm text-cyan-300">
+            Inspiré du trend <strong>\"{trendSource.title}\"</strong> sur {trendSource.platform} ({trendSource.category})
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
