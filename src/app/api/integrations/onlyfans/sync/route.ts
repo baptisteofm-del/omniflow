@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getChats, getMessages, getSubscribers } from '@/lib/platforms/onlyfans'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
+
 // Sentiment analysis: simple word-based approach
 const NEGATIVE_WORDS = ['cancel', 'refund', 'scam', 'fake', 'disappointed', 'unsubscribe', 'waste', 'boring']
 const POSITIVE_WORDS = ['love', 'amazing', 'worth', 'best', '❤️', '🔥', '💕', 'perfect', 'excellent']

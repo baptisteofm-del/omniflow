@@ -95,20 +95,29 @@ export default function ChattingAIPage() {
   })
 
   useEffect(() => {
-    fetchData()
+    fetchInitialData()
   }, [])
 
-  const fetchData = async () => {
+  const fetchInitialData = async () => {
     try {
-      setLoading(true)
-
-      // Fetch models
+      setLoading(false)
+      // Don't block initial render - load data in background
+      // Only fetch models to show the UI immediately
       const modelsRes = await fetch('/api/chatting/models')
       if (modelsRes.ok) {
         const data = await modelsRes.json()
         setModels(data.models || [])
       }
+    } catch (error) {
+      console.error('Error fetching models:', error)
+    }
+    
+    // Load heavy data in background
+    loadBackgroundData()
+  }
 
+  const loadBackgroundData = async () => {
+    try {
       // Fetch scripts
       const scriptsRes = await fetch('/api/chatting/ai/scripts')
       if (scriptsRes.ok) {
@@ -123,10 +132,7 @@ export default function ChattingAIPage() {
         setPendingMessages(data.messages || [])
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
-      toast.error('Erreur lors du chargement des données')
-    } finally {
-      setLoading(false)
+      console.error('Error loading background data:', error)
     }
   }
 
@@ -262,9 +268,7 @@ export default function ChattingAIPage() {
     }
   }
 
-  if (loading) {
-    return <div className="p-8 text-gray-400">Chargement...</div>
-  }
+
 
   return (
     <div className="p-8">

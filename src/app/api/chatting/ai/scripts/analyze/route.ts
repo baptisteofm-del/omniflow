@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { analyzeScript } from '@/lib/ai/chatting'
 import { getAuth } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 30
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await getAuth()
