@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/posting/execute",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}

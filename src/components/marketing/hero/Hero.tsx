@@ -1,0 +1,83 @@
+'use client'
+import Link from 'next/link'
+import { ArrowRight, Play, TrendingUp, Zap, Shield } from 'lucide-react'
+
+const stats = [
+  { label: 'Agences actives', value: '200+' },
+  { label: 'Modèles gérés', value: '1 500+' },
+  { label: 'Posts automatisés/mois', value: '50k+' },
+]
+
+export function Hero() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center gradient-bg pt-16 overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-purple-500/30 text-sm text-purple-300 mb-8">
+          <Zap size={14} className="text-purple-400" />
+          <span>La plateforme #1 des agences OnlyFans</span>
+        </div>
+
+        {/* Headline */}
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+          Automatisez votre{' '}
+          <span className="gradient-text">agence OnlyFans</span>
+          <br />
+          de A à Z
+        </h1>
+
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-10">
+          Veille de contenu, édition vidéo & spoof, génération IA, posting multi-comptes,
+          bots Telegram, dashboard financier. Tout ce dont votre agence a besoin, en un seul endroit.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <Link
+            href="/register"
+            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-semibold text-lg hover:opacity-90 transition-all glow"
+          >
+            Démarrer l'essai gratuit 7 jours
+            <ArrowRight size={20} />
+          </Link>
+          <button className="flex items-center gap-2 px-8 py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">
+            <Play size={18} className="text-purple-400" />
+            Voir la démo
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mb-16">
+          {stats.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-3xl font-bold gradient-text">{s.value}</div>
+              <div className="text-sm text-gray-500 mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust badges */}
+        <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            <Shield size={16} className="text-green-400" />
+            Sans carte bancaire
+          </div>
+          <div className="flex items-center gap-2">
+            <TrendingUp size={16} className="text-purple-400" />
+            Setup en 5 minutes
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap size={16} className="text-cyan-400" />
+            Annulation à tout moment
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
