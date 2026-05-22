@@ -15,7 +15,7 @@ interface IntegrationConfig {
   id: string
   name: string
   description: string
-  logo: React.ComponentType
+  logo: () => JSX.Element
   requiresUrl?: boolean
   defaultUrl?: string
   category: string
