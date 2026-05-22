@@ -94,7 +94,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         for (const conv of conversations) {
           try {
             // Récupérer les messages de la conversation
-            const messages = await getMessages({ bearerToken }, conv.id || conv.fan_id || '')
+            const messages = await getMessages({ bearerToken }, conv.id || '')
             if (!messages || messages.length === 0) continue
 
             // Formater la conversation
