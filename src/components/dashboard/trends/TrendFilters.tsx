@@ -2,9 +2,9 @@
 import { cn } from '@/lib/utils/cn'
 
 interface TrendFiltersProps {
-  platforms: ('tiktok' | 'instagram' | 'youtube' | 'reddit' | 'all')[]
-  selectedPlatform: 'tiktok' | 'instagram' | 'youtube' | 'reddit' | 'all'
-  onPlatformChange: (platform: 'tiktok' | 'instagram' | 'youtube' | 'reddit' | 'all') => void
+  platforms: ('tiktok' | 'instagram' | 'twitter' | 'reddit' | 'all')[]
+  selectedPlatform: 'tiktok' | 'instagram' | 'twitter' | 'reddit' | 'all'
+  onPlatformChange: (platform: 'tiktok' | 'instagram' | 'twitter' | 'reddit' | 'all') => void
   
   categories: string[]
   selectedCategory: string | null
@@ -15,7 +15,7 @@ const platformLabels: Record<string, string> = {
   all: 'Tous',
   tiktok: 'TikTok',
   instagram: 'Instagram',
-  youtube: 'YouTube',
+  twitter: 'Twitter/X',
   reddit: 'Reddit',
 }
 
@@ -23,7 +23,7 @@ const platformColors: Record<string, string> = {
   all: 'bg-gray-700 hover:bg-gray-600',
   tiktok: 'bg-black hover:bg-gray-900 border-white/20',
   instagram: 'bg-gradient-to-r from-pink-600/30 to-purple-600/30 hover:from-pink-600/50 hover:to-purple-600/50 border-pink-500/30',
-  youtube: 'bg-red-600/30 hover:bg-red-600/50 border-red-500/30',
+  twitter: 'bg-blue-600/30 hover:bg-blue-600/50 border-blue-500/30',
   reddit: 'bg-orange-600/30 hover:bg-orange-600/50 border-orange-500/30',
 }
 

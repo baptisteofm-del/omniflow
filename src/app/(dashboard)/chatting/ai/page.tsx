@@ -74,6 +74,7 @@ const PERSONALITY_TYPES = [
   { id: 'fitness', label: 'Fitness', desc: 'Coach sportive — dynamique, motivante, lifestyle sain' },
   { id: 'baddie', label: 'Baddie', desc: 'Haut standing, luxury, légèrement inaccessible' },
   { id: 'shy', label: 'Shy / Cute', desc: 'Douce et timide en apparence, curieuse et espiègle' },
+  { id: 'influencer', label: 'Influenceuse', desc: 'Lifestyle & mode, derrière les réseaux, behind the scenes' },
   { id: 'gothic', label: 'Gothique', desc: 'Mystérieuse, sombre, univers dark et envoûtant' },
 ]
 
