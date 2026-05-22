@@ -88,6 +88,11 @@ export async function POST(request: NextRequest) {
     // Send to Claude Sonnet for analysis
     const systemPrompt = `Tu es un expert en analyse de conversations OnlyFans. Analyse cette conversation entre un chatter humain et un fan, et extrais les apprentissages pour améliorer une IA de chatting.
 
+CONTEXTE IMPORTANT : Les chatters humains analysés sont souvent d'origine africaine et ne maîtrisent pas parfaitement le français. Fais la différence entre :
+- Erreurs de langue involontaires du chatter (mauvaise grammaire, expressions incorrectes, manque de maîtrise du français) → signaler comme erreur humaine à corriger
+- Style SMS naturel voulu (abréviations, "jsp", "mdr", etc.) → ne pas signaler comme erreur
+- Opportunités ratées dues à la barrière linguistique (fan qui donne un signal d'achat, chatter qui ne comprend pas et répond à côté) → signaler comme opportunité manquée critique
+
 Retourne un JSON valide (sans markdown) avec la structure suivante:
 {
   "styleProfile": {

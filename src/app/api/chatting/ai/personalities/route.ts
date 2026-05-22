@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         .from('model_personalities')
         .insert({
           model_id: modelId,
-          agency_id: profile.agency_id,
+          agency_id: agency.id,
           display_name: displayName,
           personality_type: personalityType,
           communication_style: communicationStyle,

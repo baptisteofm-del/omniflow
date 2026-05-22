@@ -98,6 +98,10 @@ export default function ChattingAIPage() {
   const [recentFans, setRecentFans] = useState<FanProfile[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [listConfigs, setListConfigs] = useState<Record<string, any>>({
+    onlyfans: null,
+    mym: null,
+  })
 
   // UI state
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
@@ -174,10 +178,11 @@ export default function ChattingAIPage() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [modelsRes, scriptsRes, statsRes] = await Promise.all([
+      const [modelsRes, scriptsRes, statsRes, configRes] = await Promise.all([
         fetch('/api/chatting/models'),
         fetch('/api/chatting/ai/scripts'),
         fetch('/api/chatting/stats'),
+        fetch('/api/chatting/config'),
       ])
 
       if (modelsRes.ok) setModels((await modelsRes.json()).models || [])
@@ -191,6 +196,13 @@ export default function ChattingAIPage() {
           (data.recent_messages || []).filter((m: AIMessage) => m.approved === null && m.direction === 'outbound')
         )
       }
+      if (configRes.ok) {
+        const data = await configRes.json()
+        setListConfigs({
+          onlyfans: data.onlyfans,
+          mym: data.mym,
+        })
+      }
 
       // Load personalities
       const pRes = await fetch('/api/chatting/ai/personalities')
@@ -202,6 +214,57 @@ export default function ChattingAIPage() {
       }
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
+  }
+
+  const toggleAutoMode = async (modelId: string) => {
+    const personality = personalities[modelId]
+    if (!personality) return
+
+    const newAutoMode = !personality.auto_mode
+
+    // Optimistic update
+    setPersonalities((prev) => ({
+      ...prev,
+      [modelId]: { ...prev[modelId], auto_mode: newAutoMode } as Personality,
+    }))
+
+    try {
+      const res = await fetch('/api/chatting/ai/personalities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId,
+          displayName: personality.display_name,
+          personalityType: personality.personality_type,
+          communicationStyle: personality.communication_style,
+          exampleMessages: personality.example_messages,
+          languages: personality.languages,
+          topicsToAvoid: personality.topics_to_avoid,
+          ppvPriceRange: personality.ppv_price_range,
+          tipsStrategy: personality.tips_strategy,
+          autoMode: newAutoMode,
+          responseDelay: personality.response_delay_seconds,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Erreur')
+      const data = await res.json()
+
+      setPersonalities((prev) => ({
+        ...prev,
+        [modelId]: data.personality,
+      }))
+
+      toast.success(newAutoMode ? '✅ IA activée' : '⊘ IA désactivée')
+    } catch (e) {
+      console.error(e)
+      // Revert on error
+      setPersonalities((prev) => ({
+        ...prev,
+        [modelId]: { ...prev[modelId], auto_mode: personality.auto_mode } as Personality,
+      }))
+      toast.error('Erreur lors de la mise à jour')
+    }
   }
 
   const openConfigureModel = (modelId: string) => {
@@ -348,7 +411,7 @@ export default function ChattingAIPage() {
       <div className="p-6 lg:p-8 space-y-8">
 
       {/* ── Header ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Bot className="text-violet-400" size={28} /> Chatting IA
@@ -365,6 +428,57 @@ export default function ChattingAIPage() {
           Comment ça fonctionne ?
           <ChevronDown size={14} className={`transition-transform ${showHowItWorks ? 'rotate-180' : ''}`} />
         </button>
+      </div>
+
+      {/* ── AI Status Banner ── */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        {(['onlyfans', 'mym'] as const).map((platform) => {
+          const config = listConfigs[platform]
+          const isActive = config?.is_active ?? false
+          return (
+            <div
+              key={platform}
+              className={`glass rounded-2xl p-5 border ${
+                isActive ? 'border-green-500/40 bg-green-500/5' : 'border-white/5 bg-white/2'
+              } flex items-center justify-between transition-all`}
+            >
+              <div className="flex items-center gap-3">
+                {/* Logo plateforme */}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    platform === 'onlyfans' ? 'bg-[#00AFF0]/20' : 'bg-black/40 border border-white/10'
+                  }`}
+                >
+                  <span className="text-xs font-bold text-white">
+                    {platform === 'onlyfans' ? 'OF' : 'MYM'}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-white text-sm">
+                    {platform === 'onlyfans' ? 'OnlyFans' : 'MYM'}
+                  </p>
+                  <p className={`text-xs ${isActive ? 'text-green-400' : 'text-gray-500'}`}>
+                    {isActive ? '● IA active' : '○ IA désactivée'}
+                  </p>
+                </div>
+              </div>
+              {/* Toggle switch */}
+              <button
+                onClick={() => toggleAI(platform)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  isActive ? 'bg-green-500' : 'bg-gray-700'
+                }`}
+                title={`Toggle ${platform} IA`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    isActive ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          )
+        })}
       </div>
 
       {/* ── How it works panel ── */}
@@ -557,11 +671,11 @@ export default function ChattingAIPage() {
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center font-bold text-white text-sm">
                           {model.name.slice(0, 2).toUpperCase()}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-semibold text-white">{model.name}</p>
                           {isConfigured ? (
                             <div className="flex items-center gap-2 mt-0.5">
@@ -577,13 +691,31 @@ export default function ChattingAIPage() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => openConfigureModel(model.id)}
-                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-xs hover:border-violet-500/40 hover:text-violet-300 transition-all flex items-center gap-1.5"
-                      >
-                        <Settings size={13} />
-                        {isConfigured ? 'Modifier' : 'Configurer'}
-                      </button>
+                      <div className="flex items-center gap-2 ml-3">
+                        {/* Auto Mode Toggle */}
+                        {isConfigured && (
+                          <button
+                            onClick={() => toggleAutoMode(model.id)}
+                            className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+                              p.auto_mode ? 'bg-green-500' : 'bg-gray-700'
+                            }`}
+                            title={p.auto_mode ? 'Désactiver l\'IA automatique' : 'Activer l\'IA automatique'}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                p.auto_mode ? 'translate-x-4' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openConfigureModel(model.id)}
+                          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-xs hover:border-violet-500/40 hover:text-violet-300 transition-all flex items-center gap-1.5 flex-shrink-0"
+                        >
+                          <Settings size={13} />
+                          {isConfigured ? 'Modifier' : 'Configurer'}
+                        </button>
+                      </div>
                     </div>
 
                     {isConfigured && (

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data: models, error } = await supabase
       .from('models')
       .select('id, name')
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
       .order('name')
 
     if (error) {

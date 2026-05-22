@@ -15,13 +15,13 @@ export async function DELETE(
     }
 
     // Get agency ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
@@ -32,7 +32,7 @@ export async function DELETE(
       .eq('id', id)
       .single()
 
-    if (fetchError || !model || model.agency_id !== profile.agency_id) {
+    if (fetchError || !model || model.agency_id !== agency.id) {
       return NextResponse.json({ error: 'Model not found' }, { status: 404 })
     }
 

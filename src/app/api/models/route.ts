@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get agency ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const { data: models, error: modelError } = await supabase
       .from('models')
       .select('*')
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
 
     if (modelError) throw modelError
 
@@ -68,13 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get agency ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
@@ -88,19 +88,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if ((!chatting_platforms || chatting_platforms.length === 0) && 
-        (!social_networks || social_networks.length === 0)) {
-      return NextResponse.json(
-        { error: 'At least one platform must be selected' },
-        { status: 400 }
-      )
-    }
-
     // Create model with both platform types
     const { data: model, error: modelError } = await supabase
       .from('models')
       .insert({
-        agency_id: profile.agency_id,
+        agency_id: agency.id,
         name,
         chatting_platforms: chatting_platforms || [],
         social_networks: social_networks || [],

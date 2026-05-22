@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: scripts, error } = await supabase
       .from('chat_scripts')
       .select('*')
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const { data: script, error } = await supabase
       .from('chat_scripts')
       .insert({
-        agency_id: profile.agency_id,
+        agency_id: agency.id,
         name,
         category,
         content,

@@ -6,11 +6,14 @@ export async function GET(_request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles').select('agency_id').eq('id', user.id).single()
-  if (!profile?.agency_id) return NextResponse.json({ error: 'No agency' }, { status: 404 })
+  const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single()
+  if (!agency?.id) return NextResponse.json({ error: 'No agency' }, { status: 404 })
 
-  const agencyId = profile.agency_id
+  const agencyId = agency.id
 
   // Today range
   const todayStart = new Date(); todayStart.setHours(0,0,0,0)

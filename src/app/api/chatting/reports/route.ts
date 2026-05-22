@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get agency ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data: todayReport } = await supabase
       .from('chatting_reports')
       .select('*')
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
       .eq('date', todayStr)
       .single()
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const { data: yesterdayReport } = await supabase
       .from('chatting_reports')
       .select('*')
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
       .eq('date', yesterdayStr)
       .single()
 
@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get agency ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const { data: report, error } = await supabase
       .from('chatting_reports')
       .upsert({
-        agency_id: profile.agency_id,
+        agency_id: agency.id,
         date,
         messages_sent,
         revenue,

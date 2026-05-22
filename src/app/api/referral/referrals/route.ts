@@ -12,17 +12,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's agency
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!profile?.agency_id) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
-    const agencyId = profile.agency_id
+    const agencyId = agency.id
 
     // Get all referrals for this agency
     const { data: referrals, error } = await supabase

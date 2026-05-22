@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         fan_profile:fan_profile_id(fan_name)
       `
       )
-      .eq('agency_id', profile.agency_id)
+      .eq('agency_id', agency.id)
       .eq('direction', 'outgoing')
 
     // Filter by approval status
