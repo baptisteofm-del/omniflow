@@ -21,7 +21,7 @@ interface Trend {
   capturedAt: Date
 }
 
-const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'reddit' | 'youtube'> = ['all', 'tiktok', 'instagram', 'reddit', 'youtube']
+const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'twitter' | 'reddit'> = ['all', 'tiktok', 'instagram', 'twitter', 'reddit']
 const CATEGORIES = [
   'lifestyle',
   'fitness',
