@@ -39,7 +39,7 @@ export default function VeillePage() {
   const [trends, setTrends] = useState<Trend[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'tiktok' | 'instagram' | 'twitter' | 'youtube' | 'reddit'>('all')
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'tiktok' | 'instagram' | 'youtube' | 'reddit'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
