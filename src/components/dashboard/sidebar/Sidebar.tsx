@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
@@ -58,7 +58,29 @@ const navItems = [
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null)
+  const [planId, setPlanId] = useState<string>('starter')
+  const [planName, setPlanName] = useState<string>('...')
   const pathname = usePathname()
+
+  useEffect(() => {
+    fetch('/api/usage')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.plan) {
+          setPlanId(d.plan.id)
+          setPlanName(d.plan.name)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const planRank: Record<string, number> = { starter: 0, pro: 1, agency: 2 }
+  const userRank = planRank[planId] ?? 0
+
+  const hasAccess = (requiredPlan?: string) => {
+    if (!requiredPlan) return true
+    return userRank >= (planRank[requiredPlan] ?? 99)
+  }
 
   const closeSidebar = () => setIsOpen(false)
 
@@ -111,6 +133,7 @@ export function Sidebar() {
               </p>
               <ul className="space-y-1">
                 {section.items.map((item: any) => {
+                  if (item.requiredPlan && !hasAccess(item.requiredPlan)) return null
                   const active = pathname === item.href || pathname.startsWith(item.href + '/')
                   const isSubmenuExpanded = expandedSubmenu === item.href
                   const hasSubmenu = item.submenu && item.submenu.length > 0
@@ -220,7 +243,7 @@ export function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">Mon Agence</p>
-                <p className="text-xs text-purple-400">Plan Pro</p>
+                <p className="text-xs text-purple-400">Plan {planName}</p>
               </div>
               <ChevronRight size={14} className="text-gray-600 group-hover:text-purple-400 transition-colors flex-shrink-0" />
             </div>
