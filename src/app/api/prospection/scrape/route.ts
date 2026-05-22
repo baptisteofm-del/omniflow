@@ -399,7 +399,7 @@ export async function POST(request: NextRequest) {
         geo_country: geo?.country || null,
         geo_cities: geo?.cities ? JSON.stringify(geo.cities) : null,
         scrape_mode: mode,
-        potential_score: scoreProfile(profile),
+        potential_score: scoreProfile(profile, niche),
         potential_score_base: 3,
         learning_score_weight: 1.0,
         status: 'discovered',
