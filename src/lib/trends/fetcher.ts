@@ -6,10 +6,11 @@
  * - Reddit API (gratuit)
  * - YouTube RSS (gratuit)
  * 
- * Fallback : URLs réelles de créatrices populaires connues
+ * Fallback : 83 vraies URLs Instagram/TikTok avec métadonnées réelles
  */
 
 import axios from 'axios'
+import { SEED_TRENDS } from './seed-data'
 
 export interface Trend {
   id: string
@@ -78,196 +79,28 @@ const POPULAR_CREATORS = {
   ],
 }
 
-// Realistic fallback trends (quand les APIs ne répondent pas)
-const REALISTIC_FALLBACK_TRENDS: Omit<Trend, 'id' | 'capturedAt'>[] = [
-  // TikTok trends
-  {
-    platform: 'tiktok',
-    title: '7-Minute Full Body Workout (No Equipment Needed)',
-    description: 'Quick morning workout routine that burns 300+ calories',
-    url: 'https://www.tiktok.com/@fitnessgirl/video/7234567890123456789',
-    authorUsername: 'fitnessgirl',
-    authorUrl: 'https://www.tiktok.com/@fitnessgirl',
-    contentType: 'video',
-    engagement: 2400000,
-    category: 'fitness',
-    tags: ['fitness', 'workout', 'quickworkout', 'morningroutine'],
-  },
-  {
-    platform: 'tiktok',
-    title: 'Get Ready With Me - Everyday Glamour Look',
-    description: 'Simple makeup routine for busy mornings',
-    url: 'https://www.tiktok.com/@beautybyjoey/video/7234567890123456790',
-    authorUsername: 'beautybyjoey',
-    authorUrl: 'https://www.tiktok.com/@beautybyjoey',
-    contentType: 'video',
-    engagement: 1890000,
-    category: 'beauty',
-    tags: ['makeup', 'grwm', 'beautyroutine', 'makeupartist'],
-  },
-  {
-    platform: 'tiktok',
-    title: 'Luxury Apartment Tour in NYC',
-    description: 'Beautiful high-rise apartment with city views',
-    url: 'https://www.tiktok.com/@luxelifestyle/video/7234567890123456791',
-    authorUsername: 'luxelifestyle',
-    authorUrl: 'https://www.tiktok.com/@luxelifestyle',
-    contentType: 'video',
-    engagement: 3100000,
-    category: 'lifestyle',
-    tags: ['apartmenttour', 'luxury', 'newyork', 'apartmentdecor'],
-  },
-  {
-    platform: 'tiktok',
-    title: 'Summer Body Challenge - Day 1',
-    description: '30-day transformation challenge starting today',
-    url: 'https://www.tiktok.com/@fitnesspro/video/7234567890123456792',
-    authorUsername: 'fitnesspro',
-    authorUrl: 'https://www.tiktok.com/@fitnesspro',
-    contentType: 'video',
-    engagement: 2650000,
-    category: 'fitness',
-    tags: ['challenge', 'transformation', 'fitness', 'summerbody'],
-  },
-  {
-    platform: 'tiktok',
-    title: 'Designer Haul - Luxury Shopping Spree',
-    description: 'New designer bags and clothes I just got',
-    url: 'https://www.tiktok.com/@fashionista/video/7234567890123456793',
-    authorUsername: 'fashionista',
-    authorUrl: 'https://www.tiktok.com/@fashionista',
-    contentType: 'video',
-    engagement: 2200000,
-    category: 'fashion',
-    tags: ['haul', 'designer', 'fashion', 'shopping'],
-  },
+/**
+ * Fallback: Use real seed trends when APIs fail
+ * This is now sourced from seed-data.ts with 80+ real Instagram/TikTok URLs
+ * enriched with actual engagement metrics from Apify
+ */
+function getSeedTrendsAsLegacyFormat(): Omit<Trend, 'id' | 'capturedAt'>[] {
+  return SEED_TRENDS.map(trend => ({
+    platform: trend.platform === 'instagram' ? 'instagram' : 'tiktok',
+    title: trend.title,
+    url: trend.url,
+    thumbnailUrl: trend.thumbnailUrl,
+    authorUsername: trend.authorUsername.replace('@', ''),
+    authorUrl: trend.authorUrl,
+    contentType: trend.contentType,
+    engagement: trend.engagement,
+    category: trend.category,
+    tags: trend.tags,
+  }))
+}
 
-  // Instagram Reels
-  {
-    platform: 'instagram',
-    title: 'Morning Routine for Glowing Skin',
-    description: 'Complete skincare routine in 60 seconds',
-    url: 'https://instagram.com/reel/C7X9kL4h5Qx',
-    authorUsername: 'skincare_expert',
-    authorUrl: 'https://instagram.com/skincare_expert',
-    contentType: 'reel',
-    engagement: 892000,
-    category: 'beauty',
-    tags: ['skincare', 'morningroutine', 'glowingskin', 'beautytips'],
-  },
-  {
-    platform: 'instagram',
-    title: 'Protein-Packed Breakfast Ideas',
-    description: 'Quick breakfast recipes for fitness goals',
-    url: 'https://instagram.com/reel/C7X8pM3h2Qy',
-    authorUsername: 'fitnessfood',
-    authorUrl: 'https://instagram.com/fitnessfood',
-    contentType: 'reel',
-    engagement: 756000,
-    category: 'fitness',
-    tags: ['breakfast', 'protein', 'mealprep', 'fitnessfood'],
-  },
-  {
-    platform: 'instagram',
-    title: 'My Day in Luxury Fashion Week',
-    description: 'Behind the scenes at Paris Fashion Week',
-    url: 'https://instagram.com/reel/C7X7nK1h3Qz',
-    authorUsername: 'fashionweek_diary',
-    authorUrl: 'https://instagram.com/fashionweek_diary',
-    contentType: 'reel',
-    engagement: 1240000,
-    category: 'fashion',
-    tags: ['fashionweek', 'paris', 'luxury', 'behindthescenes'],
-  },
-  {
-    platform: 'instagram',
-    title: 'Travel Vlog: Luxury Resort in Bali',
-    description: 'Exploring a 5-star resort in paradise',
-    url: 'https://instagram.com/reel/C7X6jH9h4Qa',
-    authorUsername: 'travelgirl',
-    authorUrl: 'https://instagram.com/travelgirl',
-    contentType: 'reel',
-    engagement: 1520000,
-    category: 'travel',
-    tags: ['bali', 'travel', 'resort', 'luxury'],
-  },
-  {
-    platform: 'instagram',
-    title: 'Wellness Meditation at Home',
-    description: '10-minute guided meditation for stress relief',
-    url: 'https://instagram.com/reel/C7X5fE7h5Qb',
-    authorUsername: 'wellness_coach',
-    authorUrl: 'https://instagram.com/wellness_coach',
-    contentType: 'reel',
-    engagement: 634000,
-    category: 'wellness',
-    tags: ['meditation', 'wellness', 'mindfulness', 'stressrelief'],
-  },
-
-  // Reddit posts
-  {
-    platform: 'reddit',
-    title: 'The Most Effective Workout Split for Women',
-    description: 'Discussion about optimal training splits for female fitness goals',
-    url: 'https://reddit.com/r/FitnessInfluencers/comments/abc12345',
-    authorUsername: 'fitness_expert',
-    authorUrl: 'https://reddit.com/user/fitness_expert',
-    contentType: 'text',
-    engagement: 3200,
-    category: 'fitness',
-    tags: ['fitness', 'workout', 'training', 'women'],
-  },
-  {
-    platform: 'reddit',
-    title: 'Best K-Beauty Products That Actually Work',
-    description: 'Comprehensive guide to Korean skincare products',
-    url: 'https://reddit.com/r/SkincareAddiction/comments/def67890',
-    authorUsername: 'skincare_guru',
-    authorUrl: 'https://reddit.com/user/skincare_guru',
-    contentType: 'text',
-    engagement: 4500,
-    category: 'beauty',
-    tags: ['skincare', 'kbeauty', 'products', 'review'],
-  },
-  {
-    platform: 'reddit',
-    title: 'How to Build an Authentic Personal Brand',
-    description: 'Tips for growing your influence organically',
-    url: 'https://reddit.com/r/ContentCreators/comments/ghi11223',
-    authorUsername: 'content_strategist',
-    authorUrl: 'https://reddit.com/user/content_strategist',
-    contentType: 'text',
-    engagement: 5800,
-    category: 'lifestyle',
-    tags: ['personalbrand', 'content', 'strategy', 'growth'],
-  },
-
-  // YouTube
-  {
-    platform: 'youtube',
-    title: 'Complete Makeup Tutorial for Beginners',
-    description: 'Step-by-step guide to creating a perfect makeup look',
-    url: 'https://youtube.com/watch?v=abc123XYZ',
-    authorUsername: 'MakeupByMary',
-    authorUrl: 'https://youtube.com/@MakeupByMary',
-    contentType: 'video',
-    engagement: 450000,
-    category: 'beauty',
-    tags: ['makeup', 'tutorial', 'beginner', 'beauty'],
-  },
-  {
-    platform: 'youtube',
-    title: '30-Day Fitness Transformation Challenge',
-    description: 'My complete journey to building muscle and losing fat',
-    url: 'https://youtube.com/watch?v=def456UVW',
-    authorUsername: 'FitnessJourney',
-    authorUrl: 'https://youtube.com/@FitnessJourney',
-    contentType: 'video',
-    engagement: 680000,
-    category: 'fitness',
-    tags: ['fitness', 'transformation', 'challenge', 'motivation'],
-  },
-]
+// Legacy fallback (kept for compatibility, now uses seed data)
+const REALISTIC_FALLBACK_TRENDS: Omit<Trend, 'id' | 'capturedAt'>[] = []
 
 /**
  * Fetch TikTok trends via Apify
@@ -565,13 +398,22 @@ function extractHashtags(text: string): string[] {
 }
 
 /**
- * Public export: Flat fallback trends
+ * Public export: Real seed trends as Trend objects
  */
-export const MOCK_TRENDS_FLAT: Trend[] = REALISTIC_FALLBACK_TRENDS.map(
+export const MOCK_TRENDS_FLAT: Trend[] = SEED_TRENDS.map(
   (t, i) => ({
-    ...t,
-    id: `fallback-${i}`,
-    capturedAt: new Date(),
+    id: t.id,
+    platform: t.platform === 'instagram' ? 'instagram' : t.platform === 'tiktok' ? 'tiktok' : 'reddit',
+    title: t.title,
+    url: t.url,
+    thumbnailUrl: t.thumbnailUrl,
+    authorUsername: t.authorUsername.replace('@', ''),
+    authorUrl: t.authorUrl,
+    contentType: t.contentType as any,
+    engagement: t.engagement,
+    category: t.category,
+    tags: t.tags,
+    capturedAt: new Date(t.capturedAt),
   })
 ).sort((a, b) => b.engagement - a.engagement)
 
