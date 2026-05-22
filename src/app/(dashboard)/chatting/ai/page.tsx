@@ -780,9 +780,119 @@ export default function ChattingAIPage() {
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed line-clamp-2">{msg.content}</p>
                 </div>
+                {/* Feedback buttons for AI-generated messages */}
+                {msg.direction === 'outbound' && msg.ai_generated && AI_GENERATED_FEEDBACK_ENABLED && (
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    <button
+                      onClick={() => handleFeedback(msg.id, 'validate')}
+                      title="Valider cette réponse IA"
+                      className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
+                    >
+                      <CheckCircle2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => openFeedbackModal(msg.id, msg.content)}
+                      title="Corriger cette réponse"
+                      className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleFeedback(msg.id, 'reject')}
+                      title="Rejeter cette réponse"
+                      className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* ════ FEEDBACK CORRECTION MODAL ════ */}
+      {feedbackModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#12111a] border border-white/10 rounded-2xl p-6 max-w-xl w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Edit2 size={20} className="text-amber-400" />
+                Corriger la réponse IA
+              </h3>
+              <button
+                onClick={() => setFeedbackModal({ isOpen: false, messageId: null, originalContent: '', corrected: '', reason: '' })}
+                className="text-gray-500 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Original message */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                  Message original (IA)
+                </label>
+                <div className="p-3 rounded-lg bg-black/30 border border-white/10 text-gray-300 text-sm leading-relaxed">
+                  {feedbackModal.originalContent}
+                </div>
+              </div>
+
+              {/* Corrected message */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                  Message corrigé
+                </label>
+                <textarea
+                  value={feedbackModal.corrected}
+                  onChange={(e) => setFeedbackModal({ ...feedbackModal, corrected: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-amber-500 focus:outline-none text-sm resize-none"
+                  placeholder="Écrivez la version corrigée du message..."
+                />
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                  Pourquoi ? (optionnel)
+                </label>
+                <input
+                  type="text"
+                  value={feedbackModal.reason}
+                  onChange={(e) => setFeedbackModal({ ...feedbackModal, reason: e.target.value })}
+                  className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-amber-500 focus:outline-none"
+                  placeholder="ex: trop formel, mauvaise expression, manque d'authenticité..."
+                />
+              </div>
+
+              <p className="text-xs text-gray-600 italic">
+                Cette correction sera enregistrée et servira à l'IA pour générer de meilleures réponses à l'avenir.
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setFeedbackModal({ isOpen: false, messageId: null, originalContent: '', corrected: '', reason: '' })}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm hover:border-white/20"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => feedbackModal.messageId && handleFeedback(
+                  feedbackModal.messageId,
+                  'correct',
+                  feedbackModal.corrected,
+                  feedbackModal.reason
+                )}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-amber-500/20"
+              >
+                Enregistrer la correction
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
