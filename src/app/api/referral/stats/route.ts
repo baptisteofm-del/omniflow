@@ -23,15 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     const agencyId = agency.id
-
-    // Get agency info to generate referral code
-    const { data: agency } = await supabase
-      .from('agencies')
-      .select('id, name')
-      .eq('id', agencyId)
-      .single()
-
-    const referralCode = agency?.id?.substring(0, 8).toUpperCase() || 'UNKNOWN'
+    const referralCode = agency.id.substring(0, 8).toUpperCase()
 
     // Count total referrals
     const { count: totalReferrals } = await supabase
