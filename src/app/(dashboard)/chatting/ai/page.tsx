@@ -1343,15 +1343,6 @@ export default function ChattingAIPage() {
               {/* Stratégie PPV/Tips */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Fourchette PPV</label>
-                  <input
-                    type="text" value={personalityForm.ppvPriceRange}
-                    onChange={(e) => setPersonalityForm({ ...personalityForm, ppvPriceRange: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none"
-                    placeholder="ex: 5€–25€"
-                  />
-                </div>
-                <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Sujets à éviter</label>
                   <input
                     type="text"
