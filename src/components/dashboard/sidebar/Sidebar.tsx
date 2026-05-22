@@ -5,7 +5,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
-  Zap, ChevronRight, CreditCard, User, Gift, Menu, X, Clapperboard
+  Zap, ChevronRight, CreditCard, User, Gift, Menu, X, Clapperboard, Search
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -21,6 +21,7 @@ const navItems = [
     section: 'Pilotage',
     items: [
       { label: 'Comptes & Modèles', href: '/accounts', icon: Users },
+      { label: 'Recrutement modèles', href: '/accounts/prospection', icon: Search, badge: 'IA' },
       { label: 'Finance', href: '/finance', icon: BarChart3 },
     ],
   },
