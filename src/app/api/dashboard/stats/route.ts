@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch recent AI activity
-    let recentActivity = []
+    let recentActivity: any[] = []
     try {
       const { data: messages, error: activityError } = await supabase
         .from('ai_messages')
