@@ -688,13 +688,21 @@ export default function ChattingAIPage() {
                         <div className="flex-1">
                           <p className="font-semibold text-white">{model.name}</p>
                           {isConfigured ? (
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <div className={`w-2 h-2 rounded-full ${p.auto_mode ? 'bg-green-400 animate-pulse' : 'bg-blue-400'}`} />
-                              <span className="text-xs text-gray-400">
-                                {p.auto_mode ? 'Mode automatique' : 'Mode supervisé'} · {
-                                  PERSONALITY_TYPES.find((t) => t.id === p.personality_type)?.label || p.personality_type
-                                }
-                              </span>
+                            <div className="space-y-1 mt-1">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${p.auto_mode ? 'bg-green-400 animate-pulse' : 'bg-blue-400'}`} />
+                                <span className="text-xs text-gray-400">
+                                  {p.auto_mode ? 'Mode automatique' : 'Mode supervisé'} · {
+                                    PERSONALITY_TYPES.find((t) => t.id === p.personality_type)?.label || p.personality_type
+                                  }
+                                </span>
+                              </div>
+                              {p.schedule_enabled && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                                  <span className="text-violet-400 font-medium">⏰ Planning actif</span>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <p className="text-xs text-gray-600 mt-0.5">Non configurée</p>
