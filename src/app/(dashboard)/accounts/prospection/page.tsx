@@ -1306,11 +1306,13 @@ function ProspectCard({
           {(prospect as any).platform_status && (
             <span
               className="text-xs font-semibold"
-              title={{
-                'not_on_platform': 'Non encore sur les plateformes',
-                'aggregator_detected': 'Agrégateur detecté',
-                'already_on_platform': 'Déjà monetélisée',
-              }[(prospect as any).platform_status]}
+              title={(
+                {
+                  'not_on_platform': 'Non encore sur les plateformes',
+                  'aggregator_detected': 'Agrégateur detecté',
+                  'already_on_platform': 'Déjà monetélisée',
+                } as Record<string, string>
+              )[(prospect as any).platform_status]}
             >
               {(prospect as any).platform_status === 'not_on_platform'
                 ? '🟢'
