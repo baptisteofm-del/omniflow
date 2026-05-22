@@ -401,15 +401,15 @@ function extractHashtags(text: string): string[] {
  * Public export: Real seed trends as Trend objects
  */
 export const MOCK_TRENDS_FLAT: Trend[] = SEED_TRENDS.map(
-  (t, i) => ({
+  (t) => ({
     id: t.id,
-    platform: t.platform === 'instagram' ? 'instagram' : t.platform === 'tiktok' ? 'tiktok' : 'reddit',
+    platform: (t.platform === 'instagram' ? 'instagram' : 'tiktok') as 'instagram' | 'tiktok',
     title: t.title,
     url: t.url,
     thumbnailUrl: t.thumbnailUrl,
     authorUsername: t.authorUsername.replace('@', ''),
     authorUrl: t.authorUrl,
-    contentType: t.contentType as any,
+    contentType: t.contentType as 'video' | 'photo' | 'reel',
     engagement: t.engagement,
     category: t.category,
     tags: t.tags,
