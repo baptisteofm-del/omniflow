@@ -5,15 +5,21 @@ import { DemoPosting } from './DemoPosting'
 import { DemoKling } from './DemoKling'
 import { DemoChatting } from './DemoChatting'
 import { DemoAnalytics } from './DemoAnalytics'
+import { DemoInstagram } from './DemoInstagram'
+import { DemoTwitter } from './DemoTwitter'
 
 const tabs = [
-  { id: 'posting', label: 'Posting IA', icon: '🎬' },
+  { id: 'instagram', label: 'Instagram', icon: '📸' },
+  { id: 'twitter', label: 'X / Twitter', icon: '𝕏' },
+  { id: 'posting', label: 'Multi-Posting', icon: '🎬' },
   { id: 'kling', label: 'Génération Kling', icon: '✨' },
   { id: 'chatting', label: 'Chatting IA', icon: '💬' },
   { id: 'analytics', label: 'Analytics', icon: '📊' },
 ]
 
 const demoComponents = {
+  instagram: DemoInstagram,
+  twitter: DemoTwitter,
   posting: DemoPosting,
   kling: DemoKling,
   chatting: DemoChatting,
@@ -21,6 +27,18 @@ const demoComponents = {
 }
 
 const tabFeatures = {
+  instagram: [
+    '47 profils IG en simultané',
+    'Reels + Stories + Posts',
+    'Zéro ban grâce à GeeLark',
+    'Likes & comments en hausse',
+  ],
+  twitter: [
+    'Threads & tweets auto-générés',
+    '28 tweets en file d\'attente',
+    'Analytics temps réel (vues, likes)',
+    'Horaires optimisés par l\'IA',
+  ],
   posting: [
     '100 profils simultanément',
     'AdsPower + GeeLark natif',
@@ -48,7 +66,7 @@ const tabFeatures = {
 }
 
 export function DemosSection() {
-  const [activeTab, setActiveTab] = useState<keyof typeof demoComponents>('posting')
+  const [activeTab, setActiveTab] = useState<keyof typeof demoComponents>('instagram')
 
   const ActiveComponent = demoComponents[activeTab]
   const features = tabFeatures[activeTab]
