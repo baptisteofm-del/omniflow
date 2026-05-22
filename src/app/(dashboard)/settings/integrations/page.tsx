@@ -32,89 +32,93 @@ interface FormData {
   }
 }
 
-// SVG Logo Components
+// SVG Logo Components with Official Brand SVGs
 const LogoOnlyFans = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#00AFF0"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="system-ui">OF</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#00AFF0' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M24 4.003h-4.015c-3.45 0-5.3.197-6.748 1.957a7.996 7.996 0 1 0 2.103 9.211c3.182-.231 5.39-2.134 6.085-5.173 0 0-2.399.585-4.43 0 4.018-.777 6.333-3.037 7.005-5.995zM5.61 11.999A2.391 2.391 0 0 1 9.28 9.97a2.966 2.966 0 0 1 2.998-2.528h.008c-.92 1.778-1.407 3.352-1.998 5.263A2.392 2.392 0 0 1 5.61 12Zm2.386-7.996a7.996 7.996 0 1 0 7.996 7.996 7.996 7.996 0 0 0-7.996-7.996Zm0 10.394A2.399 2.399 0 1 1 10.395 12a2.396 2.396 0 0 1-2.399 2.398Z" />
+    </svg>
+  </div>
 )
 
 const LogoMYM = () => (
-  <svg viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="40" height="20" rx="4" fill="#1a1a2e"/>
-    <text x="20" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="system-ui">MYM</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1a1a2e' }}>
+    <span className="text-white font-bold text-sm">MYM</span>
+  </div>
 )
 
 const LogoAdsPower = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#2563eb"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">A</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563eb' }}>
+    <span className="text-white font-bold text-lg">A</span>
+  </div>
 )
 
 const LogoGeeLark = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#059669"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">G</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#059669' }}>
+    <span className="text-white font-bold text-lg">G</span>
+  </div>
 )
 
 const LogoBinance = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#F3BA2F"/>
-    <text x="12" y="16" textAnchor="middle" fill="#1a1a1a" fontSize="7" fontWeight="bold" fontFamily="system-ui">BNB</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F3BA2F' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="#000000">
+      <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
+    </svg>
+  </div>
 )
 
 const LogoCoinbase = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <circle cx="12" cy="12" r="12" fill="#0052FF"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">C</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0052FF' }}>
+    <span className="text-white font-bold text-lg">C</span>
+  </div>
 )
 
 const LogoStripe = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#635BFF"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">S</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#635BFF' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
+    </svg>
+  </div>
 )
 
 const LogoPayPal = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#003087"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="system-ui">PP</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#003087' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M15.607 4.653H8.941L6.645 19.251H1.82L4.862 0h7.995c3.754 0 6.375 2.294 6.473 5.513-.648-.478-2.105-.86-3.722-.86m6.57 5.546c0 3.41-3.01 6.853-6.958 6.853h-2.493L11.595 24H6.74l1.845-11.538h3.592c4.208 0 7.346-3.634 7.153-6.949a5.24 5.24 0 0 1 2.848 4.686M9.653 5.546h6.408c.907 0 1.942.222 2.363.541-.195 2.741-2.655 5.483-6.441 5.483H8.714Z" />
+    </svg>
+  </div>
 )
 
 const LogoRevolut = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#000000"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">R</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#191C1F' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M20.9133 6.9566C20.9133 3.1208 17.7898 0 13.9503 0H2.424v3.8605h10.9782c1.7376 0 3.177 1.3651 3.2087 3.043.016.84-.2994 1.633-.8878 2.2324-.5886.5998-1.375.9303-2.2144.9303H9.2322a.2756.2756 0 0 0-.2755.2752v3.431c0 .0585.018.1142.052.1612L16.2646 24h5.3114l-7.2727-10.094c3.6625-.1838 6.61-3.2612 6.61-6.9494zM6.8943 5.9229H2.424V24h4.4704z" />
+    </svg>
+  </div>
 )
 
 const LogoWise = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#9FE870"/>
-    <text x="12" y="16" textAnchor="middle" fill="#000000" fontSize="12" fontWeight="bold" fontFamily="system-ui">W</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#9FE870' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="#163300">
+      <path d="M6.488 7.469 0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873l-6.878 18.925h4.706L24 .595H2.543l3.945 6.874Z" />
+    </svg>
+  </div>
 )
 
 const LogoN8n = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#EA4B27"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold" fontFamily="system-ui">n8n</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#EA4B27' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 10c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-7 0c-.83 0-1.5-.67-1.5-1.5S7.67 9 8.5 9s1.5.67 1.5 1.5S9.33 12 8.5 12zm3.5 6.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" />
+    </svg>
+  </div>
 )
 
 const LogoZapier = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
-    <rect width="24" height="24" rx="6" fill="#FF4A00"/>
-    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="system-ui">Z</text>
-  </svg>
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FF4A00' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M18.4 1H5.6A1.6 1.6 0 0 0 4 2.6v3.2h4.8V2.8h6.4v2.8V9.6H20V2.6A1.6 1.6 0 0 0 18.4 1zm1.6 6.4h-4.8v3.2h4.8V7.4zM4 9.6h4.8v3.2H4V9.6zm0 4.8h4.8v3.2H4v-3.2zm6.4 0h4.8v3.2h-4.8v-3.2zm6.4 0H20v3.2h-3.2v-3.2zM4 18.8h4.8V22H5.6A1.6 1.6 0 0 1 4 20.4v-1.6zm6.4 0h4.8V22h-4.8v-3.2zm6.4 0H20V22h-3.2v-3.2z" />
+    </svg>
+  </div>
 )
 
 const integrations = [
