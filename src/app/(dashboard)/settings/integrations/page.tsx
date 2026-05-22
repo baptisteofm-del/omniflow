@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import { Check, X, Loader2, Settings, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -15,7 +15,7 @@ interface IntegrationConfig {
   id: string
   name: string
   description: string
-  logo: () => JSX.Element
+  logo: () => ReactNode
   requiresUrl?: boolean
   defaultUrl?: string
   category: string
