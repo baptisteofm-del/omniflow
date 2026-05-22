@@ -122,13 +122,13 @@ const integrations = [
   {
     id: 'onlyfans',
     name: 'OnlyFans',
-    description: 'Connexion via cookies de session (requis à cause de la 2FA)',
+    description: 'Connectez vos comptes OnlyFans pour le chatting IA',
     logo: LogoOnlyFans,
     requiresUrl: false,
     category: 'chatting',
-    fields: ['userId', 'authId', 'sess', 'bcTokens'],
-    fieldLabels: { userId: 'User ID', authId: 'auth_id (cookie)', sess: 'sess (cookie)', bcTokens: 'bc-tokens-p11 (cookie)' },
-    helpText: 'Sur OnlyFans : F12 → Application → Cookies → copiez les valeurs ci-dessous',
+    fields: ['email', 'password'],
+    fieldLabels: { email: 'Adresse email', password: 'Mot de passe' },
+    helpText: '⚠️ La double authentification (2FA) doit être désactivée sur ce compte pour que la connexion fonctionne.',
   },
   {
     id: 'mym',
