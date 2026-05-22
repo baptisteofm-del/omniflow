@@ -216,6 +216,22 @@ export default function ChattingAIPage() {
     finally { setLoading(false) }
   }
 
+  const toggleAI = async (platform: string) => {
+    const current = listConfigs[platform]?.is_active ?? false
+    setListConfigs(prev => ({ ...prev, [platform]: { ...prev[platform], is_active: !current } }))
+    try {
+      await fetch('/api/chatting/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, is_active: !current })
+      })
+      toast.success(!current ? `IA ${platform === 'onlyfans' ? 'OnlyFans' : 'MYM'} activée` : `IA désactivée`)
+    } catch {
+      setListConfigs(prev => ({ ...prev, [platform]: { ...prev[platform], is_active: current } }))
+      toast.error('Erreur lors de la mise à jour')
+    }
+  }
+
   const toggleAutoMode = async (modelId: string) => {
     const personality = personalities[modelId]
     if (!personality) return
