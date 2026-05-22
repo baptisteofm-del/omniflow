@@ -5,11 +5,22 @@ import { getChats as getOFChats } from '@/lib/platforms/onlyfans'
 import { getConversations as getMYMConversations } from '@/lib/platforms/mym'
 import { getUSDTBalance } from '@/lib/platforms/binance'
 import { getAccounts as getCoinbaseAccounts } from '@/lib/platforms/coinbase'
+import { checkRateLimit } from '@/lib/security/rate-limit'
+import { logAudit } from '@/lib/security/audit'
+import { decryptIntegrationData } from '@/lib/crypto/sensitive-fields'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    
+    // Rate limiting: max 3 test attempts per minute per IP
+    if (!checkRateLimit(`integration-test:${ip}`, 3, 60000)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await request.json()
-    const { tool } = body
+    let { tool } = body
 
     if (!tool) {
       return NextResponse.json(
@@ -18,11 +29,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get user and agency for audit logging
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    let agencyId: string | undefined
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('agency_id')
+        .eq('id', user.id)
+        .single()
+      agencyId = profile?.agency_id
+    }
+
     let isConnected = false
     let message = ''
+    let testData = body
+
+    // Decrypt sensitive fields for testing
+    testData = decryptIntegrationData(tool, body)
 
     if (tool === 'adspower') {
-      const { api_key, api_url } = body
+      const { api_key, api_url } = testData
       if (!api_key || !api_url) {
         return NextResponse.json(
           { error: 'AdsPower requires api_key and api_url' },
@@ -38,7 +67,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur AdsPower: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'geelark') {
-      const { api_key } = body
+      const { api_key } = testData
       if (!api_key) {
         return NextResponse.json(
           { error: 'GeeLark requires api_key' },
@@ -54,7 +83,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur GeeLark: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'telegram') {
-      const { api_key } = body
+      const { api_key } = testData
       if (!api_key) {
         return NextResponse.json(
           { error: 'Telegram requires api_key' },
@@ -77,7 +106,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur Telegram: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'onlyfans') {
-      const { userId, authId, sess, bcTokens, userAgent } = body
+      const { userId, authId, sess, bcTokens, userAgent } = testData
       if (!userId || !authId || !sess || !bcTokens) {
         return NextResponse.json(
           { error: 'OnlyFans requires userId, authId, sess, bcTokens' },
@@ -99,7 +128,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur OnlyFans: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'mym') {
-      const { api_key } = body
+      const { api_key } = testData
       if (!api_key) {
         return NextResponse.json(
           { error: 'MYM requires api_key' },
@@ -115,7 +144,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur MYM: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'binance') {
-      const { api_key, secret_key } = body
+      const { api_key, secret_key } = testData
       if (!api_key || !secret_key) {
         return NextResponse.json(
           { error: 'Binance requires api_key and secret_key' },
@@ -134,7 +163,7 @@ export async function POST(request: NextRequest) {
         message = `Erreur Binance: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'coinbase') {
-      const { api_key } = body
+      const { api_key } = testData
       if (!api_key) {
         return NextResponse.json(
           { error: 'Coinbase requires api_key' },
@@ -150,6 +179,16 @@ export async function POST(request: NextRequest) {
         message = `Erreur Coinbase: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     }
+
+    // Log the test attempt
+    await logAudit({
+      agencyId,
+      action: 'integration.tested',
+      resource: tool,
+      ip,
+      success: isConnected,
+      metadata: { tool, result: isConnected ? 'success' : 'failed', message }
+    })
 
     return NextResponse.json({
       success: isConnected,
