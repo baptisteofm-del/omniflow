@@ -259,16 +259,14 @@ export default function DashboardPage() {
                 const scheduledTime = new Date(post.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
                 const platform = post.platforms && post.platforms[0] ? post.platforms[0].substring(0, 2).toUpperCase() : 'N/A'
                 return (
-                  <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all">
+                  <Link key={i} href="/posting" className="block p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:border-purple-500/30 transition-all">
                     <p className="text-sm font-medium text-white line-clamp-2">{post.title || 'Post sans titre'}</p>
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                       <span>{post.model_id || 'N/A'}</span>
                       <span className="text-cyan-400 font-semibold">{scheduledTime}</span>
                     </div>
-                    <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded">
-                      {platform}
-                    </span>
-                  </div>
+                    <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded">{platform}</span>
+                  </Link>
                 )
               })
             ) : (
@@ -294,8 +292,8 @@ export default function DashboardPage() {
                 const directionLabel = a.direction === 'inbound' ? 'Message reçu' : 'Message envoyé'
                 const relativeTime = getRelativeTime(a.sent_at)
                 return (
-                  <div key={i} className="flex items-center gap-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/3 transition-all px-2 rounded">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 text-blue-400">
+                  <Link key={i} href="/chatting/ai" className="flex items-center gap-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-all px-2 rounded-lg cursor-pointer">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0 text-blue-400">
                       <MessageSquare size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -303,7 +301,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-500 truncate">{a.content || 'Contenu vide'}</p>
                     </div>
                     <span className="text-xs text-gray-500 whitespace-nowrap">{relativeTime}</span>
-                  </div>
+                  </Link>
                 )
               })
             ) : (
@@ -318,17 +316,30 @@ export default function DashboardPage() {
             <Radio size={18} className="text-green-400" />
             Connexions
           </h2>
-          <div className="space-y-3">
-            {!loading && dashboardData?.connections && dashboardData.connections.length > 0 ? (
-              dashboardData.connections.map((conn: any, i: number) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
-                  <span className="text-sm font-medium">{conn.name}</span>
-                  <div className={`w-2.5 h-2.5 rounded-full ${conn.color === 'green' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500'}`}></div>
+          <div className="space-y-2">
+            {[{name:'OnlyFans',key:'onlyfans'},{name:'MYM',key:'mym'},{name:'AdsPower',key:'adspower'},{name:'GeeLark',key:'geelark'}].map(tool => {
+              const conn = dashboardData?.connections?.find((c:any) => c.tool === tool.key || c.name?.toLowerCase() === tool.name.toLowerCase())
+              const connected = conn?.is_active === true
+              return (
+                <div key={tool.key} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-gray-600'}`} />
+                    <span className="text-sm font-medium text-white">{tool.name}</span>
+                    {connected && <span className="text-xs text-green-400">Connecté</span>}
+                  </div>
+                  <Link
+                    href={`/settings/integrations?tool=${tool.key}`}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
+                      connected
+                        ? 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
+                        : 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30'
+                    }`}
+                  >
+                    {connected ? 'Gérer' : 'Connecter'}
+                  </Link>
                 </div>
-              ))
-            ) : (
-              <div className="p-3 text-center text-gray-500 text-sm">Aucune intégration disponible</div>
-            )}
+              )
+            })}
           </div>
         </div>
       </div>
