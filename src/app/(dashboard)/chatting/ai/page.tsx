@@ -749,7 +749,7 @@ export default function ChattingAIPage() {
                           ) : (
                             <RefreshCw size={12} />
                           )}
-                          Analyser convs MYM
+                          Analyser chatting
                         </button>
                       </div>
                     </div>
