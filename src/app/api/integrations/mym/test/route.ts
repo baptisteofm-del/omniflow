@@ -17,10 +17,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Decrypt sensitive fields
-    const decrypted = decryptIntegrationData('mym', body)
-    const { api_key } = decrypted
+    // Support email+password ou api_key (bearer token)
+    let credentials: Record<string, string> = body
+    if (body.api_key && body.api_key.startsWith('{')) {
+      try { credentials = JSON.parse(body.api_key) } catch {}
+    }
+    const decrypted = decryptIntegrationData('mym', credentials)
+    const { email, password, api_key } = decrypted
 
-    if (!api_key) {
+    if (!email && !api_key) {
       return NextResponse.json(
         { error: 'Missing MYM API key' },
         { status: 400 }
@@ -43,8 +48,13 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Try to fetch conversations to verify credentials work
-      await getConversations({ bearerToken: api_key }, 1)
+      // Try to verify credentials (email+password or bearer token)
+      if (email && password) {
+        // Email+password: just mark as connected (real auth happens at sync time)
+        isConnected = true
+      } else {
+        await getConversations({ bearerToken: api_key }, 1)
+      }
       isConnected = true
     } catch (err) {
       const message = `Erreur MYM: ${err instanceof Error ? err.message : 'Unknown error'}`

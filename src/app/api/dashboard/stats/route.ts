@@ -36,6 +36,69 @@ export async function GET(request: NextRequest) {
       .eq('id', agencyId)
       .single()
 
+    // Check if agency has active integrations
+    const { count: activeIntegrations } = await supabase
+      .from('agency_integrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agencyId)
+      .eq('is_active', true)
+
+    // If no active integrations, return all stats as 0
+    if (!activeIntegrations || activeIntegrations === 0) {
+      return NextResponse.json({
+        agency: {
+          name: agencyData?.name || 'Omniflow',
+        },
+        stats: [
+          {
+            label: 'Modèles actifs',
+            value: '0',
+            change: '+0 ce mois',
+            icon: 'Users',
+            color: 'text-purple-400',
+          },
+          {
+            label: 'Posts ce mois',
+            value: '0',
+            change: '+0%',
+            icon: 'Calendar',
+            color: 'text-cyan-400',
+          },
+          {
+            label: 'Revenus (mois)',
+            value: '0,00 €',
+            change: '+0%',
+            icon: 'BarChart3',
+            color: 'text-green-400',
+          },
+          {
+            label: 'Trends captés',
+            value: '0',
+            change: 'nouveau',
+            icon: 'Eye',
+            color: 'text-pink-400',
+          },
+          {
+            label: 'Messages IA',
+            value: '0',
+            change: 'ce mois',
+            icon: 'MessageSquare',
+            color: 'text-blue-400',
+          },
+          {
+            label: 'Fans à risque',
+            value: '0',
+            change: 'à action',
+            icon: 'AlertCircle',
+            color: 'text-red-400',
+          },
+        ],
+        recentActivity: [],
+        upcomingPosts: [],
+        connections: [],
+      })
+    }
+
     // 1. Active models count
     let activeModelsCount = 0
     try {

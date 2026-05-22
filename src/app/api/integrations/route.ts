@@ -25,11 +25,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No agency found' }, { status: 404 })
     }
 
-    // Get integrations
-    const { data: integrations, error } = await supabase
+    // Get query parameters for filtering
+    const { searchParams } = new URL(request.url)
+    const toolFilter = searchParams.get('tool')
+    const isActive = searchParams.get('is_active')
+
+    // Build query
+    let query = supabase
       .from('agency_integrations')
       .select('*')
       .eq('agency_id', agency.id)
+
+    // Apply tool filter if provided (can be comma-separated for multiple)
+    if (toolFilter) {
+      const tools = toolFilter.split(',')
+      query = query.in('tool', tools)
+    }
+
+    // Apply is_active filter if provided
+    if (isActive !== null) {
+      const isActiveBoolean = isActive === 'true'
+      query = query.eq('is_active', isActiveBoolean)
+    }
+
+    const { data: integrations, error } = await query
 
     if (error) throw error
 
@@ -77,28 +96,37 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { tool, api_key, api_url, is_active } = body
+    const { tool, api_key, api_url, is_active, email, password, ...rest } = body
 
-    if (!tool || !api_key) {
+    if (!tool) {
       return NextResponse.json(
-        { error: 'Missing required fields: tool, api_key' },
+        { error: 'Missing required field: tool' },
         { status: 400 }
       )
     }
 
-    // Encrypt sensitive fields
-    let dataToStore = body
-    if (tool === 'onlyfans' || tool === 'binance' || tool === 'coinbase' || tool === 'stripe' || tool === 'geelark' || tool === 'adspower') {
-      // For complex credentials, encrypt each sensitive field
-      dataToStore = encryptIntegrationData(tool, body)
+    // MYM et OF utilisent email+password
+    const usesEmailPassword = ['mym', 'onlyfans'].includes(tool) && email
+    if (!usesEmailPassword && !api_key) {
+      return NextResponse.json(
+        { error: `${tool} required api_key` },
+        { status: 400 }
+      )
     }
 
-    // Store all fields as JSON in api_key for complex integrations
-    let storedKey = dataToStore.api_key || api_key
-    if (tool === 'onlyfans' || tool === 'binance' || tool === 'coinbase') {
-      // For complex credentials, store the entire object as JSON (encrypted)
-      storedKey = JSON.stringify(dataToStore)
+    // Construire les données à stocker
+    let dataToStore: Record<string, string> = {}
+    if (usesEmailPassword) {
+      dataToStore = { email, password, ...rest }
+    } else {
+      dataToStore = { api_key, ...rest }
     }
+
+    // Chiffrer les champs sensibles
+    dataToStore = encryptIntegrationData(tool, dataToStore)
+
+    // Stocker en JSON dans api_key
+    let storedKey = JSON.stringify(dataToStore)
 
     // Upsert integration
     const { data: integration, error } = await supabase
