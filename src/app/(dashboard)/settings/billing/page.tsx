@@ -436,13 +436,12 @@ function BillingContent() {
                 {cryptoPaymentMethods.map(method => (
                   <button
                     key={method.name}
-                    onClick={() => {
-                      alert(`Redirection vers NOWPayments pour ${method.name}...`)
-                    }}
-                    className={`p-4 rounded-lg bg-gradient-to-br ${method.color} text-white font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all`}
+                    onClick={() => handleChangePlan(currentPlan?.id || 'starter', 'crypto')}
+                    disabled={actionLoading}
+                    className={`p-4 rounded-lg bg-gradient-to-br ${method.color} text-white font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <div className="text-xl mb-1">{method.symbol}</div>
-                    {method.name}
+                    {actionLoading ? '...' : method.name}
                   </button>
                 ))}
               </div>

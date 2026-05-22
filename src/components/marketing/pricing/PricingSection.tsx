@@ -8,6 +8,32 @@ import type { BillingInterval } from '@/types'
 
 export function PricingSection() {
   const [interval, setInterval] = useState<BillingInterval>('monthly')
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+
+  const handleCryptoPay = async (planId: string) => {
+    setLoadingPlan(planId)
+    try {
+      const response = await fetch('/api/nowpayments/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, interval }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate payment')
+      }
+
+      const data = await response.json()
+      if (data.invoiceUrl) {
+        window.location.href = data.invoiceUrl
+      }
+    } catch (error) {
+      console.error('Crypto payment error:', error)
+      alert('Erreur lors de l\'initiation du paiement. Veuillez réessayer.')
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 gradient-bg">
@@ -93,7 +119,7 @@ export function PricingSection() {
               <Link
                 href={`/register?plan=${plan.id}&interval=${interval}`}
                 className={cn(
-                  'block text-center py-3 rounded-xl font-semibold transition-all mb-6',
+                  'block text-center py-3 rounded-xl font-semibold transition-all mb-2',
                   plan.highlighted
                     ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 glow-sm'
                     : 'glass border border-purple-500/30 hover:border-purple-500/60 hover:text-white'
@@ -101,6 +127,15 @@ export function PricingSection() {
               >
                 Essai gratuit 7 jours
               </Link>
+
+              {/* Crypto Payment Button */}
+              <button
+                onClick={() => handleCryptoPay(plan.id)}
+                disabled={loadingPlan === plan.id}
+                className="w-full text-center py-2 text-sm text-gray-400 hover:text-yellow-400 transition-colors flex items-center justify-center gap-2 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>{loadingPlan === plan.id ? '⏳' : '₿'}</span> {loadingPlan === plan.id ? 'Chargement...' : 'Payer en crypto (USDT/BTC)'}
+              </button>
 
               {/* Features */}
               <ul className="space-y-3 flex-1">
