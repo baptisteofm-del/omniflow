@@ -218,18 +218,19 @@ export async function GET(request: NextRequest) {
     const upcomingPosts = upcomingPostsData
 
     // Fetch integrations
-    const integrationsData = await safeSelect(
-      supabase
-        .from('agency_integrations')
-        .select('tool, is_active')
-        .eq('agency_id', agencyId)
+    const tools = [
+      { name: 'OnlyFans', tool: 'onlyfans' },
+      { name: 'MYM', tool: 'mym' },
+      { name: 'AdsPower', tool: 'adspower' },
+      { name: 'GeeLark', tool: 'geelark' },
+    ]
+    const integrationsList = await safeSelect(
+      supabase.from('agency_integrations').select('tool, is_active').eq('agency_id', agencyId)
     )
-    const toolsToDisplay = ['OnlyFans', 'MYM', 'AdsPower', 'GeeLark']
-    const integrationMap = new Map(integrationsData.map((i: any) => [i.tool, i.is_active]))
-    const connections = toolsToDisplay.map((tool) => ({
-      name: tool,
-      status: integrationMap.get(tool) ? 'connected' : 'disconnected',
-      color: integrationMap.get(tool) ? 'green' : 'red',
+    const connections = tools.map(t => ({
+      name: t.name,
+      tool: t.tool,
+      is_active: integrationsList.some((i:any) => i.tool === t.tool && i.is_active),
     }))
 
     // Format revenue for display

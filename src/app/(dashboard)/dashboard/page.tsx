@@ -243,8 +243,47 @@ export default function DashboardPage() {
         <FeatureMiniCards stats={dashboardData.stats} data={dashboardData} />
       )}
 
+      {/* ROI Section */}
+      {!loading && dashboardData?.stats && (() => {
+        const aiMessages = dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0
+        const aiMessagesNum = parseInt(aiMessages.toString().replace(/[^0-9]/g, '')) || 0
+        const hoursStr = (aiMessagesNum * 2) / 60
+        const hourssaved = hoursStr >= 1 ? Math.round(hoursStr) : Math.round(hoursStr * 10) / 10
+        const estimatedValue = Math.round(hoursStr * 12)
+        const currentMonthLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+        
+        return (
+          <div className="glass rounded-2xl p-6 border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-cyan-500/5">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Zap size={18} className="text-yellow-400" />
+                Ce que l'IA a fait pour vous ce mois
+              </h2>
+              <span className="text-xs text-gray-500">{currentMonthLabel}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-purple-400">{hourssaved}h</p>
+                <p className="text-xs text-gray-500 mt-1">économisées</p>
+              </div>
+              <div className="text-center border-x border-white/10">
+                <p className="text-3xl font-bold text-cyan-400">{aiMessagesNum}</p>
+                <p className="text-xs text-gray-500 mt-1">messages envoyés</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-400">{estimatedValue}€</p>
+                <p className="text-xs text-gray-500 mt-1">valeur estimée</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mt-4 text-center">
+              Basé sur {aiMessagesNum} messages IA × 2min × 12€/h
+            </p>
+          </div>
+        )
+      })()}
+
       {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Posts */}
         <div className="lg:col-span-1 glass rounded-2xl p-6 border border-white/5">
           <div className="flex items-center justify-between mb-4">
@@ -310,36 +349,59 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Connections Status */}
+        {/* Alertes actionnables */}
         <div className="glass rounded-2xl p-6 border border-white/5">
           <h2 className="font-semibold flex items-center gap-2 mb-4">
-            <Radio size={18} className="text-green-400" />
-            Connexions
+            <AlertCircle size={18} className="text-orange-400" />
+            Actions recommandées
           </h2>
           <div className="space-y-2">
-            {[{name:'OnlyFans',key:'onlyfans'},{name:'MYM',key:'mym'},{name:'AdsPower',key:'adspower'},{name:'GeeLark',key:'geelark'}].map(tool => {
-              const conn = dashboardData?.connections?.find((c:any) => c.tool === tool.key || c.name?.toLowerCase() === tool.name.toLowerCase())
-              const connected = conn?.is_active === true
-              return (
-                <div key={tool.key} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-green-500 shadow-sm shadow-green-500/50' : 'bg-gray-600'}`} />
-                    <span className="text-sm font-medium text-white">{tool.name}</span>
-                    {connected && <span className="text-xs text-green-400">Connecté</span>}
-                  </div>
-                  <Link
-                    href={`/settings/integrations?tool=${tool.key}`}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${
-                      connected
-                        ? 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
-                        : 'bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30'
-                    }`}
-                  >
-                    {connected ? 'Gérer' : 'Connecter'}
-                  </Link>
+            {/* Intégrations non connectées */}
+            {dashboardData?.connections?.filter((c:any) => !c.is_active).map((c:any, i:number) => (
+              <Link key={i} href={`/settings/integrations?tool=${c.tool || c.name?.toLowerCase()}`}
+                className="flex items-center justify-between p-3 bg-orange-500/5 border border-orange-500/20 rounded-xl hover:bg-orange-500/10 transition-all">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                  <span className="text-sm text-orange-300">{c.name} non connecté</span>
                 </div>
-              )
-            })}
+                <span className="text-xs text-orange-400 font-medium">Connecter →</span>
+              </Link>
+            ))}
+            
+            {/* Modèles sans config IA */}
+            {(dashboardData?.stats?.find((s:any) => s.label === 'Modèles actifs')?.value || 0) > 0 && 
+             (dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0) === 0 && (
+              <Link href="/chatting/ai"
+                className="flex items-center justify-between p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:bg-purple-500/10 transition-all">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  <span className="text-sm text-purple-300">Chatting IA non configuré</span>
+                </div>
+                <span className="text-xs text-purple-400 font-medium">Configurer →</span>
+              </Link>
+            )}
+            
+            {/* Fans à risque */}
+            {(dashboardData?.stats?.find((s:any) => s.label?.includes('risque'))?.value || 0) > 0 && (
+              <Link href="/chatting"
+                className="flex items-center justify-between p-3 bg-red-500/5 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                  <span className="text-sm text-red-300">
+                    {dashboardData?.stats?.find((s:any) => s.label?.includes('risque'))?.value} fans à risque
+                  </span>
+                </div>
+                <span className="text-xs text-red-400 font-medium">Voir →</span>
+              </Link>
+            )}
+
+            {/* Tout va bien */}
+            {(!dashboardData?.connections?.some((c:any) => !c.is_active) && 
+              (dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0) > 0) && (
+              <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-xl text-center">
+                <span className="text-sm text-green-400">✓ Tout fonctionne correctement</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
