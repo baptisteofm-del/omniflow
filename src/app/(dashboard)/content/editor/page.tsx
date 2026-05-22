@@ -1,170 +1,162 @@
 'use client'
 import { useState } from 'react'
-import { ArrowLeft, Check } from 'lucide-react'
-import Link from 'next/link'
+import { Check, Download, Trash2, Film, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { VideoEditor } from '@/components/dashboard/editor/VideoEditor'
 
-interface ContentLibraryItem {
+interface ProcessedItem {
   id: string
   name: string
   size: string
   type: 'video' | 'image'
-  spoofed: boolean
-  savedAt: string
   url: string
+  format: string
+  processedAt: string
+  duplicate: number
 }
 
 export default function EditorPage() {
-  const [savedContent, setSavedContent] = useState<ContentLibraryItem[]>([])
-  const [isUploadingToDb, setIsUploadingToDb] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<string>('')
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('instagram')
+  const [processed, setProcessed] = useState<ProcessedItem[]>([])
 
-  // Mock models data
-  const models = [
-    { id: '1', name: 'Leelou' },
-    { id: '2', name: 'Victoria' },
-    { id: '3', name: 'Sophie' },
-  ]
+  const handleProcessingComplete = async (
+    files: { blob: Blob; filename: string; duplicate: number }[],
+    format: string
+  ) => {
+    const newItems: ProcessedItem[] = []
 
-  const handleProcessingComplete = async (file: Blob, filename: string) => {
-    setIsUploadingToDb(true)
+    for (const { blob, filename, duplicate } of files) {
+      // Optionally save to media library via API
+      try {
+        const formData = new FormData()
+        formData.append('file', blob, filename)
+        formData.append('type', blob.type.startsWith('video') ? 'video' : 'image')
+        formData.append('spoofed', 'true')
 
-    try {
-      const formData = new FormData()
-      formData.append('file', file, filename)
-      formData.append('type', filename.includes('video') ? 'video' : 'image')
-      formData.append('platform', selectedPlatform)
-      formData.append('spoofed', 'true')
-      if (selectedModel) {
-        formData.append('modelId', selectedModel)
+        const res = await fetch('/api/content/process', { method: 'POST', body: formData })
+        const data = await res.json()
+
+        if (res.ok && data.data) {
+          newItems.push({
+            id: data.data.id,
+            name: filename,
+            size: `${(blob.size / 1024 / 1024).toFixed(1)} MB`,
+            type: blob.type.startsWith('video') ? 'video' : 'image',
+            url: data.data.url,
+            format,
+            processedAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            duplicate,
+          })
+        } else {
+          throw new Error()
+        }
+      } catch {
+        // Save locally as object URL if API fails
+        const url = URL.createObjectURL(blob)
+        newItems.push({
+          id: `local-${Date.now()}-${duplicate}`,
+          name: filename,
+          size: `${(blob.size / 1024 / 1024).toFixed(1)} MB`,
+          type: blob.type.startsWith('video') ? 'video' : 'image',
+          url,
+          format,
+          processedAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          duplicate,
+        })
       }
-
-      const response = await fetch('/api/content/process', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed')
-      }
-
-      // Add to saved content
-      const newItem: ContentLibraryItem = {
-        id: data.data.id,
-        name: data.data.fileName,
-        size: `${(data.data.size / 1024 / 1024).toFixed(1)} MB`,
-        type: filename.includes('video') ? 'video' : 'image',
-        spoofed: true,
-        savedAt: new Date().toLocaleString('fr-FR'),
-        url: data.data.url,
-      }
-
-      setSavedContent((prev) => [newItem, ...prev])
-      toast.success('Contenu sauvegardé avec succès!')
-    } catch (error) {
-      console.error('Upload error:', error)
-      toast.error(
-        error instanceof Error ? error.message : 'Erreur lors de la sauvegarde'
-      )
-    } finally {
-      setIsUploadingToDb(false)
     }
+
+    setProcessed((prev) => [...newItems, ...prev])
+    toast.success(`${newItems.length} fichier${newItems.length > 1 ? 's' : ''} traité${newItems.length > 1 ? 's' : ''} ✅`)
+  }
+
+  const downloadItem = (item: ProcessedItem) => {
+    const a = document.createElement('a')
+    a.href = item.url
+    a.download = item.name
+    a.click()
+  }
+
+  const removeItem = (id: string) => {
+    setProcessed((prev) => prev.filter((i) => i.id !== id))
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <Link
-          href="/dashboard"
-          className="p-2 rounded-lg hover:bg-white/5 transition-colors"
-        >
-          <ArrowLeft size={18} />
-        </Link>
-        <h1 className="text-3xl font-bold">Éditeur vidéo & Spoof</h1>
-      </div>
-
-      {/* Settings section */}
-      <div className="glass rounded-2xl p-6 mb-8">
-        <h2 className="font-semibold mb-4">Paramètres</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              Modèle (optionnel)
-            </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500/50 focus:outline-none text-sm"
-            >
-              <option value="">-- Tous les modèles --</option>
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              Plateforme
-            </label>
-            <select
-              value={selectedPlatform}
-              onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500/50 focus:outline-none text-sm"
-            >
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="twitter">Twitter/X</option>
-              <option value="telegram">Telegram</option>
-            </select>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <Film className="text-purple-400" size={28} />
+          Éditeur & Spoof
+        </h1>
+        <p className="text-gray-400 mt-1">
+          Importez une vidéo ou image, choisissez le format et le nombre de copies — l'IA spoofe les métadonnées pour éviter la détection.
+        </p>
       </div>
 
       {/* Editor */}
-      <div className="mb-8">
-        <VideoEditor onProcessingComplete={handleProcessingComplete} />
-      </div>
+      <VideoEditor onProcessingComplete={handleProcessingComplete} />
 
-      {/* Saved content */}
-      {savedContent.length > 0 && (
-        <div className="glass rounded-2xl p-6">
-          <h2 className="font-semibold mb-4">Contenu traité ({savedContent.length})</h2>
+      {/* Output */}
+      {processed.length > 0 && (
+        <div className="rounded-2xl border border-white/10 bg-white/3 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-white flex items-center gap-2">
+              <Copy size={18} className="text-purple-400" />
+              Fichiers traités ({processed.length})
+            </h2>
+            <button
+              onClick={() => setProcessed([])}
+              className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+            >
+              Tout effacer
+            </button>
+          </div>
+
           <div className="space-y-2">
-            {savedContent.map((item) => (
+            {processed.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-4 rounded-lg hover:bg-white/5 transition-colors border border-white/5"
+                className="flex items-center gap-4 p-3.5 rounded-xl border border-white/5 hover:border-white/10 bg-black/20 transition-colors"
               >
+                {/* Icon */}
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm">{item.type === 'video' ? '🎬' : '🖼️'}</span>
+                </div>
+
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    {item.spoofed && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/20 text-xs font-medium text-green-300">
-                        <Check size={12} /> Spoofé
-                      </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-white truncate">{item.name}</p>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 font-medium">
+                      {item.format}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30 font-medium flex items-center gap-0.5">
+                      <Check size={10} /> Spoofé
+                    </span>
+                    {item.duplicate > 1 && (
+                      <span className="text-[10px] text-gray-500">copie #{item.duplicate}</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500">{item.savedAt}</p>
+                  <p className="text-xs text-gray-600 mt-0.5">{item.size} · {item.processedAt}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400">{item.size}</p>
-                  <p className="text-xs text-gray-600">{item.type.toUpperCase()}</p>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => downloadItem(item)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    title="Télécharger"
+                  >
+                    <Download size={15} />
+                  </button>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-4 px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-500/20 transition-colors"
-                >
-                  Aperçu
-                </a>
               </div>
             ))}
           </div>
