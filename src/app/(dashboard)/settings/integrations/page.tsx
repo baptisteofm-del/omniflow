@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Check, X, Loader2, Settings, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -252,6 +253,9 @@ const categories = [
 ]
 
 export default function IntegrationsPage() {
+  const searchParams = useSearchParams()
+  const modelIdFromUrl = searchParams.get('model')
+  const toolFromUrl = searchParams.get('tool')
   const [connected, setConnected] = useState<Record<string, Integration>>({})
   const [loading, setLoading] = useState(true)
   const [testing, setTesting] = useState<Record<string, boolean>>({})
@@ -295,8 +299,11 @@ export default function IntegrationsPage() {
 
     setTesting({ ...testing, [toolId]: true })
     try {
+      // Inclure model_id pour OF et MYM si on vient d'un profil modèle
+      const isPerModel = ['onlyfans', 'mym'].includes(toolId)
       const payload: any = {
         tool: toolId,
+        ...(isPerModel && modelIdFromUrl ? { model_id: modelIdFromUrl } : {}),
         ...form[toolId],
       }
 
@@ -366,6 +373,16 @@ export default function IntegrationsPage() {
         </div>
         <p className="text-gray-400">Connectez vos outils pour le chatting IA, le posting automatisé et la finance</p>
       </div>
+
+      {/* Bandeau modèle */}
+      {modelIdFromUrl && (
+        <div className="mb-6 px-4 py-3 bg-purple-500/10 border border-purple-500/30 rounded-xl flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+          <p className="text-sm text-purple-300">
+            Connexion pour un profil modèle spécifique — {toolFromUrl && <strong className="text-white capitalize">{toolFromUrl}</strong>} sera lié uniquement à ce modèle.
+          </p>
+        </div>
+      )}
 
       {/* Loading state */}
       {loading ? (

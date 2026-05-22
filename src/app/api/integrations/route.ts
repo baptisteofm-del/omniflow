@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { tool, api_key, api_url, is_active, email, password, ...rest } = body
+    const { tool, api_key, api_url, is_active, email, password, model_id, ...rest } = body
 
     if (!tool) {
       return NextResponse.json(
@@ -128,18 +128,23 @@ export async function POST(request: NextRequest) {
     // Stocker en JSON dans api_key
     let storedKey = JSON.stringify(dataToStore)
 
+    // OF et MYM sont par modèle, les autres sont par agence
+    const isPerModel = ['onlyfans', 'mym'].includes(tool)
+    const effectiveModelId = isPerModel ? (model_id || null) : null
+
     // Upsert integration
     const { data: integration, error } = await supabase
-      .from('agency_integrations')
+      .from('integrations')
       .upsert(
         {
           agency_id: agency.id,
           tool,
+          model_id: effectiveModelId,
           api_key: storedKey,
           api_url: api_url || null,
           is_active: is_active !== false,
         },
-        { onConflict: 'agency_id,tool' }
+        { onConflict: 'agency_id,tool,model_id', ignoreDuplicates: false }
       )
       .select()
       .single()
