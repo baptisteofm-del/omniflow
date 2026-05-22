@@ -44,7 +44,7 @@ export default function AccountsPage() {
   const [importCategory, setImportCategory] = useState<'chatting' | 'social' | ''>('')
   const [importedProfiles, setImportedProfiles] = useState<ImportedProfile[]>([])
   const [uploadingAvatar, setUploadingAvatar] = useState<Record<string, boolean>>({})
-  const [modelStats, setModelStats] = useState<Record<string, { revenue_month: number; posts_count: number }>({})
+  const [modelStats, setModelStats] = useState<Record<string, { revenue_month: number; posts_count: number }>>({})
 
   const [form, setForm] = useState({
     name: '',
