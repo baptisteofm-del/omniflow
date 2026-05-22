@@ -5,6 +5,8 @@ import { loginAndGetToken, getConversations, getMessages } from '@/lib/platforms
 
 export const dynamic = 'force-dynamic'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // Call the analyze endpoint
         const analyzeRes = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/chatting/ai/analyze`,
+          `${APP_URL}/api/chatting/ai/analyze`,
           {
             method: 'POST',
             headers: {
