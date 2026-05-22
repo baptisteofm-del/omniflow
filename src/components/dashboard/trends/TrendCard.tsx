@@ -128,7 +128,7 @@ export function TrendCard({
             padding: '2px',
             WebkitMaskImage:
               'linear-gradient(to right, black, transparent, black)',
-          } as React.CSSProperties}
+          } as any}
         />
       )}
 

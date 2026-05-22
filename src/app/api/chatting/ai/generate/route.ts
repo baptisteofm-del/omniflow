@@ -60,6 +60,16 @@ export async function POST(request: NextRequest) {
       .eq('agency_id', agencyId)
       .eq('is_active', true)
 
+    // Get recent agency feedbacks for this model
+    const { data: feedbacks } = await supabase
+      .from('chatting_feedback')
+      .select('original_message, corrected_message, reason')
+      .eq('agency_id', agencyId)
+      .eq('model_id', modelId)
+      .eq('action', 'correct')
+      .order('created_at', { ascending: false })
+      .limit(15)
+
     // Generate response
     const { response, upsellOpportunity } = await generateResponse(
       {
@@ -88,6 +98,12 @@ export async function POST(request: NextRequest) {
         name: s.name,
         content: s.content,
         category: s.category,
+      })),
+      // Pass agency feedbacks for learning
+      (feedbacks || []).map(f => ({
+        original: f.original_message,
+        corrected: f.corrected_message || '',
+        reason: f.reason,
       }))
     )
 
