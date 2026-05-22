@@ -70,6 +70,22 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(15)
 
+    // Get list config for this platform
+    const { data: listConfig } = await supabase
+      .from('chatting_list_config')
+      .select('*')
+      .eq('agency_id', agencyId)
+      .eq('platform', platform)
+      .single()
+
+    // Get fan notes
+    const { data: fanNotes } = await supabase
+      .from('fan_notes')
+      .select('note, category')
+      .eq('fan_profile_id', fanProfile.id)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
     // Generate response
     const { response, upsellOpportunity } = await generateResponse(
       {
@@ -104,12 +120,26 @@ export async function POST(request: NextRequest) {
         original: f.original_message,
         corrected: f.corrected_message || '',
         reason: f.reason,
+      })),
+      // Pass list config
+      listConfig ? {
+        personalityType: listConfig.personality_type,
+        ppvFrequency: listConfig.ppv_frequency,
+        ppvPriceMin: listConfig.ppv_price_min,
+        ppvPriceMax: listConfig.ppv_price_max,
+        relationalMode: listConfig.relational_mode,
+        toneNotes: listConfig.tone_notes,
+      } : undefined,
+      // Pass fan notes
+      (fanNotes || []).map(n => ({
+        note: n.note,
+        category: n.category,
       }))
     )
 
     // Save message to database
     // Calculer send_after selon le délai configuré
-    const delaySeconds = (personality as Record<string, unknown> | null)?.response_delay_seconds as number || 60
+    const delaySeconds = listConfig?.response_delay_seconds || (personality as Record<string, unknown> | null)?.response_delay_seconds as number || 60
     const sendAfter = new Date(Date.now() + delaySeconds * 1000).toISOString()
 
     const { data: messages, error: msgError } = await supabase.from('ai_messages').insert({

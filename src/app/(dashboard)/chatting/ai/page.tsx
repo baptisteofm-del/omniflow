@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import {
   Settings, Plus, Trash2, CheckCircle2, XCircle, MessageSquare,
   Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock, Shield,
-  Radio, ChevronDown, ChevronRight, Info, ArrowRight,
+  Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useUsage } from '@/lib/hooks/useUsage'
 import { FeatureGate } from '@/components/ui/FeatureGate'
+import { ListConfigPanel } from '@/components/dashboard/chatting/ListConfigPanel'
+import { FanNotesPanel } from '@/components/dashboard/chatting/FanNotesPanel'
 
 interface Model {
   id: string
@@ -109,7 +111,8 @@ export default function ChattingAIPage() {
     corrected: '',
     reason: '',
   })
-  const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'queue' | 'fans' | 'activity'>('models')
+  const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'queue' | 'fans' | 'activity' | 'config'>('models')
+  const [selectedFanForNotes, setSelectedFanForNotes] = useState<FanProfile | null>(null)
 
   const [personalityForm, setPersonalityForm] = useState({
     displayName: '',
@@ -459,6 +462,7 @@ export default function ChattingAIPage() {
           { id: 'models', label: 'Modèles', badge: models.length },
           { id: 'queue', label: 'File de validation', badge: pendingMessages.length, alert: pendingMessages.length > 0 },
           { id: 'scripts', label: 'Scripts', badge: scripts.length },
+          { id: 'config', label: 'Config par liste', badge: null, icon: <Sliders size={14} /> },
           { id: 'fans', label: 'Profils fans', badge: recentFans.length },
           { id: 'activity', label: 'Activité récente', badge: null },
         ].map((tab) => (
@@ -471,6 +475,7 @@ export default function ChattingAIPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
+            {tab.icon && tab.icon}
             {tab.label}
             {tab.badge !== null && tab.badge !== undefined && tab.badge > 0 && (
               <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
@@ -728,6 +733,17 @@ export default function ChattingAIPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Tab: Config ── */}
+      {activeTab === 'config' && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-bold text-white mb-2">Configuration par Liste</h2>
+            <p className="text-gray-400 text-sm">Configurez les paramètres PPV, mode relationnel et instructions pour chaque plateforme</p>
+          </div>
+          <ListConfigPanel />
         </div>
       )}
 
@@ -1089,6 +1105,19 @@ export default function ChattingAIPage() {
               <button onClick={() => setShowScriptModal(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm">Annuler</button>
               <button onClick={handleSaveScript} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm">Sauvegarder</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Fan Notes ── */}
+      {selectedFanForNotes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-gray-900 rounded-2xl border border-white/10 max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
+            <FanNotesPanel
+              fanProfileId={selectedFanForNotes.id}
+              fanName={selectedFanForNotes.fan_name}
+              onClose={() => setSelectedFanForNotes(null)}
+            />
           </div>
         </div>
       )}

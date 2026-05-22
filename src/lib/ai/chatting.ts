@@ -22,6 +22,20 @@ export interface ModelPersonality {
   tipsStrategy: string
 }
 
+export interface ListConfig {
+  personalityType: string
+  ppvFrequency: 'never' | 'low' | 'moderate' | 'high' | 'always'
+  ppvPriceMin: number
+  ppvPriceMax: number
+  relationalMode: boolean
+  toneNotes: string
+}
+
+export interface FanNote {
+  note: string
+  category: 'general' | 'preferences' | 'spending' | 'avoid' | 'custom'
+}
+
 /**
  * Generate an AI response for an incoming fan message
  */
@@ -30,7 +44,9 @@ export async function generateResponse(
   personality: ModelPersonality,
   incomingMessage: string,
   availableScripts: { name: string; content: string; category: string }[],
-  agencyFeedback?: { original: string; corrected: string; reason?: string }[]
+  agencyFeedback?: { original: string; corrected: string; reason?: string }[],
+  listConfig?: ListConfig,
+  fanNotes?: FanNote[]
 ): Promise<{ response: string; scriptUsed?: string; upsellOpportunity?: boolean }> {
   const recentConversation = fanContext.recentMessages
     .map(msg => `${msg.role === 'fan' ? 'Fan' : 'Model'}: ${msg.content}`)
@@ -133,6 +149,33 @@ ${f.reason ? `Pourquoi : ${f.reason}` : ''}`
 \n`
     : ''
 
+  const fanNotesSection = fanNotes && fanNotes.length > 0
+    ? `## NOTES SUR CE FAN (confidentielles, données par l'agence)
+${fanNotes.map(n => `[${n.category}] ${n.note}`).join('\n')}
+\n`
+    : ''
+
+  const listConfigSection = listConfig
+    ? `## CONFIG DE CETTE LISTE
+- Fréquence PPV : ${listConfig.ppvFrequency} (never/low/moderate/high/always)
+- Prix PPV : entre €${listConfig.ppvPriceMin} et €${listConfig.ppvPriceMax}
+- Mode relationnel : ${listConfig.relationalMode ? 'ACTIVÉ — si le fan parle de sa vie perso/émotions, écoute et crée du lien SANS pousser de contenu payant' : 'DÉSACTIVÉ'}
+- Instructions de l'agence : ${listConfig.toneNotes || 'aucune'}
+
+DÉTECTION ÉMOTIONNELLE (si relational_mode activé) :
+Signaux "mode relationnel" → NE PAS pousser de PPV :
+- Fan parle de sa journée difficile, de problèmes, de solitude
+- Fan exprime de la tristesse, du stress, de la fatigue
+- Fan raconte quelque chose de personnel
+→ Dans ces cas : être présente, écouter, créer du lien. Le PPV viendra plus tard.
+
+Signaux "mode monétisation" → PPV possible :
+- Fan demande à voir du contenu
+- Fan est clairement en mode "chaud"
+- Fan a déjà acheté et revient
+\n`
+    : ''
+
   const systemPrompt = `Tu es ${personality.displayName}, créatrice de contenu sur OnlyFans.
 
 ## TON PROFIL
@@ -150,7 +193,7 @@ ${personality.communicationStyle || 'Naturel, authentique, jamais robotique.'}
 ## SCRIPTS DISPONIBLES
 ${scriptsContext || 'Aucun script configuré.'}
 
-${feedbackSection}## RÈGLES ABSOLUES
+${feedbackSection}${fanNotesSection}${listConfigSection}## RÈGLES ABSOLUES
 - Réponds UNIQUEMENT avec le message à envoyer, rien d'autre
 - Maximum 3-4 phrases, naturel et conversationnel
 - Jamais de guillemets autour du message
