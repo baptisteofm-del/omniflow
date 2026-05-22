@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch recent AI activity
-    let recentActivity: any[] = []
+    let recentActivity: Array<any> = []
     try {
       const { data: messages, error: activityError } = await supabase
         .from('ai_messages')
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch upcoming posts
-    let upcomingPosts = []
+    let upcomingPosts: Array<any> = []
     try {
       const now = new Date().toISOString()
       const { data: posts, error: upcomingError } = await supabase
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch integrations
-    let connections = []
+    let connections: Array<any> = []
     try {
       const { data: integrations, error: intError } = await supabase
         .from('integrations')
