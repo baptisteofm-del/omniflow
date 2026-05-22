@@ -21,7 +21,7 @@ interface Trend {
   capturedAt: Date
 }
 
-const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'twitter' | 'reddit'> = ['all', 'tiktok', 'instagram', 'twitter', 'reddit']
+const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'reddit' | 'youtube'> = ['all', 'tiktok', 'instagram', 'youtube', 'reddit']
 const CATEGORIES = [
   'lifestyle',
   'fitness',
@@ -39,7 +39,7 @@ export default function VeillePage() {
   const [trends, setTrends] = useState<Trend[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState<'tiktok' | 'instagram' | 'reddit' | 'youtube' | 'all'>('all')
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'tiktok' | 'instagram' | 'reddit' | 'youtube'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
