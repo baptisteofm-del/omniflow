@@ -7,6 +7,8 @@ import {
   Radio, ChevronDown, ChevronRight, Info, ArrowRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useUsage } from '@/lib/hooks/useUsage'
+import { FeatureGate } from '@/components/ui/FeatureGate'
 
 interface Model {
   id: string
@@ -74,6 +76,7 @@ const PERSONALITY_TYPES = [
 ]
 
 export default function ChattingAIPage() {
+  const { planId } = useUsage()
   const [models, setModels] = useState<Model[]>([])
   const [personalities, setPersonalities] = useState<Record<string, Personality>>({})
   const [scripts, setScripts] = useState<Script[]>([])
@@ -247,7 +250,8 @@ export default function ChattingAIPage() {
   const modelName = (id: string) => models.find((m) => m.id === id)?.name || id
 
   return (
-    <div className="p-6 lg:p-8 space-y-8">
+    <FeatureGate feature="chatting_ai" planId={planId}>
+      <div className="p-6 lg:p-8 space-y-8">
 
       {/* ── Header ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -925,6 +929,7 @@ export default function ChattingAIPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </FeatureGate>
   )
 }

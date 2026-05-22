@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
 import { generatePromptFromTrend } from '@/lib/trends/fetcher'
+import { useUsage } from '@/lib/hooks/useUsage'
+import { FeatureGate } from '@/components/ui/FeatureGate'
 
 interface Generation {
   taskId: string
@@ -30,6 +32,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; lab
 }
 
 export default function AIGenerationPage() {
+  const { planId } = useUsage()
   const searchParams = useSearchParams()
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -119,7 +122,8 @@ export default function AIGenerationPage() {
   }
 
   return (
-    <div className="p-8">
+    <FeatureGate feature="ai_generation" planId={planId}>
+      <div className="p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -273,5 +277,6 @@ export default function AIGenerationPage() {
         </div>
       </div>
     </div>
+    </FeatureGate>
   )
 }

@@ -5,9 +5,10 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
-  Zap, ChevronRight, CreditCard, User, Gift, Menu, X, Clapperboard, Search
+  Zap, ChevronRight, CreditCard, User, Gift, Menu, X, Clapperboard, Search, Lock
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { UsageWidget } from '@/components/ui/UsageWidget'
 
 const navItems = [
   {
@@ -21,14 +22,14 @@ const navItems = [
     section: 'Pilotage',
     items: [
       { label: 'Comptes & Modèles', href: '/accounts', icon: Users },
-      { label: 'Recrutement modèles', href: '/accounts/prospection', icon: Search, badge: 'IA' },
+      { label: 'Recrutement modèles', href: '/accounts/prospection', icon: Search, badge: 'IA', requiredPlan: 'agency' },
       { label: 'Finance', href: '/finance', icon: BarChart3 },
     ],
   },
   {
     section: 'Chatting',
     items: [
-      { label: 'Chatting IA', href: '/chatting/ai', icon: Sparkles },
+      { label: 'Chatting IA', href: '/chatting/ai', icon: Sparkles, requiredPlan: 'pro' },
       { label: 'Rapports', href: '/chatting', icon: MessageSquare },
     ],
   },
@@ -37,7 +38,7 @@ const navItems = [
     items: [
       { label: 'Veille trends', href: '/content/veille', icon: Eye },
       { label: 'Éditeur & Spoof', href: '/content/editor', icon: Film },
-      { label: 'Génération IA', href: '/content/ai-generation', icon: Zap },
+      { label: 'Génération IA', href: '/content/ai-generation', icon: Zap, requiredPlan: 'pro' },
       { label: 'Posting auto', href: '/posting', icon: Calendar },
       { label: 'Bots Telegram', href: '/telegram', icon: Bot },
       { label: 'Banque de médias', href: '/media', icon: Clapperboard },
@@ -184,12 +185,15 @@ export function Sidebar() {
                         >
                           <item.icon size={17} className={active ? 'text-purple-400' : ''} />
                           {item.label}
-                          {item.badge && (
+                          {item.requiredPlan && (
+                            <Lock size={12} className="ml-auto text-amber-400" />
+                          )}
+                          {item.badge && !item.requiredPlan && (
                             <span className="ml-auto text-xs font-semibold bg-purple-600 text-white px-2 py-0.5 rounded-full">
                               {item.badge}
                             </span>
                           )}
-                          {active && !item.badge && (
+                          {active && !item.badge && !item.requiredPlan && (
                             <ChevronRight size={14} className="ml-auto text-purple-400" />
                           )}
                         </Link>
@@ -202,17 +206,25 @@ export function Sidebar() {
           ))}
         </nav>
 
+        {/* Usage Widget */}
+        <div className="px-4 pb-2">
+          <UsageWidget />
+        </div>
+
         {/* User/plan badge */}
         <div className="p-4 border-t border-purple-500/20">
-          <div className="glass rounded-xl p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-sm font-bold">
-              A
+          <Link href="/settings/billing" className="block group">
+            <div className="glass rounded-xl p-3 flex items-center gap-3 hover:bg-purple-500/10 transition-colors cursor-pointer">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-sm font-bold">
+                A
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Mon Agence</p>
+                <p className="text-xs text-purple-400">Plan Pro</p>
+              </div>
+              <ChevronRight size={14} className="text-gray-600 group-hover:text-purple-400 transition-colors flex-shrink-0" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Mon Agence</p>
-              <p className="text-xs text-purple-400">Plan Pro</p>
-            </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

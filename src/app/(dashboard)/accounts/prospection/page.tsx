@@ -8,6 +8,8 @@ import {
   BarChart2, Bell, BookOpen, Download, ArrowRight, AlertTriangle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useUsage } from '@/lib/hooks/useUsage'
+import { FeatureGate } from '@/components/ui/FeatureGate'
 
 type ProspectStatus = 'discovered' | 'contacted' | 'discussing' | 'signed'
 type OutreachStatus = 'pending' | 'sent' | 'replied' | 'no_response' | 'signed' | 'rejected'
@@ -76,6 +78,7 @@ const SIZES = [
 ]
 
 export default function ProspectionPage() {
+  const { planId } = useUsage()
   const supabase = createClient()
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [outreach, setOutreach] = useState<OutreachMessage[]>([])
@@ -384,7 +387,7 @@ export default function ProspectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1625] to-[#0a0a0f] p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-8">
 
         {/* ── Header ── */}
         <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">

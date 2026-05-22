@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const p = orig.prospects as any
     if (!p) continue
 
-    const prompt = `Tu es recruteur pour une agence de management de créatrices (${agencyName || 'notre agence'}).
+    const prompt = `Tu es recruteur pour une agence de management de créatrices (${agency_name || 'notre agence'}).
 Tu as déjà contacté ${p.username} (${p.platform}, niche: ${p.niche}) il y a quelques jours sans réponse.
 
 Message initial envoyé: "${orig.message}"
