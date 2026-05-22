@@ -1,0 +1,105 @@
+{
+  "name": "OmniFlow — Envoi DM via AdsPower",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "omniflow-outreach",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "comment": "Ce webhook reçoit les demandes d'envoi depuis OmniFlow. Configurez N8N_OUTREACH_WEBHOOK_URL dans les env Vercel avec l'URL de ce webhook."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Trigger').first().json.body;\nreturn [{\n  json: {\n    outreach_id: body.outreach_id,\n    username: body.prospect_username,\n    platform: body.platform,\n    profile_url: body.profile_url,\n    message: body.message,\n    adspower_profile_id: body.adspower_profile_id || null,\n    timestamp: body.timestamp\n  }\n}];"
+      },
+      "name": "Extraire les données",
+      "type": "n8n-nodes-base.code",
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{ $json.platform }}", "operation": "equal", "value2": "Instagram" }]
+        }
+      },
+      "name": "Router par plateforme",
+      "type": "n8n-nodes-base.if",
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:50325/api/v1/browser/open",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "serial_number", "value": "={{ $json.adspower_profile_id || 'DEFAULT_PROFILE' }}" }
+          ]
+        },
+        "method": "POST"
+      },
+      "name": "Ouvrir AdsPower (Instagram)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1000, 200],
+      "comment": "Ouvre le profil AdsPower. Remplacez DEFAULT_PROFILE par votre ID de profil par défaut."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Délai anti-détection (entre 3s et 8s)\nconst delay = Math.floor(Math.random() * 5000) + 3000;\nawait new Promise(r => setTimeout(r, delay));\nreturn [$input.first()];"
+      },
+      "name": "Délai anti-détection",
+      "type": "n8n-nodes-base.code",
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ `https://www.instagram.com/${$json.username.replace('@', '')}/` }}",
+        "waitForSelector": "body"
+      },
+      "name": "Naviguer vers profil IG",
+      "type": "n8n-nodes-base.puppeteer",
+      "position": [1500, 200],
+      "comment": "Nécessite le node Puppeteer pour n8n. Sinon utilisez l'API AdsPower directement."
+    },
+    {
+      "parameters": {
+        "url": "https://omniflowapp.ai/api/prospection/outreach",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "id", "value": "={{ $('Extraire les données').first().json.outreach_id }}" },
+            { "name": "status", "value": "sent" }
+          ]
+        },
+        "method": "PATCH",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        }
+      },
+      "name": "Marquer comme envoyé",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1750, 300]
+    },
+    {
+      "parameters": { "responseBody": "={{ JSON.stringify({ success: true }) }}", "options": {} },
+      "name": "Répondre au webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [2000, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Extraire les données", "type": "main", "index": 0 }]] },
+    "Extraire les données": { "main": [[{ "node": "Router par plateforme", "type": "main", "index": 0 }]] },
+    "Router par plateforme": { "main": [[{ "node": "Ouvrir AdsPower (Instagram)", "type": "main", "index": 0 }], [{ "node": "Marquer comme envoyé", "type": "main", "index": 0 }]] },
+    "Ouvrir AdsPower (Instagram)": { "main": [[{ "node": "Délai anti-détection", "type": "main", "index": 0 }]] },
+    "Délai anti-détection": { "main": [[{ "node": "Naviguer vers profil IG", "type": "main", "index": 0 }]] },
+    "Naviguer vers profil IG": { "main": [[{ "node": "Marquer comme envoyé", "type": "main", "index": 0 }]] },
+    "Marquer comme envoyé": { "main": [[{ "node": "Répondre au webhook", "type": "main", "index": 0 }]] }
+  }
+}

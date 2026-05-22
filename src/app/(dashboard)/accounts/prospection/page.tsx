@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Search, Star, Trash2, MessageSquare, ExternalLink, Upload,
   Bot, Send, RefreshCw, ChevronRight, X, Check, Loader2,
-  Users, TrendingUp, Zap, Filter,
+  Users, TrendingUp, Zap, Filter, CheckSquare, Square,
+  BarChart2, Bell, BookOpen, Download, ArrowRight, AlertTriangle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -79,7 +80,7 @@ export default function ProspectionPage() {
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [outreach, setOutreach] = useState<OutreachMessage[]>([])
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState<'kanban' | 'outreach'>('kanban')
+  const [view, setView] = useState<'kanban' | 'outreach' | 'stats' | 'followup' | 'setup'>('kanban')
 
   // Search modal
   const [showSearch, setShowSearch] = useState(false)
@@ -93,6 +94,26 @@ export default function ProspectionPage() {
 
   // CSV import
   const csvRef = useRef<HTMLInputElement>(null)
+
+  // ── Campaign mode ──
+  const [campaignMode, setCampaignMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showCampaignModal, setShowCampaignModal] = useState(false)
+  const [campaignAgencyName, setCampaignAgencyName] = useState('')
+  const [campaignAgencyPitch, setCampaignAgencyPitch] = useState('')
+  const [campaignTone, setCampaignTone] = useState('chaleureux et direct')
+  const [generatingCampaign, setGeneratingCampaign] = useState(false)
+  const [campaignMessages, setCampaignMessages] = useState<any[]>([])
+  const [campaignStep, setCampaignStep] = useState<'config' | 'review' | 'done'>('config')
+  const [editedCampaignMsgs, setEditedCampaignMsgs] = useState<Record<string, string>>({})
+  const [queuingCampaign, setQueuingCampaign] = useState(false)
+
+  // ── Follow-up ──
+  const [overdueProspects, setOverdueProspects] = useState<any[]>([])
+  const [followupDays, setFollowupDays] = useState(5)
+  const [loadingFollowup, setLoadingFollowup] = useState(false)
+  const [selectedFollowup, setSelectedFollowup] = useState<Set<string>>(new Set())
+  const [generatingFollowup, setGeneratingFollowup] = useState(false)
 
   // AI outreach modal
   const [outreachProspect, setOutreachProspect] = useState<Prospect | null>(null)
@@ -256,6 +277,101 @@ export default function ProspectionPage() {
     finally { setSendingOutreach(false) }
   }
 
+  // ── Campaign helpers ──
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+  const selectAll = () => setSelectedIds(new Set(prospects.filter(p => p.status === 'discovered').map(p => p.id)))
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const generateCampaign = async () => {
+    setGeneratingCampaign(true)
+    try {
+      const res = await fetch('/api/prospection/campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prospect_ids: Array.from(selectedIds),
+          tone: campaignTone,
+          agency_name: campaignAgencyName,
+          agency_pitch: campaignAgencyPitch,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCampaignMessages(data.messages)
+        const edited: Record<string, string> = {}
+        data.messages.forEach((m: any) => { edited[m.prospect_id] = m.message })
+        setEditedCampaignMsgs(edited)
+        setCampaignStep('review')
+      }
+    } catch { /* ignore */ }
+    finally { setGeneratingCampaign(false) }
+  }
+
+  const queueCampaign = async () => {
+    setQueuingCampaign(true)
+    let queued = 0
+    for (const msg of campaignMessages) {
+      const edited = editedCampaignMsgs[msg.prospect_id] || msg.message
+      const res = await fetch('/api/prospection/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prospect_id: msg.prospect_id,
+          message: edited,
+          platform: msg.prospect.platform,
+          ai_generated: true,
+        }),
+      })
+      if (res.ok) queued++
+    }
+    setProspects(prev => prev.map(p =>
+      selectedIds.has(p.id) ? { ...p, status: 'contacted' as ProspectStatus, outreach_count: (p.outreach_count || 0) + 1 } : p
+    ))
+    setCampaignStep('done')
+    setQueuingCampaign(false)
+    setTimeout(() => {
+      setShowCampaignModal(false)
+      setCampaignStep('config')
+      setCampaignMessages([])
+      clearSelection()
+      setCampaignMode(false)
+    }, 2500)
+  }
+
+  const loadFollowup = async () => {
+    setLoadingFollowup(true)
+    try {
+      const res = await fetch(`/api/prospection/followup?days=${followupDays}`)
+      const data = await res.json()
+      setOverdueProspects(data.overdue || [])
+    } catch { /* ignore */ }
+    finally { setLoadingFollowup(false) }
+  }
+
+  const generateFollowups = async () => {
+    setGeneratingFollowup(true)
+    try {
+      const ids = Array.from(selectedFollowup)
+      const res = await fetch('/api/prospection/followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outreach_ids: ids }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setOverdueProspects(prev => prev.filter(o => !ids.includes(o.id)))
+        setSelectedFollowup(new Set())
+      }
+    } catch { /* ignore */ }
+    finally { setGeneratingFollowup(false) }
+  }
+
   // ── Stats ──
   const stats = {
     total: prospects.length,
@@ -281,26 +397,28 @@ export default function ProspectionPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => { setView('outreach'); loadOutreach() }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                view === 'outreach'
-                  ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                  : 'border-white/10 text-gray-400 hover:border-white/20'
-              }`}
-            >
-              <Bot size={16} className="inline mr-2" />Outreach IA
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                view === 'kanban'
-                  ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                  : 'border-white/10 text-gray-400 hover:border-white/20'
-              }`}
-            >
-              Kanban
-            </button>
+            {([
+              ['kanban', 'Kanban', null],
+              ['outreach', 'Outreach IA', null],
+              ['stats', 'Stats', null],
+              ['followup', 'Relances', overdueProspects.length > 0 ? overdueProspects.length : null],
+              ['setup', 'Guide n8n', null],
+            ] as [string, string, number | null][]).map(([v, label, badge]) => (
+              <button
+                key={v}
+                onClick={() => {
+                  setView(v as any)
+                  if (v === 'outreach') loadOutreach()
+                  if (v === 'followup') loadFollowup()
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                  view === v ? 'bg-violet-500/20 border-violet-500/50 text-violet-300' : 'border-white/10 text-gray-400 hover:border-white/20'
+                }`}
+              >
+                {label}
+                {badge !== null && <span className="text-xs bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded-full font-bold">{badge}</span>}
+              </button>
+            ))}
             <button
               onClick={() => csvRef.current?.click()}
               className="px-4 py-2 rounded-lg text-sm font-medium border border-white/10 text-gray-400 hover:border-white/20 transition-all"
@@ -333,6 +451,34 @@ export default function ProspectionPage() {
           ))}
         </div>
 
+        {/* ── Campaign toolbar ── */}
+        {view === 'kanban' && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setCampaignMode(!campaignMode); clearSelection() }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                campaignMode ? 'bg-violet-500/20 border-violet-500/50 text-violet-300' : 'border-white/10 text-gray-500 hover:border-white/20'
+              }`}
+            >
+              <CheckSquare size={14} /> Mode campagne
+            </button>
+            {campaignMode && (
+              <>
+                <button onClick={selectAll} className="text-xs text-gray-400 hover:text-white">Tout sélectionner</button>
+                <button onClick={clearSelection} className="text-xs text-gray-400 hover:text-white">Désélectionner</button>
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={() => { setShowCampaignModal(true); setCampaignStep('config') }}
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-violet-500/20 transition-all"
+                  >
+                    <Bot size={14} /> Lancer campagne ({selectedIds.size})
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ── Kanban ── */}
         {view === 'kanban' && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -358,6 +504,9 @@ export default function ProspectionPage() {
                         onStatusChange={updateStatus}
                         onDelete={deleteProspect}
                         onOutreach={openOutreach}
+                        campaignMode={campaignMode}
+                        selected={selectedIds.has(p.id)}
+                        onToggleSelect={toggleSelect}
                       />
                     ))}
                     {colProspects.length === 0 && (
@@ -398,6 +547,252 @@ export default function ProspectionPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Stats view ── */}
+        {view === 'stats' && (() => {
+          const total = prospects.length
+          const contacted = prospects.filter(p => p.status !== 'discovered').length
+          const discussing = prospects.filter(p => p.status === 'discussing').length
+          const signed = prospects.filter(p => p.status === 'signed').length
+          const contactRate = total > 0 ? Math.round(contacted / total * 100) : 0
+          const replyRate = contacted > 0 ? Math.round(discussing / contacted * 100) : 0
+          const signRate = discussing > 0 ? Math.round(signed / discussing * 100) : 0
+
+          const byPlatform = ['Instagram', 'TikTok', 'Twitter'].map(pl => ({
+            platform: pl,
+            total: prospects.filter(p => p.platform === pl).length,
+            signed: prospects.filter(p => p.platform === pl && p.status === 'signed').length,
+          }))
+          const byNiche = Array.from(new Set(prospects.map(p => p.niche))).map(n => ({
+            niche: n,
+            count: prospects.filter(p => p.niche === n).length,
+            signed: prospects.filter(p => p.niche === n && p.status === 'signed').length,
+          })).sort((a, b) => b.count - a.count).slice(0, 6)
+
+          return (
+            <div className="space-y-6">
+              {/* Funnel */}
+              <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
+                <h3 className="font-semibold text-white mb-5 flex items-center gap-2"><BarChart2 size={18} className="text-violet-400" /> Funnel de conversion</h3>
+                <div className="flex items-end gap-3">
+                  {[
+                    { label: 'Scrapés', value: total, color: 'bg-blue-500', pct: 100 },
+                    { label: 'Contactés', value: contacted, color: 'bg-amber-500', pct: contactRate },
+                    { label: 'Réponse', value: discussing, color: 'bg-violet-500', pct: contacted > 0 ? Math.round(discussing/total*100) : 0 },
+                    { label: 'Signées', value: signed, color: 'bg-green-500', pct: total > 0 ? Math.round(signed/total*100) : 0 },
+                  ].map((f, i) => (
+                    <div key={f.label} className="flex-1 text-center">
+                      <div className="relative h-28 flex items-end justify-center mb-2">
+                        <div className={`${f.color} rounded-t-lg w-full opacity-80`} style={{ height: `${Math.max(f.pct, 4)}%` }} />
+                      </div>
+                      <p className="text-2xl font-bold text-white">{f.value}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{f.label}</p>
+                      <p className="text-xs text-gray-700">{f.pct}%</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/5">
+                  {[
+                    { label: 'Taux de contact', value: contactRate + '%', color: 'text-amber-400' },
+                    { label: 'Taux de réponse', value: replyRate + '%', color: 'text-violet-400' },
+                    { label: 'Taux de signature', value: signRate + '%', color: 'text-green-400' },
+                  ].map(s => (
+                    <div key={s.label} className="text-center p-3 rounded-xl bg-black/20">
+                      <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* By platform */}
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
+                  <h4 className="font-semibold text-white mb-4 text-sm">Par plateforme</h4>
+                  <div className="space-y-3">
+                    {byPlatform.map(p => (
+                      <div key={p.platform} className="flex items-center gap-3">
+                        <span className="text-sm text-gray-400 w-20">{PLATFORM_ICON[p.platform]} {p.platform}</span>
+                        <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full" style={{ width: total > 0 ? `${p.total/total*100}%` : '0%' }} />
+                        </div>
+                        <span className="text-sm text-white font-semibold w-8 text-right">{p.total}</span>
+                        {p.signed > 0 && <span className="text-xs text-green-400">{p.signed} signées</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* By niche */}
+                <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
+                  <h4 className="font-semibold text-white mb-4 text-sm">Par niche</h4>
+                  <div className="space-y-2">
+                    {byNiche.map(n => (
+                      <div key={n.niche} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400 capitalize">{n.niche}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600">{n.count} profils</span>
+                          {n.signed > 0 && <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">{n.signed} signées</span>}
+                        </div>
+                      </div>
+                    ))}
+                    {byNiche.length === 0 && <p className="text-gray-600 text-sm">Pas encore de données</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Follow-up view ── */}
+        {view === 'followup' && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-gray-400">Pas de réponse depuis :</label>
+                <select
+                  value={followupDays}
+                  onChange={e => setFollowupDays(Number(e.target.value))}
+                  className="px-3 py-1.5 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none"
+                >
+                  {[3,5,7,10,14].map(d => <option key={d} value={d}>{d} jours</option>)}
+                </select>
+              </div>
+              <button onClick={loadFollowup} disabled={loadingFollowup} className="px-4 py-1.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:border-white/20 flex items-center gap-2">
+                {loadingFollowup ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Actualiser
+              </button>
+              {selectedFollowup.size > 0 && (
+                <button
+                  onClick={generateFollowups}
+                  disabled={generatingFollowup}
+                  className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold flex items-center gap-2"
+                >
+                  {generatingFollowup ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+                  Relancer ({selectedFollowup.size})
+                </button>
+              )}
+            </div>
+
+            {overdueProspects.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <Bell size={40} className="mx-auto mb-3 opacity-20" />
+                <p>Aucune relance nécessaire</p>
+                <p className="text-xs mt-1">Tous les prospects contactés ont répondu ou ont été relancer</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {overdueProspects.map(o => {
+                  const p = o.prospects
+                  const daysSince = Math.floor((Date.now() - new Date(o.sent_at).getTime()) / 86400000)
+                  return (
+                    <div key={o.id} className="flex items-center gap-4 p-4 rounded-xl border border-amber-500/20 bg-amber-500/3 hover:bg-amber-500/5 transition-colors">
+                      <button onClick={() => setSelectedFollowup(prev => { const n = new Set(prev); n.has(o.id) ? n.delete(o.id) : n.add(o.id); return n })}>
+                        {selectedFollowup.has(o.id) ? <CheckSquare size={18} className="text-amber-400" /> : <Square size={18} className="text-gray-600" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-white text-sm">{p?.username || '—'}</span>
+                          <span className="text-xs text-gray-500">{p?.platform && PLATFORM_ICON[p.platform as keyof typeof PLATFORM_ICON]}</span>
+                        </div>
+                        <p className="text-gray-500 text-xs line-clamp-1">{o.message}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-amber-400 text-sm font-semibold">{daysSince}j sans réponse</p>
+                        <p className="text-gray-600 text-xs">Envoyé le {new Date(o.sent_at).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Setup / n8n guide ── */}
+        {view === 'setup' && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/3 p-6">
+              <h3 className="font-bold text-white text-lg mb-1 flex items-center gap-2"><BookOpen size={20} className="text-violet-400" /> Guide de configuration</h3>
+              <p className="text-gray-500 text-sm mb-6">Pour un scraping réel et un envoi DM automatique, suivez ces 3 étapes.</p>
+
+              <div className="space-y-5">
+                {[{
+                  step: '1', title: 'Base de données Supabase', color: 'border-blue-500/30 bg-blue-500/5',
+                  content: (
+                    <div>
+                      <p className="text-gray-400 text-sm mb-3">Exécutez cette migration dans <strong className="text-white">Supabase → SQL Editor</strong> :</p>
+                      <div className="bg-black/40 rounded-lg p-3 font-mono text-xs text-green-400 mb-3">
+                        -- Fichier : supabase/add_prospection_v2.sql<br />
+                        -- Ajoute les colonnes manquantes + table outreach_messages
+                      </div>
+                      <a href="https://supabase.com/dashboard/project/jbtljjximpsqasfylrce/sql" target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm hover:bg-blue-500/30 transition-colors">
+                        Ouvrir Supabase SQL Editor <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  )
+                }, {
+                  step: '2', title: 'Scraping automatique (n8n + RapidAPI)', color: 'border-cyan-500/30 bg-cyan-500/5',
+                  content: (
+                    <div className="space-y-3">
+                      <p className="text-gray-400 text-sm">2 options :</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="p-3 rounded-lg bg-black/20 border border-white/5">
+                          <p className="text-white font-medium mb-1">Option A — RapidAPI (recommandé)</p>
+                          <p className="text-gray-500 text-xs">1. Créez un compte sur <strong>rapidapi.com</strong> (gratuit)</p>
+                          <p className="text-gray-500 text-xs">2. Ajoutez <code className="text-cyan-400">RAPIDAPI_KEY=votre_clé</code> dans Vercel → Settings → Environment Variables</p>
+                          <p className="text-gray-500 text-xs">3. Le bouton "Scraper des profils" utilisera la vraie API Instagram/TikTok</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-black/20 border border-white/5">
+                          <p className="text-white font-medium mb-1">Option B — n8n workflow</p>
+                          <p className="text-gray-500 text-xs mb-2">Importez le workflow dans n8n et configurez les variables :</p>
+                          <div className="flex gap-2">
+                            <a href="/accounts/prospection/n8n-templates/scraping.json" download
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs hover:bg-cyan-500/30">
+                              <Download size={12} /> Télécharger workflow scraping
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }, {
+                  step: '3', title: 'Envoi DM automatique (AdsPower + n8n)', color: 'border-violet-500/30 bg-violet-500/5',
+                  content: (
+                    <div className="space-y-3">
+                      <p className="text-gray-400 text-sm">Configuration de l'envoi automatique des DMs :</p>
+                      <div className="space-y-2 text-xs text-gray-500">
+                        <p>1. Importez le workflow n8n d’outreach dans votre n8n</p>
+                        <p>2. Copiez l’URL du webhook n8n généré</p>
+                        <p>3. Ajoutez <code className="text-violet-400">N8N_OUTREACH_WEBHOOK_URL=https://n8n.srv1610420.hstgr.cloud/webhook/omniflow-outreach</code> dans Vercel</p>
+                        <p>4. Ajoutez aussi <code className="text-violet-400">PROSPECTION_WEBHOOK_SECRET=un_secret_fort</code></p>
+                        <p>5. Les DMs seront envoyés via AdsPower automatiquement quand vous cliquez "Mettre en file"</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <a href="/accounts/prospection/n8n-templates/outreach-dm.json" download
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs hover:bg-violet-500/30">
+                          <Download size={12} /> Télécharger workflow DM
+                        </a>
+                        <a href="https://n8n.srv1610420.hstgr.cloud" target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-xs hover:border-white/20">
+                          Ouvrir n8n <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    </div>
+                  )
+                }].map(s => (
+                  <div key={s.step} className={`rounded-xl border ${s.color} p-5`}>
+                    <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">{s.step}</span>
+                      {s.title}
+                    </h4>
+                    {s.content}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -525,6 +920,94 @@ export default function ProspectionPage() {
                 {loading ? 'Scan en cours...' : 'Lancer le scraping'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════ CAMPAIGN MODAL ════════════════════════════ */}
+      {showCampaignModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#12111a] border border-violet-500/20 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                <Bot size={20} className="text-violet-400" /> Campagne IA — {selectedIds.size} prospect{selectedIds.size > 1 ? 's' : ''}
+              </h3>
+              <button onClick={() => { setShowCampaignModal(false); setCampaignStep('config') }} className="text-gray-500 hover:text-white"><X size={20} /></button>
+            </div>
+
+            {campaignStep === 'config' && (
+              <div className="space-y-4">
+                <div className="p-3 rounded-xl bg-violet-500/5 border border-violet-500/20 text-sm text-gray-400">
+                  Claude va générer un DM personnalisé pour chacun des <strong className="text-white">{selectedIds.size}</strong> profils sélectionnés.
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Ton agence (optionnel)</label>
+                  <input type="text" value={campaignAgencyName} onChange={e => setCampaignAgencyName(e.target.value)}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none mb-2"
+                    placeholder="Nom de l'agence..." />
+                  <textarea value={campaignAgencyPitch} onChange={e => setCampaignAgencyPitch(e.target.value)} rows={2}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none resize-none"
+                    placeholder="Pitch court (optionnel)..." />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Ton</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['chaleureux et direct', 'professionnel', 'décontracté', 'enthousiaste'].map(t => (
+                      <button key={t} onClick={() => setCampaignTone(t)}
+                        className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                          campaignTone === t ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'border-white/10 text-gray-500 hover:border-white/20'
+                        }`}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={generateCampaign} disabled={generatingCampaign}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                  {generatingCampaign ? <><Loader2 size={18} className="animate-spin" />Génération en cours...</> : <><Zap size={18} />Générer {selectedIds.size} messages IA</>}
+                </button>
+              </div>
+            )}
+
+            {campaignStep === 'review' && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-400">✏️ Vérifiez et modifiez les messages avant envoi</p>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
+                  {campaignMessages.map((msg) => (
+                    <div key={msg.prospect_id} className="rounded-xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white">
+                          {msg.prospect.username.slice(1,3).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-semibold text-white">{msg.prospect.username}</span>
+                        <span className="text-xs text-gray-600">{PLATFORM_ICON[msg.prospect.platform as keyof typeof PLATFORM_ICON]}</span>
+                      </div>
+                      <textarea
+                        value={editedCampaignMsgs[msg.prospect_id] || msg.message}
+                        onChange={e => setEditedCampaignMsgs(prev => ({ ...prev, [msg.prospect_id]: e.target.value }))}
+                        rows={3}
+                        className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none resize-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setCampaignStep('config')} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm">← Recommencer</button>
+                  <button onClick={queueCampaign} disabled={queuingCampaign}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                    {queuingCampaign ? <><Loader2 size={15} className="animate-spin" />File...</> : <><Send size={15} />Mettre en file ({campaignMessages.length})</>}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {campaignStep === 'done' && (
+              <div className="text-center py-10">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto mb-4">
+                  <Check size={30} className="text-green-400" />
+                </div>
+                <p className="text-white font-bold text-lg">{campaignMessages.length} messages en file !</p>
+                <p className="text-gray-500 text-sm mt-1">Les prospects sont passés en statut "Contactées"</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -696,12 +1179,15 @@ export default function ProspectionPage() {
 
 // ── Prospect Card ──
 function ProspectCard({
-  prospect, onStatusChange, onDelete, onOutreach,
+  prospect, onStatusChange, onDelete, onOutreach, campaignMode, selected, onToggleSelect,
 }: {
   prospect: Prospect
   onStatusChange: (id: string, s: ProspectStatus) => void
   onDelete: (id: string) => void
   onOutreach: (p: Prospect) => void
+  campaignMode?: boolean
+  selected?: boolean
+  onToggleSelect?: (id: string) => void
 }) {
   const STATUSES: ProspectStatus[] = ['discovered', 'contacted', 'discussing', 'signed']
   const next = STATUSES[(STATUSES.indexOf(prospect.status) + 1) % STATUSES.length]
@@ -712,8 +1198,20 @@ function ProspectCard({
   const fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(0) + 'K' : String(n)
 
   return (
-    <div className="bg-black/30 rounded-xl p-3.5 border border-white/5 hover:border-white/10 transition-all group">
+    <div
+      onClick={() => campaignMode && onToggleSelect?.(prospect.id)}
+      className={`bg-black/30 rounded-xl p-3.5 border transition-all group ${
+        selected ? 'border-violet-500/50 bg-violet-500/5 ring-1 ring-violet-500/30' : 'border-white/5 hover:border-white/10'
+      } ${campaignMode ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex items-start gap-3 mb-3">
+        {campaignMode && (
+          <div className="flex-shrink-0 mt-0.5">
+            {selected
+              ? <CheckSquare size={16} className="text-violet-400" />
+              : <Square size={16} className="text-gray-600" />}
+          </div>
+        )}
         <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${bg} to-slate-800 flex items-center justify-center font-bold text-white text-xs flex-shrink-0`}>
           {prospect.username.slice(1, 3).toUpperCase()}
         </div>

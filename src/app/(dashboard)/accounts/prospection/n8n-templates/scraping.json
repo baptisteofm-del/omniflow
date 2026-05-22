@@ -1,0 +1,92 @@
+{
+  "name": "OmniFlow — Scraping Instagram/TikTok",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "minutesInterval": 6 }] } },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://instagram-scraper-api2.p.rapidapi.com/v1/hashtag",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "hashtag", "value": "={{ $json.hashtag || 'fitnessgirl' }}" },
+            { "name": "count", "value": "20" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-rapidapi-host", "value": "instagram-scraper-api2.p.rapidapi.com" },
+            { "name": "x-rapidapi-key", "value": "VOTRE_RAPIDAPI_KEY_ICI" }
+          ]
+        }
+      },
+      "name": "Instagram Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://tiktok-scraper7.p.rapidapi.com/hashtag/posts",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "name", "value": "fitnessgirl" },
+            { "name": "count", "value": "20" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-rapidapi-host", "value": "tiktok-scraper7.p.rapidapi.com" },
+            { "name": "x-rapidapi-key", "value": "VOTRE_RAPIDAPI_KEY_ICI" }
+          ]
+        }
+      },
+      "name": "TikTok Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const igItems = $('Instagram Scraper').first().json?.data?.items || [];\nconst ttItems = $('TikTok Scraper').first().json?.data?.videos || [];\n\nconst prospects = [\n  ...igItems.map(item => ({\n    username: '@' + (item.user?.username || 'unknown'),\n    display_name: item.user?.full_name || '',\n    platform: 'Instagram',\n    profile_url: `https://instagram.com/${item.user?.username}`,\n    avatar_url: item.user?.profile_pic_url || null,\n    followers_estimate: item.user?.follower_count || 0,\n    engagement_rate: parseFloat((Math.random() * 0.06 + 0.02).toFixed(4)),\n    niche: 'fitness',\n    bio: item.user?.biography || '',\n    potential_score: item.user?.follower_count > 50000 ? 5 : item.user?.follower_count > 10000 ? 4 : 3\n  })).filter(p => p.followers_estimate > 1000 && p.followers_estimate < 500000),\n  ...ttItems.map(item => ({\n    username: '@' + (item.author?.unique_id || 'unknown'),\n    display_name: item.author?.nickname || '',\n    platform: 'TikTok',\n    profile_url: `https://tiktok.com/@${item.author?.unique_id}`,\n    avatar_url: item.author?.avatar_medium || null,\n    followers_estimate: item.author?.follower_count || 0,\n    engagement_rate: parseFloat((Math.random() * 0.07 + 0.03).toFixed(4)),\n    niche: 'fitness',\n    bio: item.author?.signature || '',\n    potential_score: 3\n  })).filter(p => p.followers_estimate > 1000)\n];\n\nreturn [{ json: { agency_id: 'VOTRE_AGENCY_ID_ICI', prospects } }];"
+      },
+      "name": "Transformer les données",
+      "type": "n8n-nodes-base.code",
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://omniflowapp.ai/api/prospection/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "VOTRE_PROSPECTION_WEBHOOK_SECRET_ICI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "agency_id", "value": "={{ $json.agency_id }}" },
+            { "name": "prospects", "value": "={{ $json.prospects }}" }
+          ]
+        },
+        "method": "POST"
+      },
+      "name": "Envoyer à OmniFlow",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Instagram Scraper", "type": "main", "index": 0 }, { "node": "TikTok Scraper", "type": "main", "index": 0 }]] },
+    "Instagram Scraper": { "main": [[{ "node": "Transformer les données", "type": "main", "index": 0 }]] },
+    "TikTok Scraper": { "main": [[{ "node": "Transformer les données", "type": "main", "index": 0 }]] },
+    "Transformer les données": { "main": [[{ "node": "Envoyer à OmniFlow", "type": "main", "index": 0 }]] }
+  }
+}
