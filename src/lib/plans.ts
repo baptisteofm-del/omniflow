@@ -88,8 +88,8 @@ export const PLANS: Plan[] = [
 ]
 
 export const PLAN_FEATURES: Record<string, string[]> = {
-  starter: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram_basic'],
-  pro: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_reports', 'ai_generation'],
+  starter: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram'],
+  pro: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation'],
   agency: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_ai', 'chatting_reports', 'ai_generation', 'prospection', 'admin'],
 }
 
