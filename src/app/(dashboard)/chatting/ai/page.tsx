@@ -336,6 +336,8 @@ export default function ChattingAIPage() {
         tipsStrategy: existing.tips_strategy || '',
         autoMode: existing.auto_mode || false,
         responseDelay: existing.response_delay_seconds || 60,
+        scheduleEnabled: (existing as any).schedule_enabled || false,
+        schedule: (existing as any).schedule || null,
       })
     } else {
       setPersonalityForm({
