@@ -8,66 +8,76 @@ import {
 import { SkeletonStat } from '@/components/ui/Skeleton'
 
 const DAILY_QUOTES = [
-  "Les grandes choses commencent par un petit pas ✨",
-  "Votre audience vous attend, créez des moments inoubliables 🎬",
-  "Chaque post est une opportunité de briller 💫",
-  "La consistance crée la communauté 🚀",
-  "Osez être authentique, c'est ça qui marche 💎",
-  "Le contenu de qualité se paie toujours 💰",
-  "Transformez vos passions en revenus 🔥",
+  "Les grandes choses commencent par un petit pas",
+  "Votre audience vous attend, créez des moments inoubliables",
+  "Chaque post est une opportunité de briller",
+  "La consistance crée la communauté",
+  "Osez être authentique, c'est ça qui marche",
+  "Le contenu de qualité se paie toujours",
+  "Transformez vos passions en revenus",
 ]
 
-const stats = [
-  { label: 'Modèles actifs', value: '8', change: '+2 ce mois', icon: Users, color: 'text-purple-400' },
-  { label: 'Posts ce mois', value: '342', change: '+18%', icon: Calendar, color: 'text-cyan-400' },
-  { label: 'Revenus (mai)', value: '12 400€', change: '+24%', icon: BarChart3, color: 'text-green-400' },
-  { label: 'Trends captés', value: '156', change: 'nouveau 🎯', icon: Eye, color: 'text-pink-400' },
-  { label: 'Messages IA', value: '2 847', change: 'ce mois', icon: MessageSquare, color: 'text-blue-400' },
-  { label: 'Fans à risque', value: '3', change: 'à action', icon: AlertCircle, color: 'text-red-400' },
-]
+const ICON_MAP: Record<string, any> = {
+  'Users': Users,
+  'Calendar': Calendar,
+  'BarChart3': BarChart3,
+  'Eye': Eye,
+  'MessageSquare': MessageSquare,
+  'AlertCircle': AlertCircle,
+}
 
-const recentActivity = [
-  { action: 'Vidéo spoofée', model: 'Leelou', time: 'Il y a 5 min', icon: Film, color: 'text-cyan-400' },
-  { action: 'Post Telegram', model: 'Victoria', time: 'Il y a 12 min', icon: Bot, color: 'text-blue-400' },
-  { action: 'Génération IA', model: 'Leelou', time: 'Il y a 1h', icon: Zap, color: 'text-purple-400' },
-  { action: 'Veille trends', model: 'Tous', time: 'Il y a 2h', icon: Eye, color: 'text-pink-400' },
-]
+function StatsGrid({ loading, stats }: { loading: boolean; stats: any[] }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {[...Array(6)].map((_, i) => <SkeletonStat key={i} />)}
+      </div>
+    )
+  }
 
-const upcomingPosts = [
-  { title: 'Morning Routine Glamour', model: 'Leelou', time: '14:00', platform: 'OF' },
-  { title: 'GRWM: Luxury Edition', model: 'Victoria', time: '16:30', platform: 'TG' },
-  { title: 'Fitness Challenge Day 5', model: 'Sophie', time: '18:45', platform: 'IG' },
-]
-
-const activeConnections = [
-  { name: 'AdsPower', status: 'connected', color: 'green' },
-  { name: 'GeeLark', status: 'connected', color: 'green' },
-  { name: 'OnlyFans', status: 'connected', color: 'green' },
-  { name: 'MYM', status: 'disconnected', color: 'red' },
-]
-
-function StatsGrid() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      {stats.map((s) => (
-        <div key={s.label} className="glass rounded-2xl p-6 border border-white/5 hover:border-purple-500/30 transition-all group">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 bg-gradient-to-br from-white/10 to-white/5 rounded-xl group-hover:from-purple-500/20 group-hover:to-cyan-500/20 transition-all">
-              <s.icon size={20} className={s.color} />
+      {stats.map((s) => {
+        const IconComponent = ICON_MAP[s.icon] || Users
+        return (
+          <div key={s.label} className="glass rounded-2xl p-6 border border-white/5 hover:border-purple-500/30 transition-all group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2.5 bg-gradient-to-br from-white/10 to-white/5 rounded-xl group-hover:from-purple-500/20 group-hover:to-cyan-500/20 transition-all">
+                <IconComponent size={20} className={s.color} />
+              </div>
+              <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg">{s.change}</span>
             </div>
-            <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg">{s.change}</span>
+            <div className="text-3xl font-bold mb-2">{s.value}</div>
+            <div className="text-sm text-gray-400">{s.label}</div>
           </div>
-          <div className="text-3xl font-bold mb-2">{s.value}</div>
-          <div className="text-sm text-gray-400">{s.label}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
+}
+
+function getRelativeTime(dateString: string): string {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'À l\'instant'
+  if (diffMins < 60) return `Il y a ${diffMins}min`
+  if (diffHours < 24) return `Il y a ${diffHours}h`
+  if (diffDays === 1) return 'Hier'
+  if (diffDays < 7) return `Il y a ${diffDays}j`
+  return date.toLocaleDateString('fr-FR')
 }
 
 export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [todayQuote, setTodayQuote] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<any>(null)
 
   useEffect(() => {
     // Set daily quote
@@ -87,10 +97,31 @@ export default function DashboardPage() {
       }
     }
     checkAdmin()
+
+    // Fetch dashboard data
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch('/api/dashboard/stats')
+        if (!res.ok) {
+          throw new Error('Failed to fetch dashboard data')
+        }
+        const data = await res.json()
+        setDashboardData(data)
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboardData()
   }, [])
 
   const today = new Date()
   const dateStr = today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const agencyName = dashboardData?.agency?.name || 'Omniflow'
 
   return (
     <div className="p-8" data-tutorial="dashboard">
@@ -106,29 +137,30 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Dynamic Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Bonjour 👋 Omniflow</h1>
+            <h1 className="text-4xl font-bold mb-2">Bonjour 👋 {agencyName}</h1>
             <p className="text-gray-400 text-lg">{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
           </div>
         </div>
         {todayQuote && (
           <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-xl">
-            <p className="text-sm text-gray-300 italic">💡 {todayQuote}</p>
+            <p className="text-sm text-gray-300 italic">{todayQuote}</p>
           </div>
         )}
       </div>
 
-      {/* Stats grid with Suspense */}
-      <Suspense fallback={
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {[...Array(6)].map((_, i) => <SkeletonStat key={i} />)}
-        </div>
-      }>
-        <StatsGrid />
-      </Suspense>
+      {/* Stats grid */}
+      <StatsGrid loading={loading} stats={dashboardData?.stats || []} />
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -141,18 +173,26 @@ export default function DashboardPage() {
             </h2>
           </div>
           <div className="space-y-3">
-            {upcomingPosts.map((post, i) => (
-              <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all">
-                <p className="text-sm font-medium text-white line-clamp-2">{post.title}</p>
-                <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                  <span>{post.model}</span>
-                  <span className="text-cyan-400 font-semibold">{post.time}</span>
-                </div>
-                <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded">
-                  {post.platform}
-                </span>
-              </div>
-            ))}
+            {!loading && dashboardData?.upcomingPosts && dashboardData.upcomingPosts.length > 0 ? (
+              dashboardData.upcomingPosts.map((post: any, i: number) => {
+                const scheduledTime = new Date(post.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                const platform = post.platforms && post.platforms[0] ? post.platforms[0].substring(0, 2).toUpperCase() : 'N/A'
+                return (
+                  <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all">
+                    <p className="text-sm font-medium text-white line-clamp-2">{post.title || 'Post sans titre'}</p>
+                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                      <span>{post.model_id || 'N/A'}</span>
+                      <span className="text-cyan-400 font-semibold">{scheduledTime}</span>
+                    </div>
+                    <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded">
+                      {platform}
+                    </span>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="p-3 text-center text-gray-500 text-sm">Aucun post planifié</div>
+            )}
           </div>
         </div>
 
@@ -168,18 +208,26 @@ export default function DashboardPage() {
             </button>
           </div>
           <div className="space-y-4">
-            {recentActivity.map((a, i) => (
-              <div key={i} className="flex items-center gap-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/3 transition-all px-2 rounded">
-                <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 ${a.color}`}>
-                  <a.icon size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{a.action}</p>
-                  <p className="text-xs text-gray-500">Modèle: {a.model}</p>
-                </div>
-                <span className="text-xs text-gray-500 whitespace-nowrap">{a.time}</span>
-              </div>
-            ))}
+            {!loading && dashboardData?.recentActivity && dashboardData.recentActivity.length > 0 ? (
+              dashboardData.recentActivity.map((a: any, i: number) => {
+                const directionLabel = a.direction === 'inbound' ? 'Message reçu' : 'Message envoyé'
+                const relativeTime = getRelativeTime(a.sent_at)
+                return (
+                  <div key={i} className="flex items-center gap-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/3 transition-all px-2 rounded">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 text-blue-400">
+                      <MessageSquare size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{directionLabel}</p>
+                      <p className="text-xs text-gray-500 truncate">{a.content || 'Contenu vide'}</p>
+                    </div>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">{relativeTime}</span>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="p-3 text-center text-gray-500 text-sm">Aucune activité récente</div>
+            )}
           </div>
         </div>
 
@@ -190,12 +238,16 @@ export default function DashboardPage() {
             Connexions
           </h2>
           <div className="space-y-3">
-            {activeConnections.map((conn, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
-                <span className="text-sm font-medium">{conn.name}</span>
-                <div className={`w-2.5 h-2.5 rounded-full ${conn.color === 'green' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500'}`}></div>
-              </div>
-            ))}
+            {!loading && dashboardData?.connections && dashboardData.connections.length > 0 ? (
+              dashboardData.connections.map((conn: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
+                  <span className="text-sm font-medium">{conn.name}</span>
+                  <div className={`w-2.5 h-2.5 rounded-full ${conn.color === 'green' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500'}`}></div>
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-center text-gray-500 text-sm">Aucune intégration disponible</div>
+            )}
           </div>
         </div>
       </div>
@@ -205,20 +257,24 @@ export default function DashboardPage() {
         <h2 className="font-semibold mb-4">Actions rapides</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: '🔥 Voir les trends', href: '/content/veille', color: 'from-purple-600 to-purple-800' },
-            { label: '🎬 Éditer une vidéo', href: '/content/editor', color: 'from-cyan-600 to-cyan-800' },
-            { label: '✨ Générer avec l\'IA', href: '/content/ai-generation', color: 'from-pink-600 to-rose-800' },
-            { label: '📅 Scheduler un post', href: '/posting', color: 'from-orange-600 to-amber-800' },
-          ].map((action) => (
-            <a
-              key={action.href}
-              href={action.href}
-              className={`flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r ${action.color} bg-opacity-20 hover:opacity-90 transition-all group font-medium text-sm`}
-            >
-              {action.label}
-              <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
-          ))}
+            { label: 'Voir les trends', href: '/content/veille', color: 'from-purple-600 to-purple-800', icon: Eye },
+            { label: 'Éditer une vidéo', href: '/content/editor', color: 'from-cyan-600 to-cyan-800', icon: Film },
+            { label: 'Générer avec l\'IA', href: '/content/ai-generation', color: 'from-pink-600 to-rose-800', icon: Zap },
+            { label: 'Scheduler un post', href: '/posting', color: 'from-orange-600 to-amber-800', icon: Calendar },
+          ].map((action) => {
+            const IconComponent = action.icon
+            return (
+              <a
+                key={action.href}
+                href={action.href}
+                className={`flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r ${action.color} bg-opacity-20 hover:opacity-90 transition-all group font-medium text-sm`}
+              >
+                <IconComponent size={18} />
+                {action.label}
+                <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            )
+          })}
         </div>
       </div>
     </div>
