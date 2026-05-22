@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Helper functions for safe queries
+const safeCount = async (query: any): Promise<number> => {
+  try {
+    const { count, error } = await query
+    if (error) return 0
+    return count || 0
+  } catch {
+    return 0
+  }
+}
+
+const safeSelect = async (query: any): Promise<any[]> => {
+  try {
+    const { data, error } = await query
+    if (error || !data) return []
+    return data
+  } catch {
+    return []
+  }
+}
+
+const safeSum = async (query: any): Promise<number> => {
+  try {
+    const { data, error } = await query
+    if (error || !data) return 0
+    return data[0]?.sum || 0
+  } catch {
+    return 0
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -37,11 +68,13 @@ export async function GET(request: NextRequest) {
       .single()
 
     // Check if agency has active integrations
-    const { count: activeIntegrations } = await supabase
-      .from('agency_integrations')
-      .select('*', { count: 'exact', head: true })
-      .eq('agency_id', agencyId)
-      .eq('is_active', true)
+    const activeIntegrations = await safeCount(
+      supabase
+        .from('agency_integrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('agency_id', agencyId)
+        .eq('is_active', true)
+    )
 
     // If no active integrations, return all stats as 0
     if (!activeIntegrations || activeIntegrations === 0) {
@@ -100,173 +133,111 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. Active models count
-    let activeModelsCount = 0
-    try {
-      const { data: models, error: modelsError } = await supabase
+    const models = await safeSelect(
+      supabase
         .from('models')
         .select('id')
         .eq('agency_id', agencyId)
         .eq('is_active', true)
-
-      if (!modelsError) {
-        activeModelsCount = models?.length || 0
-      }
-    } catch (e) {
-      console.error('Error fetching active models:', e)
-    }
+    )
+    const activeModelsCount = models.length
 
     // 2. Posts this month count
-    let postsThisMonth = 0
-    try {
-      const now = new Date()
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-
-      const { data: posts, error: postsError } = await supabase
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const posts = await safeSelect(
+      supabase
         .from('scheduled_posts')
         .select('id')
         .eq('agency_id', agencyId)
         .gte('created_at', monthStart)
-
-      if (!postsError) {
-        postsThisMonth = posts?.length || 0
-      }
-    } catch (e) {
-      console.error('Error fetching posts this month:', e)
-    }
+    )
+    const postsThisMonth = posts.length
 
     // 3. Monthly revenue
-    let monthlyRevenue = 0
-    try {
-      const now = new Date()
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-
-      const { data: transactions, error: txError } = await supabase
+    const transactions = await safeSelect(
+      supabase
         .from('finance_transactions')
         .select('amount')
         .eq('agency_id', agencyId)
         .eq('type', 'income')
         .gte('created_at', monthStart)
-
-      if (!txError && transactions) {
-        monthlyRevenue = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0)
-      }
-    } catch (e) {
-      console.error('Error fetching revenue:', e)
-    }
+    )
+    const monthlyRevenue = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0)
 
     // 4. Trends captured count
-    let trendsCount = 0
-    try {
-      const { data: trends, error: trendsError } = await supabase
+    const trends = await safeSelect(
+      supabase
         .from('trends')
         .select('id')
         .eq('agency_id', agencyId)
-
-      if (!trendsError) {
-        trendsCount = trends?.length || 0
-      }
-    } catch (e) {
-      console.error('Error fetching trends:', e)
-    }
+    )
+    const trendsCount = trends.length
 
     // 5. AI messages this month
-    let aiMessagesCount = 0
-    try {
-      const now = new Date()
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-
-      const { data: messages, error: messagesError } = await supabase
+    const messages = await safeSelect(
+      supabase
         .from('ai_messages')
         .select('id')
         .eq('agency_id', agencyId)
         .gte('created_at', monthStart)
-
-      if (!messagesError) {
-        aiMessagesCount = messages?.length || 0
-      }
-    } catch (e) {
-      console.error('Error fetching AI messages:', e)
-    }
+    )
+    const aiMessagesCount = messages.length
 
     // 6. At-risk fans count
-    let atRiskFans = 0
-    try {
-      const { data: fans, error: fansError } = await supabase
+    const fans = await safeSelect(
+      supabase
         .from('fan_profiles')
         .select('id')
         .eq('agency_id', agencyId)
         .eq('engagement_level', 'at_risk')
-
-      if (!fansError) {
-        atRiskFans = fans?.length || 0
-      }
-    } catch (e) {
-      console.error('Error fetching at-risk fans:', e)
-    }
+    )
+    const atRiskFans = fans.length
 
     // Fetch recent AI activity
-    let recentActivity: any[] = []
-    try {
-      const { data: messages, error: activityError } = await supabase
+    const recentActivityData = await safeSelect(
+      supabase
         .from('ai_messages')
         .select('id, direction, content, model_id, sent_at')
         .eq('agency_id', agencyId)
         .order('sent_at', { ascending: false })
         .limit(4)
-
-      if (!activityError && messages) {
-        recentActivity = messages.map((msg: any) => ({
-          id: msg.id,
-          direction: msg.direction,
-          content: msg.content ? msg.content.substring(0, 50) : '',
-          model_id: msg.model_id,
-          sent_at: msg.sent_at,
-        }))
-      }
-    } catch (e) {
-      console.error('Error fetching recent activity:', e)
-    }
+    )
+    const recentActivity = recentActivityData.map((msg: any) => ({
+      id: msg.id,
+      direction: msg.direction,
+      content: msg.content ? msg.content.substring(0, 50) : '',
+      model_id: msg.model_id,
+      sent_at: msg.sent_at,
+    }))
 
     // Fetch upcoming posts
-    let upcomingPosts: any[] = []
-    try {
-      const now = new Date().toISOString()
-      const { data: posts, error: upcomingError } = await supabase
+    const now2 = new Date().toISOString()
+    const upcomingPostsData = await safeSelect(
+      supabase
         .from('scheduled_posts')
         .select('id, title, model_id, scheduled_at, platforms')
         .eq('agency_id', agencyId)
-        .gt('scheduled_at', now)
+        .gt('scheduled_at', now2)
         .order('scheduled_at', { ascending: true })
         .limit(3)
-
-      if (!upcomingError && posts) {
-        upcomingPosts = posts
-      }
-    } catch (e) {
-      console.error('Error fetching upcoming posts:', e)
-    }
+    )
+    const upcomingPosts = upcomingPostsData
 
     // Fetch integrations
-    let connections: any[] = []
-    try {
-      const { data: integrations, error: intError } = await supabase
+    const integrationsData = await safeSelect(
+      supabase
         .from('agency_integrations')
         .select('tool, is_active')
         .eq('agency_id', agencyId)
-
-      if (!intError && integrations) {
-        const toolsToDisplay = ['OnlyFans', 'MYM', 'AdsPower', 'GeeLark']
-        const integrationMap = new Map(integrations.map((i: any) => [i.tool, i.is_active]))
-
-        connections = toolsToDisplay.map((tool) => ({
-          name: tool,
-          status: integrationMap.get(tool) ? 'connected' : 'disconnected',
-          color: integrationMap.get(tool) ? 'green' : 'red',
-        }))
-      }
-    } catch (e) {
-      console.error('Error fetching integrations:', e)
-    }
+    )
+    const toolsToDisplay = ['OnlyFans', 'MYM', 'AdsPower', 'GeeLark']
+    const integrationMap = new Map(integrationsData.map((i: any) => [i.tool, i.is_active]))
+    const connections = toolsToDisplay.map((tool) => ({
+      name: tool,
+      status: integrationMap.get(tool) ? 'connected' : 'disconnected',
+      color: integrationMap.get(tool) ? 'green' : 'red',
+    }))
 
     // Format revenue for display
     const formattedRevenue = new Intl.NumberFormat('fr-FR', {

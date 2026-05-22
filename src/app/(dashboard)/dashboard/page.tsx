@@ -1,9 +1,10 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   TrendingUp, Users, Calendar, BarChart3,
-  Eye, Film, Bot, ArrowUpRight, Zap, AlertCircle, MessageSquare, Radio
+  Eye, Film, Bot, ArrowUpRight, Zap, AlertCircle, MessageSquare, Radio, Sparkles, Database, TrendingUpIcon
 } from 'lucide-react'
 import { SkeletonStat } from '@/components/ui/Skeleton'
 
@@ -70,6 +71,81 @@ function getRelativeTime(dateString: string): string {
   if (diffDays === 1) return 'Hier'
   if (diffDays < 7) return `Il y a ${diffDays}j`
   return date.toLocaleDateString('fr-FR')
+}
+
+function FeatureMiniCards({ stats, data }: { stats: any[]; data: any }) {
+  const planRank: Record<string, number> = { starter: 0, pro: 1, agency: 2 }
+  const featureMinPlan: Record<string, string> = {
+    chatting_ai: 'agency',
+    prospection: 'agency',
+    ai_generation: 'pro',
+  }
+
+  const hasFeature = (feature: string) => {
+    const min = featureMinPlan[feature] || 'starter'
+    const userPlan = data?.plan?.id || 'starter'
+    return (planRank[userPlan] || 0) >= (planRank[min] || 0)
+  }
+
+  const features = [
+    { id: 'accounts', name: 'Comptes & Modèles', href: '/accounts', icon: Database, stat: stats[0]?.value || '0', label: 'modèles actifs' },
+    { id: 'chatting_ai', name: 'Chatting IA', href: '/chatting/ai', icon: Sparkles, stat: stats[4]?.value || '0', label: 'messages/mois' },
+    { id: 'veille', name: 'Veille Trends', href: '/content/veille', icon: TrendingUpIcon, stat: stats[3]?.value || '0', label: 'trends captés' },
+    { id: 'finance', name: 'Finance', href: '/finance', icon: BarChart3, stat: stats[2]?.value || '0,00 €', label: 'ce mois' },
+    { id: 'posting', name: 'Posting Auto', href: '/posting', icon: Calendar, stat: stats[1]?.value || '0', label: 'posts planifiés' },
+    { id: 'prospection', name: 'Recrutement', href: '/accounts/prospection', icon: Users, stat: '0', label: 'prospects' },
+  ]
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      {features.map((feature) => {
+        const IconComponent = feature.icon
+        const isLocked = !hasFeature(feature.id)
+        const minPlan = featureMinPlan[feature.id]
+
+        if (isLocked) {
+          return (
+            <div
+              key={feature.id}
+              className="glass rounded-xl p-4 border border-white/10 opacity-50 cursor-not-allowed"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <IconComponent size={16} className="text-gray-500" />
+                  <span className="text-sm font-semibold text-white">{feature.name}</span>
+                </div>
+                {minPlan && (
+                  <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
+                    {minPlan === 'agency' ? 'Agency' : 'Pro'}
+                  </span>
+                )}
+              </div>
+              <p className="text-2xl font-bold text-gray-400">{feature.stat}</p>
+              <p className="text-xs text-gray-600 mt-1">{feature.label}</p>
+            </div>
+          )
+        }
+
+        return (
+          <Link
+            key={feature.id}
+            href={feature.href}
+            className="glass rounded-xl p-4 border border-white/10 hover:border-purple-500/30 transition-all group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <IconComponent size={16} className="text-purple-400 group-hover:text-purple-300 transition-colors" />
+                <span className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">{feature.name}</span>
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white">{feature.stat}</p>
+            <p className="text-xs text-gray-500 mt-1">{feature.label}</p>
+            <p className="text-xs text-purple-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Voir →</p>
+          </Link>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -148,7 +224,7 @@ export default function DashboardPage() {
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Bonjour 👋 {agencyName}</h1>
+            <h1 className="text-4xl font-bold mb-2">Bonjour, <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">{agencyName}</span></h1>
             <p className="text-gray-400 text-lg">{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
           </div>
         </div>
@@ -161,6 +237,11 @@ export default function DashboardPage() {
 
       {/* Stats grid */}
       <StatsGrid loading={loading} stats={dashboardData?.stats || []} />
+
+      {/* Feature Mini-Cards */}
+      {!loading && dashboardData?.stats && (
+        <FeatureMiniCards stats={dashboardData.stats} data={dashboardData} />
+      )}
 
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -252,31 +333,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="mt-6 glass rounded-2xl p-6 border border-white/5">
-        <h2 className="font-semibold mb-4">Actions rapides</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { label: 'Voir les trends', href: '/content/veille', color: 'from-purple-600 to-purple-800', icon: Eye },
-            { label: 'Éditer une vidéo', href: '/content/editor', color: 'from-cyan-600 to-cyan-800', icon: Film },
-            { label: 'Générer avec l\'IA', href: '/content/ai-generation', color: 'from-pink-600 to-rose-800', icon: Zap },
-            { label: 'Scheduler un post', href: '/posting', color: 'from-orange-600 to-amber-800', icon: Calendar },
-          ].map((action) => {
-            const IconComponent = action.icon
-            return (
-              <a
-                key={action.href}
-                href={action.href}
-                className={`flex items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r ${action.color} bg-opacity-20 hover:opacity-90 transition-all group font-medium text-sm`}
-              >
-                <IconComponent size={18} />
-                {action.label}
-                <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-            )
-          })}
-        </div>
-      </div>
+
     </div>
   )
 }
