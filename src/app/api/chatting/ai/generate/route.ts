@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateResponse } from '@/lib/ai/chatting'
+import { isAIActiveNow } from '@/lib/chatting/schedule'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -43,6 +44,20 @@ export async function POST(request: NextRequest) {
 
     if (perError) {
       return NextResponse.json({ error: 'Model personality not configured' }, { status: 400 })
+    }
+
+    // Vérifier si l'IA est active selon le planning
+    const scheduleActive = isAIActiveNow(
+      personality?.schedule as any,
+      personality?.schedule_enabled || false
+    )
+
+    if (!scheduleActive) {
+      return NextResponse.json({
+        response: null,
+        skipped: true,
+        reason: 'IA hors planning',
+      })
     }
 
     // Get recent messages

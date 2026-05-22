@@ -5,12 +5,16 @@ import {
   Settings, Plus, Trash2, CheckCircle2, XCircle, MessageSquare,
   Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock, Shield,
   Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders, Brain,
+  RefreshCw, Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useUsage } from '@/lib/hooks/useUsage'
 import { FeatureGate } from '@/components/ui/FeatureGate'
 import { ListConfigPanel } from '@/components/dashboard/chatting/ListConfigPanel'
 import { FanNotesPanel } from '@/components/dashboard/chatting/FanNotesPanel'
+import { SchedulePanel } from '@/components/dashboard/chatting/SchedulePanel'
+import type { Schedule } from '@/lib/chatting/schedule'
+import { getTodaySchedule } from '@/lib/chatting/schedule'
 
 interface Model {
   id: string
@@ -30,6 +34,8 @@ interface Personality {
   ppv_price_range: string
   tips_strategy: string
   response_delay_seconds?: number
+  schedule_enabled?: boolean
+  schedule?: Schedule | null
 }
 
 interface Script {
@@ -116,6 +122,7 @@ export default function ChattingAIPage() {
     reason: '',
   })
   const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'queue' | 'fans' | 'activity' | 'config' | 'analyze'>('models')
+  const [showScheduleSection, setShowScheduleSection] = useState(false)
   const [selectedFanForNotes, setSelectedFanForNotes] = useState<FanProfile | null>(null)
   const [showAnalyzeModal, setShowAnalyzeModal] = useState(false)
   const [analyzeForm, setAnalyzeForm] = useState({
@@ -137,11 +144,42 @@ export default function ChattingAIPage() {
     tipsStrategy: '',
     autoMode: false,
     responseDelay: 60,
+    scheduleEnabled: false,
+    schedule: null as Schedule | null,
   })
 
   const [scriptForm, setScriptForm] = useState({
     name: '', category: 'ppv', content: '', variables: [] as string[],
   })
+
+  const [syncing, setSyncing] = useState<Record<string, boolean>>({})
+
+  const syncConversations = async (modelId: string) => {
+    setSyncing(prev => ({ ...prev, [modelId]: true }))
+    try {
+      const res = await fetch('/api/chatting/ai/sync-conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelId }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Erreur lors de la synchronisation')
+      }
+
+      const result = await res.json()
+      toast.success(
+        `${result.conversationsAnalyzed} conversations analysées, ${result.feedbackSaved} exemples sauvés`
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error(message)
+      console.error('Sync error:', error)
+    } finally {
+      setSyncing(prev => ({ ...prev, [modelId]: false }))
+    }
+  }
 
   const handleAnalyzeConversation = async () => {
     if (!analyzeForm.conversation.trim() || !analyzeForm.selectedModelId) {
@@ -304,8 +342,11 @@ export default function ChattingAIPage() {
         displayName: '', personalityType: 'warm', communicationStyle: '',
         exampleMessages: [], languages: ['fr'], topicsToAvoid: [],
         ppvPriceRange: '', tipsStrategy: '', autoMode: false, responseDelay: 60,
+        scheduleEnabled: false,
+        schedule: null,
       })
     }
+    setShowScheduleSection(false)
     setShowPersonalityModal(true)
   }
 
@@ -327,6 +368,8 @@ export default function ChattingAIPage() {
           tipsStrategy: personalityForm.tipsStrategy,
           autoMode: personalityForm.autoMode,
           responseDelay: personalityForm.responseDelay,
+          scheduleEnabled: personalityForm.scheduleEnabled,
+          schedule: personalityForm.schedule,
         }),
       })
       if (!res.ok) throw new Error()
@@ -685,23 +728,44 @@ export default function ChattingAIPage() {
                           <Settings size={13} />
                           {isConfigured ? 'Modifier' : 'Configurer'}
                         </button>
+                        <button
+                          onClick={() => syncConversations(model.id)}
+                          disabled={syncing[model.id]}
+                          className="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs hover:bg-purple-500/20 transition-all flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Synchroniser et analyser les conversations MYM"
+                        >
+                          {syncing[model.id] ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <RefreshCw size={12} />
+                          )}
+                          Analyser convs MYM
+                        </button>
                       </div>
                     </div>
 
                     {isConfigured && (
-                      <div className="grid grid-cols-3 gap-2 mt-3">
-                        <div className="text-center p-2 rounded-lg bg-black/20">
-                          <p className="text-white text-sm font-bold">{p.response_delay_seconds || 60}s</p>
-                          <p className="text-gray-600 text-[10px]">Délai réponse</p>
+                      <div className="space-y-3 mt-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="text-center p-2 rounded-lg bg-black/20">
+                            <p className="text-white text-sm font-bold">{p.response_delay_seconds || 60}s</p>
+                            <p className="text-gray-600 text-[10px]">Délai réponse</p>
+                          </div>
+                          <div className="text-center p-2 rounded-lg bg-black/20">
+                            <p className="text-white text-sm font-bold">{p.languages?.join('/') || 'FR'}</p>
+                            <p className="text-gray-600 text-[10px]">Langue(s)</p>
+                          </div>
+                          <div className="text-center p-2 rounded-lg bg-black/20">
+                            <p className="text-white text-sm font-bold">{p.ppv_price_range || '—'}</p>
+                            <p className="text-gray-600 text-[10px]">Fourchette PPV</p>
+                          </div>
                         </div>
-                        <div className="text-center p-2 rounded-lg bg-black/20">
-                          <p className="text-white text-sm font-bold">{p.languages?.join('/') || 'FR'}</p>
-                          <p className="text-gray-600 text-[10px]">Langue(s)</p>
-                        </div>
-                        <div className="text-center p-2 rounded-lg bg-black/20">
-                          <p className="text-white text-sm font-bold">{p.ppv_price_range || '—'}</p>
-                          <p className="text-gray-600 text-[10px]">Fourchette PPV</p>
-                        </div>
+                        {/* Affichage du planning si actif */}
+                        {p.schedule_enabled && p.schedule && getTodaySchedule(p.schedule) && (
+                          <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                            <p className="text-xs text-violet-400 font-medium">⏰ Horaire d'aujourd'hui: {getTodaySchedule(p.schedule)?.from} - {getTodaySchedule(p.schedule)?.to}</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1365,6 +1429,40 @@ export default function ChattingAIPage() {
                 <div className="flex justify-between text-xs text-gray-700 mt-1">
                   <span>30s</span><span>1min</span><span>2min</span><span>3min</span><span>4min</span><span>5min</span>
                 </div>
+              </div>
+
+              {/* Bouton pour ouvrir/fermer la section Planning */}
+              <div className="pt-2 border-t border-white/10">
+                <button
+                  onClick={() => setShowScheduleSection(!showScheduleSection)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-violet-400" />
+                    <span className="text-sm font-semibold text-white">Planning Horaire</span>
+                    {personalityForm.scheduleEnabled && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Actif</span>
+                    )}
+                  </div>
+                  <ChevronDown size={16} className={`text-gray-500 transition-transform ${showScheduleSection ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Contenu du planning */}
+                {showScheduleSection && (
+                  <div className="mt-3 p-4 rounded-xl bg-black/20 border border-white/10">
+                    <SchedulePanel
+                      schedule={personalityForm.schedule}
+                      scheduleEnabled={personalityForm.scheduleEnabled}
+                      onUpdate={(enabled, schedule) => {
+                        setPersonalityForm({
+                          ...personalityForm,
+                          scheduleEnabled: enabled,
+                          schedule: enabled ? schedule : null,
+                        })
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

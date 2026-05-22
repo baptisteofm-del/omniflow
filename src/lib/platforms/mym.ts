@@ -1,10 +1,15 @@
 /**
  * MYM.fans Integration (French creator platform)
- * Uses Bearer token authentication
+ * Uses Bearer token authentication or email/password login
  */
 
 export interface MYMCredentials {
   bearerToken: string
+}
+
+export interface MYMLoginRequest {
+  email: string
+  password: string
 }
 
 export interface MYMMessage {
@@ -32,6 +37,72 @@ export interface MYMEarnings {
   pendingEarnings: number
   currency: string
   lastUpdated: string
+}
+
+/**
+ * Login to MYM.fans and get Bearer token
+ */
+export async function loginAndGetToken(
+  email: string,
+  password: string
+): Promise<string> {
+  const attemptUrls = [
+    'https://mym.fans/api/auth/login',
+    'https://api.mym.fans/auth/login',
+    'https://mym.fans/api/v1/auth/login',
+  ]
+
+  let lastError: Error | null = null
+
+  for (const url of attemptUrls) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Origin': 'https://mym.fans',
+          'Referer': 'https://mym.fans/login',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error(`Authentication failed: ${res.status}`)
+        }
+        continue // Try next URL
+      }
+
+      const data = await res.json()
+
+      // Try various token field names
+      const token =
+        data.token ||
+        data.access_token ||
+        data.data?.token ||
+        data.data?.access_token ||
+        data.accessToken
+
+      if (!token) {
+        throw new Error('No token found in response')
+      }
+
+      return token
+    } catch (error) {
+      lastError = error as Error
+      // Continue to next URL
+    }
+  }
+
+  // All URLs failed
+  throw (
+    lastError ||
+    new Error(
+      'Failed to login to MYM.fans. Please check your credentials and try again.'
+    )
+  )
 }
 
 /**

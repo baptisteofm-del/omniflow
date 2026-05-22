@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
       tipsStrategy,
       autoMode,
       responseDelay,
+      scheduleEnabled,
+      schedule,
     } = await request.json()
 
     // Check if personality exists
@@ -94,6 +96,8 @@ export async function POST(request: NextRequest) {
           tips_strategy: tipsStrategy,
           auto_mode: autoMode,
           response_delay_seconds: responseDelay || 60,
+          schedule_enabled: scheduleEnabled || false,
+          schedule: schedule || { timezone: 'Europe/Paris', slots: [] },
           updated_at: new Date().toISOString(),
         })
         .eq('model_id', modelId)
@@ -121,6 +125,8 @@ export async function POST(request: NextRequest) {
           tips_strategy: tipsStrategy,
           auto_mode: autoMode,
           response_delay_seconds: responseDelay || 60,
+          schedule_enabled: scheduleEnabled || false,
+          schedule: schedule || { timezone: 'Europe/Paris', slots: [] },
         })
         .select()
 
