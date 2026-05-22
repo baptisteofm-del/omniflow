@@ -14,7 +14,7 @@ export const PLANS: Plan[] = [
       postSchedules: 1000,
       teamMembers: 2,
       telegramBots: 2,
-      aiGenerations: 100,
+      aiGenerations: 0,  // NO AI generation for Starter
       contentWatches: -1,  // illimité
     },
     features: [
@@ -52,8 +52,8 @@ export const PLANS: Plan[] = [
       { name: 'Dashboard financier', included: true },
       { name: 'Parrainage 10%', included: true },
       { name: 'Génération IA Kling (500/mois)', included: true },
-      { name: 'Chatting IA', included: true },
-      { name: 'Rapports chatting', included: true },
+      { name: 'Chatting IA', included: false },
+      { name: 'Rapports chatting', included: false },
       { name: 'Prospection modèles IA', included: false },
       { name: 'Support prioritaire', included: true },
     ],
@@ -62,7 +62,7 @@ export const PLANS: Plan[] = [
     id: 'agency',
     name: 'Agency',
     description: 'Pour les grandes agences',
-    price: { monthly: 249, yearly: 199 },
+    price: { monthly: 199, yearly: 159 },
     limits: {
       accounts: -1,
       models: -1,
@@ -79,7 +79,7 @@ export const PLANS: Plan[] = [
       { name: 'Dashboard financier avancé', included: true },
       { name: 'Parrainage 10%', included: true },
       { name: 'Génération IA Kling illimitée', included: true },
-      { name: 'Chatting IA complet', included: true },
+      { name: 'Chatting IA', included: true },
       { name: 'Rapports chatting', included: true },
       { name: 'Prospection modèles IA', included: true },
       { name: 'Support dédié 24/7', included: true },

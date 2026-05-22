@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/chatting/cron",
-      "schedule": "0 9 * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }

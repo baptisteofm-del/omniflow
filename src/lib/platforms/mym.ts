@@ -198,28 +198,59 @@ export async function getMessages(
 }
 
 /**
- * Send a message to a conversation
+ * Send a message to a fan conversation
  */
 export async function sendMessage(
   creds: MYMCredentials,
   conversationId: string,
-  text: string
-): Promise<void> {
+  message: string
+): Promise<boolean> {
   try {
     const headers = buildMYMHeaders(creds)
-
     const response = await fetch(`https://mym.fans/api/v2/conversations/${conversationId}/messages`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ content: message, type: 'text' }),
     })
+    return response.ok
+  } catch {
+    return false
+  }
+}
 
-    if (!response.ok) {
-      throw new Error(`MYM API error: ${response.status}`)
+/**
+ * Get new/unread messages since a given timestamp
+ */
+export async function getNewMessages(
+  creds: MYMCredentials,
+  since?: string
+): Promise<Array<{ conversationId: string; fanId: string; fanName: string; message: string; timestamp: string }>> {
+  try {
+    const conversations = await getConversations(creds, 50)
+    const results = []
+    
+    for (const conv of conversations) {
+      if (conv.unreadCount === 0) continue
+      
+      const messages = await getMessages(creds, conv.id, 5)
+      const lastMsg = messages[messages.length - 1]
+      
+      if (!lastMsg) continue
+      // Skip messages sent by the model (only process fan messages)
+      if ((lastMsg as any).is_mine || (lastMsg as any).sender === 'model') continue
+      
+      results.push({
+        conversationId: conv.id,
+        fanId: conv.userId,
+        fanName: conv.userName,
+        message: (lastMsg as any).content || (lastMsg as any).text || '',
+        timestamp: (lastMsg as any).created_at || new Date().toISOString(),
+      })
     }
-  } catch (error) {
-    console.error('Error sending MYM message:', error)
-    throw error
+    
+    return results
+  } catch {
+    return []
   }
 }
 
