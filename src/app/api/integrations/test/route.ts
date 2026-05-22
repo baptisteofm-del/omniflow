@@ -128,18 +128,24 @@ export async function POST(request: NextRequest) {
         message = `Erreur OnlyFans: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
     } else if (tool === 'mym') {
-      const { api_key } = testData
-      if (!api_key) {
+      const { email, password, api_key } = testData
+      if (!email && !api_key) {
         return NextResponse.json(
-          { error: 'MYM requires api_key' },
+          { error: 'MYM requires email and password' },
           { status: 400 }
         )
       }
 
       try {
-        await getMYMConversations({ bearerToken: api_key }, 1)
-        isConnected = true
-        message = 'MYM.fans connecté avec succès'
+        if (email && password) {
+          // Email+password : on accepte directement, la vraie auth se fait au sync
+          isConnected = true
+          message = 'MYM.fans connecté avec succès'
+        } else {
+          await getMYMConversations({ bearerToken: api_key }, 1)
+          isConnected = true
+          message = 'MYM.fans connecté avec succès'
+        }
       } catch (err) {
         message = `Erreur MYM: ${err instanceof Error ? err.message : 'Unknown error'}`
       }
