@@ -69,10 +69,13 @@ interface Stats {
 }
 
 const PERSONALITY_TYPES = [
-  { id: 'warm', label: '🥰 Chaleureuse', desc: 'Douce, attentionnée, proche' },
-  { id: 'playful', label: '😈 Coquine', desc: 'Légère, taquine, fun' },
-  { id: 'mysterious', label: '🌙 Mystérieuse', desc: 'Distante, intrigante' },
-  { id: 'direct', label: '💅 Directe', desc: 'Cash, sûre d\'elle, efficace' },
+  { id: 'gfe', label: 'GFE', desc: 'Girlfriend Experience — intime, attachante, comme une vraie petite amie' },
+  { id: 'milf', label: 'MILF', desc: 'Mature, expérimentée, confiante et sensuelle' },
+  { id: 'fitness', label: 'Fitness', desc: 'Coach sportive — dynamique, motivante, lifestyle sain' },
+  { id: 'baddie', label: 'Baddie', desc: 'Haut standing, luxury, légèrement inaccessible' },
+  { id: 'shy', label: 'Shy / Cute', desc: 'Douce et timide en apparence, curieuse et espiègle' },
+  { id: 'influencer', label: 'Influenceuse', desc: 'Lifestyle & mode, derrière les réseaux, behind the scenes' },
+  { id: 'gothic', label: 'Gothique', desc: 'Mystérieuse, sombre, univers dark et envoûtant' },
 ]
 
 export default function ChattingAIPage() {
