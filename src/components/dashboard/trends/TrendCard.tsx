@@ -126,9 +126,9 @@ export function TrendCard({
             background: 'linear-gradient(45deg, #a78bfa, #06b6d4, #ec4899)',
             borderRadius: '0.75rem',
             padding: '2px',
-            WebKitMaskImage:
+            WebkitMaskImage:
               'linear-gradient(to right, black, transparent, black)',
-          }}
+          } as React.CSSProperties}
         />
       )}
 

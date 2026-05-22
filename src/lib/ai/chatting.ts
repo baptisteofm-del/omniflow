@@ -29,7 +29,8 @@ export async function generateResponse(
   fanContext: FanContext,
   personality: ModelPersonality,
   incomingMessage: string,
-  availableScripts: { name: string; content: string; category: string }[]
+  availableScripts: { name: string; content: string; category: string }[],
+  agencyFeedback?: { original: string; corrected: string; reason?: string }[]
 ): Promise<{ response: string; scriptUsed?: string; upsellOpportunity?: boolean }> {
   const recentConversation = fanContext.recentMessages
     .map(msg => `${msg.role === 'fan' ? 'Fan' : 'Model'}: ${msg.content}`)
@@ -108,6 +109,20 @@ SIGNAUX D'UPSELL à détecter :
 
   const profileInstructions = profilePrompts[personality.personalityType] || profilePrompts['gfe']
 
+  // Build feedback section for system prompt
+  const feedbackSection = agencyFeedback && agencyFeedback.length > 0
+    ? `## CORRECTIONS DE L'AGENCE (apprends de ces exemples)
+${agencyFeedback
+  .slice(0, 15) // Max 15 examples to avoid token bloat
+  .map(
+    f => `❌ À ne PAS dire : "${f.original}"
+✅ Dire plutôt : "${f.corrected}"
+${f.reason ? `Pourquoi : ${f.reason}` : ''}`
+  )
+  .join('\n\n')}
+\n`
+    : ''
+
   const systemPrompt = `Tu es ${personality.displayName}, créatrice de contenu sur OnlyFans.
 
 ## TON PROFIL
@@ -125,7 +140,7 @@ ${personality.communicationStyle || 'Naturel, authentique, jamais robotique.'}
 ## SCRIPTS DISPONIBLES
 ${scriptsContext || 'Aucun script configuré.'}
 
-## RÈGLES ABSOLUES
+${feedbackSection}## RÈGLES ABSOLUES
 - Réponds UNIQUEMENT avec le message à envoyer, rien d'autre
 - Maximum 3-4 phrases, naturel et conversationnel
 - Jamais de guillemets autour du message
