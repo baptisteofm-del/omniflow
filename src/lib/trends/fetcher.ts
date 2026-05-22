@@ -451,6 +451,16 @@ function getCategoryFromSubreddit(sub: string): string {
 }
 
 /**
+ * Flat export of all mock trends — used as fallback when DB is unavailable
+ */
+export const MOCK_TRENDS_FLAT: Trend[] = [
+  ...MOCK_TRENDS.tiktok.map((t, i) => ({ ...t, id: `tiktok-${i}` })),
+  ...MOCK_TRENDS.instagram.map((t, i) => ({ ...t, id: `instagram-${i}` })),
+  ...MOCK_TRENDS.twitter.map((t, i) => ({ ...t, id: `twitter-${i}` })),
+  ...MOCK_TRENDS.reddit.map((t, i) => ({ ...t, id: `reddit-${i}` })),
+].sort((a, b) => b.engagement - a.engagement)
+
+/**
  * Récupère TOUS les trends depuis toutes les sources
  */
 export async function fetchAllTrends(): Promise<Trend[]> {

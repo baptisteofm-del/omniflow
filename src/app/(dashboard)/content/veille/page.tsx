@@ -41,16 +41,12 @@ export default function VeillePage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
   // Charger les trends sauvegardés
-  const loadTrends = useCallback(async () => {
-    setLoading(true)
+  const loadTrends = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const url = new URL('/api/trends', window.location.origin)
-      if (selectedPlatform !== 'all') {
-        url.searchParams.set('platform', selectedPlatform)
-      }
-      if (selectedCategory) {
-        url.searchParams.set('category', selectedCategory)
-      }
+      if (selectedPlatform !== 'all') url.searchParams.set('platform', selectedPlatform)
+      if (selectedCategory) url.searchParams.set('category', selectedCategory)
 
       const response = await fetch(url.toString())
       if (!response.ok) throw new Error('Failed to load trends')
@@ -59,14 +55,12 @@ export default function VeillePage() {
       if (data.success) {
         setTrends(data.trends.map((t: any) => ({
           ...t,
-          capturedAt: new Date(t.capturedAt),
+          capturedAt: t.capturedAt ? new Date(t.capturedAt) : new Date(),
         })))
-      } else {
-        toast.error('Erreur lors du chargement des trends')
       }
     } catch (error) {
       console.error('Load trends error:', error)
-      toast.error('Erreur réseau')
+      // silently fail — page already shows empty state
     } finally {
       setLoading(false)
     }
@@ -86,22 +80,21 @@ export default function VeillePage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const response = await fetch('/api/trends/fetch', {
-        method: 'POST',
-      })
-
+      const response = await fetch('/api/trends/fetch', { method: 'POST' })
       const data = await response.json()
       if (data.success) {
-        toast.success(`${data.trendsCount} trends récupérés ! 🎯`)
+        const msg = data.warning
+          ? `${data.trendsCount} trends chargés (mode démo)`
+          : `${data.trendsCount} trends récupérés ! 🎯`
+        toast.success(msg)
         setLastRefresh(new Date())
-        // Recharger les trends
-        await loadTrends()
+        await loadTrends(true)
       } else {
-        toast.error(`Erreur: ${data.error}`)
+        toast.error(`Erreur: ${data.error || 'Inconnue'}`)
       }
     } catch (error) {
       console.error('Refresh error:', error)
-      toast.error('Erreur lors du rafraîchissement')
+      toast.error('Erreur réseau')
     } finally {
       setRefreshing(false)
     }
