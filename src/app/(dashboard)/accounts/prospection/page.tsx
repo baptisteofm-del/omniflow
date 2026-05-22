@@ -29,6 +29,11 @@ interface Prospect {
   status: ProspectStatus
   outreach_count: number
   notes?: string
+  platform_status?: 'not_on_platform' | 'aggregator_detected' | 'already_on_platform'
+  source_account?: string
+  geo_country?: string
+  geo_cities?: string
+  scrape_mode?: 'followers' | 'similar' | 'keyword'
 }
 
 interface OutreachMessage {
@@ -88,10 +93,13 @@ export default function ProspectionPage() {
   // Search modal
   const [showSearch, setShowSearch] = useState(false)
   const [searchParams, setSearchParams] = useState({
+    mode: 'keyword' as 'followers' | 'similar' | 'keyword',
     platforms: ['Instagram'],
     niche: 'lifestyle',
-    accountSize: 'mid',
-    hashtag: '',
+    sourceAccount: '',
+    keyword: '',
+    geo: { country: 'FR', cities: [] },
+    limit: 20,
   })
   const [searchResult, setSearchResult] = useState<string | null>(null)
 
@@ -151,10 +159,27 @@ export default function ProspectionPage() {
     setLoading(true)
     setSearchResult(null)
     try {
+      const payload = {
+        mode: searchParams.mode,
+        platforms: searchParams.platforms,
+        niche: searchParams.niche,
+        limit: searchParams.limit,
+      }
+      // Add conditional fields
+      if (searchParams.mode !== 'keyword' && searchParams.sourceAccount) {
+        Object.assign(payload, { sourceAccount: searchParams.sourceAccount })
+      }
+      if (searchParams.mode === 'keyword' && searchParams.keyword) {
+        Object.assign(payload, { keyword: searchParams.keyword })
+      }
+      if (searchParams.geo.country) {
+        Object.assign(payload, { geo: searchParams.geo })
+      }
+
       const res = await fetch('/api/prospection/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchParams),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.success) {
@@ -821,6 +846,58 @@ export default function ProspectionPage() {
             </div>
 
             <div className="space-y-4 mb-6">
+              {/* Mode */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Mode de scraping</label>
+                <div className="flex gap-2">
+                  {(['keyword', 'followers', 'similar'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setSearchParams((prev) => ({ ...prev, mode: m }))}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                        searchParams.mode === m
+                          ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
+                          : 'border-white/10 text-gray-500 hover:border-white/20'
+                      }`}
+                    >
+                      {m === 'keyword' ? '🔍 Mot-clé' : m === 'followers' ? '👥 Followers' : '🤝 Similaires'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Source Account (if not keyword) */}
+              {searchParams.mode !== 'keyword' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Compte source Instagram
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: @compte_instagram"
+                    value={searchParams.sourceAccount}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, sourceAccount: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Keyword (if keyword mode) */}
+              {searchParams.mode === 'keyword' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Bio keyword
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: model paris, fitness girl..."
+                    value={searchParams.keyword}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, keyword: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                  />
+                </div>
+              )}
+
               {/* Platforms */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Plateformes</label>
@@ -846,20 +923,6 @@ export default function ProspectionPage() {
                 </div>
               </div>
 
-              {/* Hashtag */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                  Hashtag / mot-clé
-                </label>
-                <input
-                  type="text"
-                  placeholder="ex: fitnessgirl, lifestyleblogger..."
-                  value={searchParams.hashtag}
-                  onChange={(e) => setSearchParams((p) => ({ ...p, hashtag: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
-                />
-              </div>
-
               {/* Niche */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Niche</label>
@@ -880,24 +943,20 @@ export default function ProspectionPage() {
                 </div>
               </div>
 
-              {/* Size */}
+              {/* Geo */}
               <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Taille de compte</label>
-                <div className="flex gap-3">
-                  {SIZES.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSearchParams((p) => ({ ...p, accountSize: s.id }))}
-                      className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
-                        searchParams.accountSize === s.id
-                          ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                          : 'border-white/10 text-gray-500 hover:border-white/20'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Zone géographique</label>
+                <select
+                  value={searchParams.geo.country}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, geo: { ...p.geo, country: e.target.value } }))}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                >
+                  {['FR', 'BE', 'CH', 'MA', 'TN', 'SN', 'CA', 'INTL'].map((c) => (
+                    <option key={c} value={c}>
+                      {c === 'FR' ? '🇫🇷 France' : c === 'BE' ? '🇧🇪 Belgique' : c === 'CH' ? '🇨🇭 Suisse' : c === 'MA' ? '🇲🇦 Maroc' : c === 'TN' ? '🇹🇳 Tunisie' : c === 'SN' ? '🇸🇳 Sénégal' : c === 'CA' ? '🇨🇦 Canada' : '🌍 International'}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
             </div>
 
@@ -916,7 +975,7 @@ export default function ProspectionPage() {
               </button>
               <button
                 onClick={handleSearch}
-                disabled={loading || searchParams.platforms.length === 0}
+                disabled={loading || searchParams.platforms.length === 0 || (searchParams.mode !== 'keyword' && !searchParams.sourceAccount)}
                 className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-violet-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
@@ -1241,7 +1300,26 @@ function ProspectCard({
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">{prospect.niche}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">{prospect.niche}</span>
+          {/* Platform status badge */}
+          {(prospect as any).platform_status && (
+            <span
+              className="text-xs font-semibold"
+              title={{
+                'not_on_platform': 'Non encore sur les plateformes',
+                'aggregator_detected': 'Agrégateur detecté',
+                'already_on_platform': 'Déjà monetélisée',
+              }[(prospect as any).platform_status]}
+            >
+              {(prospect as any).platform_status === 'not_on_platform'
+                ? '🟢'
+                : (prospect as any).platform_status === 'aggregator_detected'
+                ? '🟡'
+                : '🔴'}
+            </span>
+          )}
+        </div>
         <div className="flex gap-0.5">
           {[...Array(5)].map((_, i) => (
             <Star key={i} size={11} className={i < prospect.potential_score ? 'fill-amber-400 text-amber-400' : 'text-gray-700'} />
