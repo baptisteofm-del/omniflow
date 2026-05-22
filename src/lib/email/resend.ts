@@ -7,6 +7,7 @@ import {
   paymentConfirmedTemplate,
   invoiceTemplate,
 } from './templates'
+import { generateInvoicePdf, InvoiceData } from './invoice-pdf'
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder')
 
@@ -89,7 +90,7 @@ export async function sendPaymentConfirmedEmail(
 }
 
 /**
- * Send monthly invoice email
+ * Send monthly invoice email (legacy)
  */
 export async function sendInvoiceEmail(
   email: string,
@@ -107,6 +108,42 @@ export async function sendInvoiceEmail(
     })
   } catch (error) {
     console.error('Error sending invoice email:', error)
+    throw error
+  }
+}
+
+/**
+ * Send invoice email with PDF attachment
+ */
+export async function sendInvoiceEmailWithPdf(
+  email: string,
+  agencyName: string,
+  invoiceData: InvoiceData
+): Promise<void> {
+  try {
+    const pdfBuffer = generateInvoicePdf(invoiceData)
+    
+    // Use the clean invoice template from templates.ts
+    const template = invoiceTemplate(
+      invoiceData.date,
+      invoiceData.amount.toFixed(2),
+      ''
+    )
+    
+    await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      to: email,
+      subject: `Votre facture OmniFlow — ${invoiceData.invoiceNumber}`,
+      html: template.html,
+      attachments: [
+        {
+          filename: `facture-omniflow-${invoiceData.invoiceNumber}.pdf`,
+          content: pdfBuffer,
+        }
+      ]
+    })
+  } catch (error) {
+    console.error('Error sending invoice email with PDF:', error)
     throw error
   }
 }
