@@ -44,19 +44,19 @@ const LogoOnlyFans = () => (
 
 const LogoMYM = () => (
   <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1a1a2e' }}>
-    <span className="text-white font-bold text-sm">MYM</span>
+    <span className="text-white font-bold" style={{fontSize:'9px', letterSpacing:'-0.5px'}}>MYM</span>
   </div>
 )
 
 const LogoAdsPower = () => (
   <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2563eb' }}>
-    <span className="text-white font-bold text-lg">A</span>
+    <img src="/logo-adspower.png" alt="AdsPower" className="w-full h-full object-contain" />
   </div>
 )
 
 const LogoGeeLark = () => (
   <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#059669' }}>
-    <span className="text-white font-bold text-lg">G</span>
+    <img src="/logo-geelark.png" alt="GeeLark" className="w-full h-full object-contain" />
   </div>
 )
 
@@ -260,9 +260,11 @@ export default function IntegrationsPage() {
   const [loading, setLoading] = useState(true)
   const [testing, setTesting] = useState<Record<string, boolean>>({})
   const [form, setForm] = useState<FormData>({})
+  const [models, setModels] = useState<{id:string;name:string}[]>([])
 
   useEffect(() => {
     loadIntegrations()
+    fetch('/api/models').then(r => r.json()).then(d => setModels(d.models || []))
   }, [])
 
   const loadIntegrations = async () => {
@@ -299,11 +301,12 @@ export default function IntegrationsPage() {
 
     setTesting({ ...testing, [toolId]: true })
     try {
-      // Inclure model_id pour OF et MYM si on vient d'un profil modèle
+      // Inclure model_id pour OF et MYM
       const isPerModel = ['onlyfans', 'mym'].includes(toolId)
+      const selectedModelId = form[toolId]?.model_id || modelIdFromUrl
       const payload: any = {
         tool: toolId,
-        ...(isPerModel && modelIdFromUrl ? { model_id: modelIdFromUrl } : {}),
+        ...(isPerModel && selectedModelId ? { model_id: selectedModelId } : {}),
         ...form[toolId],
       }
 
@@ -463,6 +466,26 @@ export default function IntegrationsPage() {
                         {/* Form */}
                         {!integration.comingSoon && (
                         <div className="space-y-4">
+                          {integration.category === 'chatting' && (
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                                Profil modèle associé
+                              </label>
+                              <select
+                                value={form[integration.id]?.model_id || modelIdFromUrl || ''}
+                                onChange={e => setForm({
+                                  ...form,
+                                  [integration.id]: { ...form[integration.id], model_id: e.target.value }
+                                })}
+                                className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none"
+                              >
+                                <option value="">-- Sélectionner un profil --</option>
+                                {models.map(m => (
+                                  <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                           {integration.requiresUrl && (
                             <div>
                               <label className="block text-sm text-gray-400 mb-1.5">URL API</label>
