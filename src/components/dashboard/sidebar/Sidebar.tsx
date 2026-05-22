@@ -29,7 +29,7 @@ const navItems = [
   {
     section: 'Chatting',
     items: [
-      { label: 'Chatting IA', href: '/chatting/ai', icon: Sparkles, requiredPlan: 'pro' },
+      { label: 'Chatting IA', href: '/chatting/ai', icon: Sparkles, requiredPlan: 'agency' },
       { label: 'Rapports', href: '/chatting', icon: MessageSquare },
     ],
   },
