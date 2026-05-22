@@ -8,17 +8,20 @@ import { cn } from '@/lib/utils/cn'
 
 interface Trend {
   id: string
-  platform: 'tiktok' | 'instagram' | 'twitter' | 'reddit'
+  platform: 'tiktok' | 'instagram' | 'reddit' | 'youtube'
   title: string
   url: string
   thumbnailUrl?: string
+  authorUsername?: string
+  authorUrl?: string
+  contentType: 'video' | 'photo' | 'text' | 'reel' | 'carousel'
   engagement: number
   category: string
   tags: string[]
   capturedAt: Date
 }
 
-const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'twitter' | 'reddit'> = ['all', 'tiktok', 'instagram', 'twitter', 'reddit']
+const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'reddit' | 'youtube'> = ['all', 'tiktok', 'instagram', 'reddit', 'youtube']
 const CATEGORIES = [
   'lifestyle',
   'fitness',
@@ -36,7 +39,7 @@ export default function VeillePage() {
   const [trends, setTrends] = useState<Trend[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState<'tiktok' | 'instagram' | 'twitter' | 'reddit' | 'all'>('all')
+  const [selectedPlatform, setSelectedPlatform] = useState<'tiktok' | 'instagram' | 'reddit' | 'youtube' | 'all'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 

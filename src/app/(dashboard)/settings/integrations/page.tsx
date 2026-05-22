@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Loader2, Settings, Plus, ExternalLink } from 'lucide-react'
+import { Check, X, Loader2, Settings, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Integration {
@@ -9,6 +9,18 @@ interface Integration {
   tool: string
   is_active: boolean
   api_url?: string
+}
+
+interface IntegrationConfig {
+  id: string
+  name: string
+  description: string
+  logo: React.ComponentType
+  requiresUrl?: boolean
+  defaultUrl?: string
+  category: string
+  fields?: string[]
+  comingSoon?: boolean
 }
 
 interface FormData {
@@ -20,22 +32,107 @@ interface FormData {
   }
 }
 
+// SVG Logo Components
+const LogoOnlyFans = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#00AFF0"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="system-ui">OF</text>
+  </svg>
+)
+
+const LogoMYM = () => (
+  <svg viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="40" height="20" rx="4" fill="#1a1a2e"/>
+    <text x="20" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="system-ui">MYM</text>
+  </svg>
+)
+
+const LogoAdsPower = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#2563eb"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">A</text>
+  </svg>
+)
+
+const LogoGeeLark = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#059669"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">G</text>
+  </svg>
+)
+
+const LogoBinance = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#F3BA2F"/>
+    <text x="12" y="16" textAnchor="middle" fill="#1a1a1a" fontSize="7" fontWeight="bold" fontFamily="system-ui">BNB</text>
+  </svg>
+)
+
+const LogoCoinbase = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <circle cx="12" cy="12" r="12" fill="#0052FF"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">C</text>
+  </svg>
+)
+
+const LogoStripe = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#635BFF"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">S</text>
+  </svg>
+)
+
+const LogoPayPal = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#003087"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="system-ui">PP</text>
+  </svg>
+)
+
+const LogoRevolut = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#000000"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="system-ui">R</text>
+  </svg>
+)
+
+const LogoWise = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#9FE870"/>
+    <text x="12" y="16" textAnchor="middle" fill="#000000" fontSize="12" fontWeight="bold" fontFamily="system-ui">W</text>
+  </svg>
+)
+
+const LogoN8n = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#EA4B27"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold" fontFamily="system-ui">n8n</text>
+  </svg>
+)
+
+const LogoZapier = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
+    <rect width="24" height="24" rx="6" fill="#FF4A00"/>
+    <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="system-ui">Z</text>
+  </svg>
+)
+
 const integrations = [
   // CHATTING IA - Creator Platforms
   {
     id: 'onlyfans',
     name: 'OnlyFans',
     description: 'Connectez vos comptes OnlyFans pour le chatting IA',
-    icon: '🔵',
+    logo: LogoOnlyFans,
     requiresUrl: false,
     category: 'chatting',
     fields: ['userId', 'authId', 'sess', 'bcTokens', 'userAgent'],
   },
   {
     id: 'mym',
-    name: 'MYM.fans',
-    description: 'Plateforme française - accédez aux messages avec l\'IA',
-    icon: '🩷',
+    name: 'MYM',
+    description: 'Synchronisez vos messages MYM avec le chatting IA',
+    logo: LogoMYM,
     requiresUrl: false,
     category: 'chatting',
     fields: ['api_key'],
@@ -45,7 +142,7 @@ const integrations = [
     id: 'adspower',
     name: 'AdsPower',
     description: 'Anti-detect browser avec profils locaux pour le posting',
-    icon: '🌐',
+    logo: LogoAdsPower,
     requiresUrl: true,
     defaultUrl: 'http://local.adspower.net:50325',
     category: 'posting',
@@ -54,44 +151,97 @@ const integrations = [
     id: 'geelark',
     name: 'GeeLark',
     description: 'Navigateur Android cloud pour TikTok/Instagram posting',
-    icon: '☁️',
+    logo: LogoGeeLark,
     requiresUrl: false,
     category: 'posting',
-  },
-  {
-    id: 'reddit',
-    name: 'Reddit API',
-    description: 'Connectez votre compte Reddit pour poster automatiquement',
-    icon: '🟠',
-    requiresUrl: false,
-    category: 'posting',
-    fields: ['client_id', 'client_secret', 'refresh_token'],
   },
   // FINANCE & CRYPTO
   {
     id: 'binance',
     name: 'Binance',
     description: 'Synchronisez vos transactions crypto et soldes USDT',
-    icon: '🪙',
+    logo: LogoBinance,
     requiresUrl: false,
-    category: 'crypto',
+    category: 'finance',
     fields: ['api_key', 'secret_key'],
   },
   {
     id: 'coinbase',
     name: 'Coinbase',
     description: 'Connectez votre portefeuille Coinbase',
-    icon: '🏢',
+    logo: LogoCoinbase,
     requiresUrl: false,
-    category: 'crypto',
+    category: 'finance',
     fields: ['api_key'],
+  },
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    description: 'Synchronisez vos paiements et revenus Stripe',
+    logo: LogoStripe,
+    requiresUrl: false,
+    category: 'finance',
+    fields: ['api_key'],
+    comingSoon: true,
+  },
+  {
+    id: 'paypal',
+    name: 'PayPal',
+    description: 'Importez vos transactions PayPal',
+    logo: LogoPayPal,
+    requiresUrl: false,
+    category: 'finance',
+    fields: ['client_id', 'client_secret'],
+    comingSoon: true,
+  },
+  {
+    id: 'revolut',
+    name: 'Revolut Business',
+    description: 'Connectez votre compte Revolut Business',
+    logo: LogoRevolut,
+    requiresUrl: false,
+    category: 'finance',
+    fields: ['api_key'],
+    comingSoon: true,
+  },
+  {
+    id: 'wise',
+    name: 'Wise',
+    description: 'Synchronisez vos virements internationaux',
+    logo: LogoWise,
+    requiresUrl: false,
+    category: 'finance',
+    fields: ['api_key'],
+    comingSoon: true,
+  },
+  // AUTOMATION
+  {
+    id: 'n8n',
+    name: 'n8n Webhook',
+    description: 'Connectez vos workflows n8n pour automatiser',
+    logo: LogoN8n,
+    requiresUrl: false,
+    category: 'automation',
+    fields: ['webhook_url'],
+    comingSoon: false,
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Connectez OmniFlow à 5000+ applications',
+    logo: LogoZapier,
+    requiresUrl: false,
+    category: 'automation',
+    fields: ['webhook_url'],
+    comingSoon: true,
   },
 ]
 
 const categories = [
-  { id: 'chatting', label: '💬 Chatting IA - Plateformes Creator', icon: '💬' },
-  { id: 'posting', label: '📤 Posting - Navigateurs & Réseaux', icon: '📤' },
-  { id: 'crypto', label: '💰 Finance & Crypto', icon: '💰' },
+  { id: 'chatting', label: 'Chatting IA' },
+  { id: 'posting', label: 'Posting & Anti-detect' },
+  { id: 'finance', label: 'Finance & Crypto' },
+  { id: 'automation', label: 'Automatisation' },
 ]
 
 export default function IntegrationsPage() {
@@ -222,10 +372,7 @@ export default function IntegrationsPage() {
             const categoryIntegrations = integrations.filter(i => i.category === category.id)
             return (
               <div key={category.id} className="mb-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">{category.icon}</span>
-                  <h2 className="text-lg font-bold">{category.label}</h2>
-                </div>
+                <h2 className="text-lg font-bold mb-4">{category.label}</h2>
                 
                 {/* Category description */}
                 {category.id === 'chatting' && (
@@ -234,8 +381,11 @@ export default function IntegrationsPage() {
                 {category.id === 'posting' && (
                   <p className="text-sm text-gray-400 mb-4">Connectez vos navigateurs anti-détection pour automatiser le posting sur les réseaux sociaux</p>
                 )}
-                {category.id === 'crypto' && (
-                  <p className="text-sm text-gray-400 mb-4">Synchronisez vos portefeuilles crypto pour le suivi financier</p>
+                {category.id === 'finance' && (
+                  <p className="text-sm text-gray-400 mb-4">Synchronisez vos portefeuilles et paiements pour le suivi financier</p>
+                )}
+                {category.id === 'automation' && (
+                  <p className="text-sm text-gray-400 mb-4">Connectez vos outils d'automatisation pour intégrer OmniFlow</p>
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -253,32 +403,41 @@ export default function IntegrationsPage() {
                         {/* Header */}
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <span className="text-3xl">{integration.icon}</span>
+                            <div className="w-12 h-12 flex items-center justify-center">
+                              {integration.logo && <integration.logo />}
+                            </div>
                             <div>
-                              <h2 className="font-bold text-lg">{integration.name}</h2>
+                              <h2 className="font-semibold text-white">{integration.name}</h2>
                               <p className="text-sm text-gray-400">{integration.description}</p>
                             </div>
                           </div>
-                          <div
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${
-                              isConnected
-                                ? 'bg-green-500/20 text-green-400'
-                                : 'bg-red-500/20 text-red-400'
-                            }`}
-                          >
-                            {isConnected ? (
-                              <>
-                                <Check size={14} /> Connecté
-                              </>
+                          <div>
+                            {integration.comingSoon ? (
+                              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap bg-gray-500/20 text-gray-400">
+                                Bientôt disponible
+                              </div>
                             ) : (
-                              <>
-                                <X size={14} /> Pas connecté
-                              </>
+                              <div
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${
+                                  isConnected
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-gray-500/20 text-gray-400'
+                                }`}
+                              >
+                                {isConnected ? (
+                                  <>
+                                    <Check size={14} /> Connecté
+                                  </>
+                                ) : (
+                                  <>Non connecté</>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
 
                         {/* Form */}
+                        {!integration.comingSoon && (
                         <div className="space-y-4">
                           {integration.requiresUrl && (
                             <div>
@@ -347,6 +506,36 @@ export default function IntegrationsPage() {
                               💡 Bearer token disponible dans les paramètres de développeur MYM
                             </p>
                           )}
+                          {integration.id === 'stripe' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Générez une clé API secrète sur votre dashboard Stripe
+                            </p>
+                          )}
+                          {integration.id === 'paypal' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Créez une application sur le compte développeur PayPal
+                            </p>
+                          )}
+                          {integration.id === 'revolut' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Obtenez votre clé API dans les paramètres Revolut Business
+                            </p>
+                          )}
+                          {integration.id === 'wise' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Générez une clé API sur le panel développeur Wise
+                            </p>
+                          )}
+                          {integration.id === 'n8n' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Créez un webhook dans vos workflows n8n
+                            </p>
+                          )}
+                          {integration.id === 'zapier' && (
+                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
+                              💡 Générez un webhook Zapier pour connecter OmniFlow
+                            </p>
+                          )}
                           {integration.id === 'binance' && (
                             <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
                               💡 Créez une clé API read-only sur{' '}
@@ -363,15 +552,7 @@ export default function IntegrationsPage() {
                               </a>
                             </p>
                           )}
-                          {integration.id === 'reddit' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 <strong>Guide:</strong> Allez sur{' '}
-                              <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-400">
-                                Reddit Apps Settings
-                              </a>
-                              <br/>Créez une "script app" et copiez le client_id, client_secret et refresh_token
-                            </p>
-                          )}
+
 
                           {/* Save button */}
                           <button
@@ -397,6 +578,7 @@ export default function IntegrationsPage() {
                             )}
                           </button>
                         </div>
+                        )}
                       </div>
                     )
                   })}
