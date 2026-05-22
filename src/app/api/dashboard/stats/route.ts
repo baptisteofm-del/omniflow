@@ -44,28 +44,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user's agency ID
-    const { data: userData } = await supabase
-      .from('users')
-      .select('agency_id')
-      .eq('id', user.id)
+    // Get user's agency
+    const { data: agencyData } = await supabase
+      .from('agencies')
+      .select('id, name, plan_id')
+      .eq('owner_id', user.id)
       .single()
 
-    if (!userData?.agency_id) {
+    if (!agencyData?.id) {
       return NextResponse.json(
         { error: 'Agency not found' },
         { status: 404 }
       )
     }
 
-    const agencyId = userData.agency_id
-
-    // Get agency name
-    const { data: agencyData } = await supabase
-      .from('agencies')
-      .select('name')
-      .eq('id', agencyId)
-      .single()
+    const agencyId = agencyData.id
 
     // Check if agency has active integrations
     const activeIntegrations = await safeCount(
