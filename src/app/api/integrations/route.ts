@@ -132,22 +132,47 @@ export async function POST(request: NextRequest) {
     const isPerModel = ['onlyfans', 'mym'].includes(tool)
     const effectiveModelId = isPerModel ? (model_id || null) : null
 
-    // Upsert integration
-    const { data: integration, error } = await supabase
-      .from('agency_integrations')
-      .upsert(
-        {
-          agency_id: agency.id,
-          tool,
-          model_id: effectiveModelId,
-          api_key: storedKey,
-          api_url: api_url || null,
-          is_active: is_active !== false,
-        },
-        { onConflict: 'agency_id,tool,model_id', ignoreDuplicates: false }
-      )
-      .select()
-      .single()
+    // Upsert integration — compatible avec et sans colonne model_id
+    let integration, error
+    
+    if (effectiveModelId) {
+      // Essayer d'abord avec model_id (si la colonne existe)
+      const result = await supabase
+        .from('agency_integrations')
+        .upsert(
+          { agency_id: agency.id, tool, model_id: effectiveModelId, api_key: storedKey, api_url: api_url || null, is_active: is_active !== false },
+          { onConflict: 'agency_id,tool' }
+        )
+        .select()
+        .single()
+      integration = result.data
+      error = result.error
+      
+      // Fallback sans model_id si erreur de colonne
+      if (error?.message?.includes('model_id')) {
+        const result2 = await supabase
+          .from('agency_integrations')
+          .upsert(
+            { agency_id: agency.id, tool, api_key: storedKey, api_url: api_url || null, is_active: is_active !== false },
+            { onConflict: 'agency_id,tool' }
+          )
+          .select()
+          .single()
+        integration = result2.data
+        error = result2.error
+      }
+    } else {
+      const result = await supabase
+        .from('agency_integrations')
+        .upsert(
+          { agency_id: agency.id, tool, api_key: storedKey, api_url: api_url || null, is_active: is_active !== false },
+          { onConflict: 'agency_id,tool' }
+        )
+        .select()
+        .single()
+      integration = result.data
+      error = result.error
+    }
 
     if (error) throw error
 
