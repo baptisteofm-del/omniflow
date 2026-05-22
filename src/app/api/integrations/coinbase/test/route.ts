@@ -34,12 +34,12 @@ export async function POST(request: NextRequest) {
     let isConnected = false
 
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('agency_id')
-        .eq('id', user.id)
-        .single()
-      agencyId = profile?.agency_id
+      const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single()
+      agencyId = agency?.id
     }
 
     try {

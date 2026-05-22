@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's agency
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('agency_id')
-      .eq('id', auth.user.id)
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('owner_id', auth.user.id)
       .single()
 
     if (!agency?.id) {
