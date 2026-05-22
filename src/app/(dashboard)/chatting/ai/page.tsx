@@ -446,56 +446,7 @@ export default function ChattingAIPage() {
         </button>
       </div>
 
-      {/* ── AI Status Banner ── */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {(['onlyfans', 'mym'] as const).map((platform) => {
-          const config = listConfigs[platform]
-          const isActive = config?.is_active ?? false
-          return (
-            <div
-              key={platform}
-              className={`glass rounded-2xl p-5 border ${
-                isActive ? 'border-green-500/40 bg-green-500/5' : 'border-white/5 bg-white/2'
-              } flex items-center justify-between transition-all`}
-            >
-              <div className="flex items-center gap-3">
-                {/* Logo plateforme */}
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    platform === 'onlyfans' ? 'bg-[#00AFF0]/20' : 'bg-black/40 border border-white/10'
-                  }`}
-                >
-                  <span className="text-xs font-bold text-white">
-                    {platform === 'onlyfans' ? 'OF' : 'MYM'}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-semibold text-white text-sm">
-                    {platform === 'onlyfans' ? 'OnlyFans' : 'MYM'}
-                  </p>
-                  <p className={`text-xs ${isActive ? 'text-green-400' : 'text-gray-500'}`}>
-                    {isActive ? '● IA active' : '○ IA désactivée'}
-                  </p>
-                </div>
-              </div>
-              {/* Toggle switch */}
-              <button
-                onClick={() => toggleAI(platform)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  isActive ? 'bg-green-500' : 'bg-gray-700'
-                }`}
-                title={`Toggle ${platform} IA`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    isActive ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          )
-        })}
-      </div>
+
 
       {/* ── How it works panel ── */}
       {showHowItWorks && (
@@ -707,23 +658,26 @@ export default function ChattingAIPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-3">
-                        {/* Auto Mode Toggle */}
-                        {isConfigured && (
+                      <div className="flex items-center gap-3 ml-3">
+                        {/* Toggle IA — visible sur tous les profils */}
+                        <div className="flex flex-col items-center gap-1">
                           <button
-                            onClick={() => toggleAutoMode(model.id)}
-                            className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                              p.auto_mode ? 'bg-green-500' : 'bg-gray-700'
+                            onClick={() => isConfigured ? toggleAutoMode(model.id) : openConfigureModel(model.id)}
+                            className={`relative w-12 h-6 rounded-full transition-all flex-shrink-0 ${
+                              isConfigured && p.auto_mode ? 'bg-green-500 shadow-lg shadow-green-500/30' : 'bg-gray-700'
                             }`}
-                            title={p.auto_mode ? 'Désactiver l\'IA automatique' : 'Activer l\'IA automatique'}
+                            title={!isConfigured ? 'Configurer d\'abord' : p.auto_mode ? 'Désactiver l\'IA' : 'Activer l\'IA'}
                           >
-                            <span
-                              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                                p.auto_mode ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
+                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                              isConfigured && p.auto_mode ? 'translate-x-6' : 'translate-x-0'
+                            }`} />
                           </button>
-                        )}
+                          <span className={`text-xs font-medium ${
+                            isConfigured && p.auto_mode ? 'text-green-400' : 'text-gray-600'
+                          }`}>
+                            {isConfigured && p.auto_mode ? 'Actif' : 'Inactif'}
+                          </span>
+                        </div>
                         <button
                           onClick={() => openConfigureModel(model.id)}
                           className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-xs hover:border-violet-500/40 hover:text-violet-300 transition-all flex items-center gap-1.5 flex-shrink-0"
