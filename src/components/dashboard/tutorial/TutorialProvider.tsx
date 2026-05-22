@@ -161,7 +161,17 @@ export const tutorials: Tutorial[] = [
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [activeTutorial, setActiveTutorial] = useState<Tutorial | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
-  const [completedTutorials, setCompletedTutorials] = useState<string[]>([])
+  const [completedTutorials, setCompletedTutorials] = useState<string[]>(() => {
+    // Initialise depuis localStorage pour éviter le flash au chargement
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('omniflow_completed_tutorials')
+        return stored ? JSON.parse(stored) : []
+      } catch { return [] }
+    }
+    return []
+  })
+  const [tutorialsLoaded, setTutorialsLoaded] = useState(false)
   const supabase = createClient()
 
   // Load completed tutorials on mount
@@ -169,7 +179,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const loadCompletedTutorials = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) { setTutorialsLoaded(true); return }
 
         const { data: agency } = await supabase
           .from('agencies')
@@ -183,20 +193,28 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
             .select('tutorial_id')
             .eq('agency_id', agency.id)
 
-          if (progress) {
-            setCompletedTutorials(progress.map(p => p.tutorial_id))
+          if (progress && progress.length > 0) {
+            const ids = progress.map((p: any) => p.tutorial_id)
+            setCompletedTutorials(ids)
+            // Sync vers localStorage
+            try { localStorage.setItem('omniflow_completed_tutorials', JSON.stringify(ids)) } catch {}
           }
         }
       } catch (error) {
         console.error('Failed to load tutorial progress:', error)
+      } finally {
+        setTutorialsLoaded(true)
       }
     }
 
     loadCompletedTutorials()
   }, [supabase])
 
-  // Auto-start "getting-started" for new agencies
+  // Auto-start "getting-started" — seulement APRES chargement DB confirmé
   useEffect(() => {
+    if (!tutorialsLoaded) return  // attendre que la DB soit chargée
+    if (completedTutorials.includes('getting-started')) return  // déjà vu
+
     const autoStartTutorial = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -208,8 +226,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
           .eq('owner_id', user.id)
           .single()
 
-        // Start tutorial if onboarding just completed and haven't seen getting-started
-        if (agency?.onboarding_completed && !completedTutorials.includes('getting-started')) {
+        if (agency?.onboarding_completed) {
           startTutorial('getting-started')
         }
       } catch (error) {
@@ -217,10 +234,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (completedTutorials.length > 0 || completedTutorials.length === 0) {
-      autoStartTutorial()
-    }
-  }, [supabase, completedTutorials])
+    autoStartTutorial()
+  }, [tutorialsLoaded]) // ne se relance pas à chaque re-render
 
   const startTutorial = useCallback((tutorialId: string) => {
     const tutorial = tutorials.find(t => t.id === tutorialId)
@@ -263,12 +278,15 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (agency) {
-        await supabase.from('tutorial_progress').insert({
+        await supabase.from('tutorial_progress').upsert({
           agency_id: agency.id,
           tutorial_id: activeTutorial.id,
-        }).select()
+        }, { onConflict: 'agency_id,tutorial_id', ignoreDuplicates: true })
 
-        setCompletedTutorials(prev => [...prev, activeTutorial.id])
+        const updated = [...completedTutorials, activeTutorial.id]
+        setCompletedTutorials(updated)
+        // Persist dans localStorage pour les prochaines sessions
+        try { localStorage.setItem('omniflow_completed_tutorials', JSON.stringify(updated)) } catch {}
       }
     } catch (error) {
       console.error('Failed to mark tutorial as completed:', error)
