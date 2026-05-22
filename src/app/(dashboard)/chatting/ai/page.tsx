@@ -50,6 +50,14 @@ interface AIMessage {
   fan_profile?: { fan_name: string }
 }
 
+interface FeedbackModal {
+  isOpen: boolean
+  messageId: string | null
+  originalContent: string
+  corrected: string
+  reason: string
+}
+
 interface FanProfile {
   id: string
   fan_name: string
@@ -94,6 +102,13 @@ export default function ChattingAIPage() {
   const [showPersonalityModal, setShowPersonalityModal] = useState(false)
   const [showScriptModal, setShowScriptModal] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
+  const [feedbackModal, setFeedbackModal] = useState<FeedbackModal>({
+    isOpen: false,
+    messageId: null,
+    originalContent: '',
+    corrected: '',
+    reason: '',
+  })
   const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'queue' | 'fans' | 'activity'>('models')
 
   const [personalityForm, setPersonalityForm] = useState({
@@ -250,7 +265,42 @@ export default function ChattingAIPage() {
     } catch { toast.error('Erreur') }
   }
 
+  const handleFeedback = async (messageId: string, action: 'validate' | 'correct' | 'reject', correction?: string, reason?: string) => {
+    try {
+      const res = await fetch('/api/chatting/ai/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          action,
+          correction,
+          reason,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setRecentMessages((prev) => prev.filter((m) => m.id !== messageId))
+      toast.success(
+        action === 'validate' ? '✅ Message validé' :
+        action === 'correct' ? '✏️ Correction enregistrée' :
+        '❌ Message rejeté'
+      )
+      setFeedbackModal({ isOpen: false, messageId: null, originalContent: '', corrected: '', reason: '' })
+    } catch { toast.error('Erreur lors de l\'envoi du feedback') }
+  }
+
+  const openFeedbackModal = (messageId: string, content: string) => {
+    setFeedbackModal({
+      isOpen: true,
+      messageId,
+      originalContent: content,
+      corrected: content,
+      reason: '',
+    })
+  }
+
   const modelName = (id: string) => models.find((m) => m.id === id)?.name || id
+
+  const AI_GENERATED_FEEDBACK_ENABLED = true // Feature flag
 
   return (
     <FeatureGate feature="chatting_ai" planId={planId}>
