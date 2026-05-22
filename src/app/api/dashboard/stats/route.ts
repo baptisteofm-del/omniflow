@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
             color: 'text-red-400',
           },
         ],
+        topModels: [],
         recentActivity: [],
         upcomingPosts: [],
         connections: [],
@@ -217,6 +218,37 @@ export async function GET(request: NextRequest) {
     )
     const upcomingPosts = upcomingPostsData
 
+    // Top modèles par revenus
+    const transactionsData = await safeSelect(
+      supabase.from('finance_transactions')
+        .select('model_id, amount')
+        .eq('agency_id', agencyId)
+        .eq('type', 'income')
+        .gte('created_at', monthStart)
+    )
+    const modelRevMap: Record<string, number> = {}
+    for (const t of transactionsData) {
+      if (t.model_id) modelRevMap[t.model_id] = (modelRevMap[t.model_id] || 0) + (t.amount || 0)
+    }
+    const modelIds = Object.keys(modelRevMap)
+    let topModels: any[] = []
+    if (modelIds.length > 0) {
+      const modelsNames = await safeSelect(
+        supabase.from('models').select('id, name').in('id', modelIds).eq('agency_id', agencyId)
+      )
+      const totalRev = Object.values(modelRevMap).reduce((a: number, b: number) => a + b, 0) || 1
+      topModels = modelsNames
+        .map((m: any) => ({ name: m.name, revenue: modelRevMap[m.id] || 0, pct: Math.round((modelRevMap[m.id] || 0) / totalRev * 100) }))
+        .sort((a: any, b: any) => b.revenue - a.revenue)
+        .slice(0, 3)
+    } else {
+      // Si pas de transactions, retourner les modèles actifs avec revenue 0
+      const activeModels = await safeSelect(
+        supabase.from('models').select('id, name').eq('agency_id', agencyId).limit(3)
+      )
+      topModels = activeModels.map((m: any) => ({ name: m.name, revenue: 0, pct: 0 }))
+    }
+
     // Fetch integrations
     const tools = [
       { name: 'OnlyFans', tool: 'onlyfans' },
@@ -294,6 +326,7 @@ export async function GET(request: NextRequest) {
           color: 'text-red-400',
         },
       ],
+      topModels,
       recentActivity,
       upcomingPosts,
       connections,

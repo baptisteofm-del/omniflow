@@ -349,6 +349,41 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Top Modèles */}
+        <div className="glass rounded-2xl p-6 border border-white/5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold flex items-center gap-2">
+              <TrendingUp size={18} className="text-purple-400" />
+              Top modèles
+            </h2>
+            <Link href="/accounts" className="text-xs text-gray-500 hover:text-purple-400 transition-colors">Voir tous →</Link>
+          </div>
+          {!loading && dashboardData?.topModels && dashboardData.topModels.length > 0 ? (
+            <div className="space-y-3">
+              {dashboardData.topModels.map((m: any, i: number) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 w-4 flex-shrink-0">{i + 1}</span>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                    {m.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{m.name}</p>
+                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-1">
+                      <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full transition-all" style={{ width: `${Math.max(m.pct, m.revenue > 0 ? 10 : 0)}%` }} />
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-green-400 flex-shrink-0">{m.revenue}€</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-600 text-sm mb-2">Aucune donnée de revenus</p>
+              <Link href="/finance" className="text-xs text-purple-400 hover:text-purple-300">→ Configurer la finance</Link>
+            </div>
+          )}
+        </div>
+
         {/* Alertes actionnables */}
         <div className="glass rounded-2xl p-6 border border-white/5">
           <h2 className="font-semibold flex items-center gap-2 mb-4">
@@ -406,8 +441,40 @@ export default function DashboardPage() {
         </div>
       </div>
 
-
+      {/* Suggestions IA contextuelles */}
+      {!loading && (() => {
+        const aiMsgs = dashboardData?.stats?.find((s: any) => s.label === 'Messages IA')?.value || 0
+        const modelsCount = dashboardData?.stats?.find((s: any) => s.label === 'Modèles actifs')?.value || 0
+        const trendsCount = dashboardData?.stats?.find((s: any) => s.label === 'Trends captés')?.value || 0
+        const hasDisconnected = dashboardData?.connections?.some((c: any) => !c.is_active)
+        
+        const suggestions = []
+        if (hasDisconnected) suggestions.push({ emoji: '🔗', text: 'Connecter une intégration', href: '/settings/integrations' })
+        if (aiMsgs === 0 && modelsCount > 0) suggestions.push({ emoji: '🤖', text: 'Activer le Chatting IA', href: '/chatting/ai' })
+        if (trendsCount < 5) suggestions.push({ emoji: '🔥', text: 'Actualiser les trends', href: '/content/veille' })
+        if (modelsCount === 0) suggestions.push({ emoji: '👤', text: 'Ajouter un modèle', href: '/accounts' })
+        suggestions.push({ emoji: '📊', text: 'Voir les rapports', href: '/chatting' })
+        suggestions.push({ emoji: '💰', text: 'Finance', href: '/finance' })
+        suggestions.push({ emoji: '🎯', text: 'Prospecter des modèles', href: '/accounts/prospection' })
+        
+        return (
+          <div className="glass rounded-2xl p-5 border border-cyan-500/20 bg-gradient-to-r from-cyan-500/3 to-purple-500/3">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles size={15} className="text-cyan-400" />
+              <span className="text-sm font-semibold text-cyan-300">Suggestions</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {suggestions.slice(0, 6).map((s, i) => (
+                <Link key={i} href={s.href} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 rounded-xl text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all border border-white/10">
+                  <span>{s.emoji}</span>
+                  <span>{s.text}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
-// force redeploy Fri May 22 18:00:19 UTC 2026
+// force redeploy Fri May 22 18:21:00 UTC 2026
