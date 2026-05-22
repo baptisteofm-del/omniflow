@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       .eq('id', auth.user.id)
       .single()
 
-    if (!profile) {
+    if (!agency?.id) {
       return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
     }
 
