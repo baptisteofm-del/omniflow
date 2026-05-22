@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert integration
     const { data: integration, error } = await supabase
-      .from('integrations')
+      .from('agency_integrations')
       .upsert(
         {
           agency_id: agency.id,

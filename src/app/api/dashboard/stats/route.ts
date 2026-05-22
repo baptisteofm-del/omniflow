@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
     let connections: any[] = []
     try {
       const { data: integrations, error: intError } = await supabase
-        .from('integrations')
+        .from('agency_integrations')
         .select('tool, is_active')
         .eq('agency_id', agencyId)
 
