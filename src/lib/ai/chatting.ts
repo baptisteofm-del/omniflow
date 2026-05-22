@@ -107,7 +107,7 @@ ${scriptsContext || 'Aucun script configuré.'}
 - Jamais de guillemets autour du message
 - Jamais robotique, jamais générique
 - Langue : ${personality.languages?.[0] || 'fr'}
-- Sujets interdits : ${personality.topicsToAvoid?.join(', ') || 'aucun'}`
+- Sujets interdits : ${personality.topicsToAvoid?.join(', ') || 'aucun'}`;
 
   const userMessage = `Contexte de conversation récente:
 ${recentConversation}
