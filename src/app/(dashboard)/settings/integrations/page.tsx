@@ -269,12 +269,20 @@ export default function IntegrationsPage() {
 
   const loadIntegrations = async () => {
     try {
-      const res = await fetch('/api/integrations')
+      // Si on est sur un modèle spécifique, filtrer par model_id
+      const url = modelIdFromUrl
+        ? `/api/integrations?model_id=${modelIdFromUrl}`
+        : '/api/integrations'
+      const res = await fetch(url)
       if (!res.ok) throw new Error('Failed to load')
       const data = await res.json()
 
       const indexed: Record<string, Integration> = {}
       for (const integ of data.integrations || []) {
+        // Si on est sur un modèle spécifique, n'accepter que les intégrations liées à ce modèle
+        if (modelIdFromUrl && ['onlyfans', 'mym'].includes(integ.tool)) {
+          if (integ.model_id !== modelIdFromUrl) continue
+        }
         indexed[integ.tool] = integ
       }
       setConnected(indexed)
@@ -550,7 +558,7 @@ export default function IntegrationsPage() {
                           )}
                           {integration.id === 'mym' && (
                             <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Bearer token disponible dans les paramètres de développeur MYM
+                              ⚠️ Entrez l'email et le mot de passe du compte MYM de ce modèle. La 2FA doit être désactivée.
                             </p>
                           )}
                           {integration.id === 'stripe' && (
