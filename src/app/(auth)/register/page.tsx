@@ -9,14 +9,17 @@ import toast from 'react-hot-toast'
 function RegisterForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const plan = params.get('plan') || 'starter'
+  const plan         = params.get('plan') || 'starter'
+  const inviteToken  = params.get('invitation') || ''
+  const inviteEmail  = params.get('email') || ''
+  const inviteAgency = params.get('agency') || ''
   const [referralCode, setReferralCode] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [form, setForm] = useState({
     agencyName: '',
-    email: '',
+    email: inviteEmail || '',  // pré-remplir si invitation
     password: '',
   })
 
@@ -64,8 +67,13 @@ function RegisterForm() {
         // Don't block signup if email fails
       }
 
-      toast.success('Compte créé ! Vérifiez votre email.')
-      router.push('/dashboard')
+      toast.success('Compte créé ! Connexion en cours...')
+      // Si invitation, rediriger vers la page d'acceptation
+      if (inviteToken && inviteAgency) {
+        router.push('/join?invitation=' + inviteToken + '&email=' + encodeURIComponent(inviteEmail) + '&agency=' + inviteAgency)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de la création du compte')
     } finally {

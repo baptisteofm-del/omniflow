@@ -1,13 +1,15 @@
 'use client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router  = useRouter()
+  const params  = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const redirect = params?.get('redirect') || ''
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
@@ -22,7 +24,11 @@ export default function LoginPage() {
         password: form.password,
       })
       if (error) throw error
-      router.push('/dashboard')
+      if (redirect) {
+        router.push(redirect)
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err: any) {
       toast.error(err.message || 'Email ou mot de passe incorrect')

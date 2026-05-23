@@ -134,7 +134,34 @@ export async function POST(req: NextRequest) {
 
     // Envoyer l'email d'invitation via Resend
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'
-    const inviteUrl = `${appUrl}/join?invitation=${token}&email=${encodeURIComponent(email)}&agency=${agency.id}`
+    const inviteUrl = appUrl + '/join?invitation=' + token + '&email=' + encodeURIComponent(email) + '&agency=' + agency.id
+
+    // Labels de rôles lisibles
+    const ROLE_LABELS: Record<string, string> = {
+      video_editor: 'Monteur Vidéo',
+      chatting_manager: 'Manager Chatting',
+      marketing_manager: 'Manager Marketing',
+      admin: 'Administrateur',
+      member: 'Membre',
+    }
+    const roleLabel = ROLE_LABELS[role] || role
+    const agencyDisplayName = agency.name || 'votre agence'
+    const subjectLine = agencyDisplayName + ' vous invite à rejoindre OmniFlow'
+
+    const emailHtml = '<div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;background:#0a0a0f;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">'
+      + '<div style="background:linear-gradient(135deg,#7c3aed22,#0891b222);padding:40px">'
+      + '<div style="width:44px;height:44px;background:linear-gradient(135deg,#7c3aed,#0891b2);border-radius:10px;margin-bottom:20px"></div>'
+      + '<h1 style="color:white;font-size:22px;font-weight:700;margin:0 0 8px">Invitation OmniFlow</h1>'
+      + '<p style="color:#9ca3af;font-size:14px;margin:0">' + agencyDisplayName + ' vous invite à rejoindre OmniFlow</p>'
+      + '</div>'
+      + '<div style="padding:32px 40px">'
+      + '<p style="color:#d1d5db;font-size:15px;line-height:1.6;margin:0 0 24px">'
+      + 'Vous avez été invité(e) à rejoindre <strong style="color:white">' + agencyDisplayName + '</strong> sur OmniFlow en tant que <strong style="color:#a78bfa">' + roleLabel + '</strong>.'
+      + '</p>'
+      + '<a href="' + inviteUrl + '" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#0891b2);color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;margin-bottom:24px">Accepter l\'invitation →</a>'
+      + '<p style="color:#6b7280;font-size:12px;margin:0;line-height:1.5">Ce lien expire dans 7 jours.<br>Si vous n\'avez pas demandé cette invitation, ignorez cet email.</p>'
+      + '</div></div>'
+
     try {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY || '')
@@ -142,33 +169,21 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
           to: email,
-          subject: `Invitation à rejoindre \${agency.name || 'OmniFlow'}`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; background: #0a0a0f; color: white; border-radius: 12px;">
-              <h1 style="color: #a855f7; margin-bottom: 16px;">Invitation OmniFlow</h1>
-              <p style="color: #9ca3af; margin-bottom: 24px;">
-                Vous avez été invité(e) à rejoindre <strong style="color: white;">\${agency.name || 'votre agence'}</strong> sur OmniFlow en tant que <strong style="color: #a78bfa;">\${({'video_editor':'Monteur Vidéo','chatting_manager':'Manager Chatting','marketing_manager':'Manager Marketing','admin':'Administrateur','member':'Membre'})[role] || role}</strong>.
-              </p>
-              <a href="\${inviteUrl}" style="display: inline-block; background: linear-gradient(to right, #7c3aed, #0891b2); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-bottom: 24px;">
-                Accepter l'invitation
-              </a>
-              <p style="color: #6b7280; font-size: 12px;">Ce lien expire dans 7 jours. Si vous n'avez pas demandé cette invitation, ignorez cet email.</p>
-            </div>
-          `
+          subject: subjectLine,
+          html: emailHtml,
         })
       }
     } catch (emailErr) {
-      // L'email a échoué mais l'invitation est créée - non bloquant
       console.warn('Email send failed (non-blocking):', emailErr)
     }
 
     return NextResponse.json({
       success: true,
       invitation,
-      inviteUrl, // utile pour tests
+      inviteUrl,
       message: process.env.RESEND_API_KEY
-        ? `Invitation envoyée à \${email}`
-        : `Invitation créée pour \${email} (email non configuré — partagez ce lien : \${inviteUrl})`
+        ? 'Invitation envoyée à ' + email
+        : 'Invitation créée. Lien à partager : ' + inviteUrl
     }, { status: 201 })
 
   } catch (error) {
