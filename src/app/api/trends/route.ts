@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
 }
 
 function filterMock(platform: string, category: string | null, limit: number) {
-  let trends = MOCK_TRENDS_FLAT.filter(t => t.platform !== 'youtube')
+  let trends = MOCK_TRENDS_FLAT.filter(t => (t.platform as string) !== 'youtube')
   if (platform !== 'all') trends = trends.filter((t) => t.platform === platform)
   if (category) trends = trends.filter((t) => t.category === category)
   return trends.slice(0, limit)
