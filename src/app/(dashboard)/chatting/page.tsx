@@ -75,16 +75,50 @@ function AlertConfigModal({ config, onSave, onClose }: {
           <div>
             <label className="text-xs text-gray-500 block mb-2">Canaux de notification</label>
             <div className="space-y-2">
-              {[
-                { key: 'notify_saas',      label: 'Notification dans le SaaS' },
-                { key: 'notify_telegram',  label: 'Notification Telegram' },
-              ].map(ch => (
-                <label key={ch.key} className="flex items-center justify-between p-2.5 bg-white/3 border border-white/8 rounded-xl cursor-pointer hover:bg-white/5">
-                  <span className="text-xs text-gray-300">{ch.label}</span>
-                  <input type="checkbox" checked={local[ch.key]} onChange={e => setLocal((l: any) => ({ ...l, [ch.key]: e.target.checked }))}
-                    className="accent-purple-500" />
-                </label>
-              ))}
+              {/* OmniFlow in-app */}
+              <label className="flex items-center justify-between p-2.5 bg-white/3 border border-white/8 rounded-xl cursor-pointer hover:bg-white/5">
+                <span className="text-xs text-gray-300">Notification OmniFlow (in-app)</span>
+                <input type="checkbox" checked={local.notify_saas}
+                  onChange={e => setLocal((l: any) => ({ ...l, notify_saas: e.target.checked }))}
+                  className="accent-purple-500" />
+              </label>
+
+              {/* Telegram agence */}
+              <label className="flex items-start justify-between p-2.5 bg-white/3 border border-white/8 rounded-xl cursor-pointer hover:bg-white/5 gap-3">
+                <div>
+                  <p className="text-xs text-gray-300">Alerte via Telegram agence</p>
+                  {!local.telegram_username
+                    ? <p className="text-xs text-gray-600 mt-0.5">Connectez votre Telegram ci-dessous</p>
+                    : <p className="text-xs text-green-500 mt-0.5">{local.telegram_username} — connecté</p>
+                  }
+                </div>
+                <input type="checkbox" checked={!!local.notify_telegram && !!local.telegram_username}
+                  disabled={!local.telegram_username}
+                  onChange={e => setLocal((l: any) => ({ ...l, notify_telegram: e.target.checked }))}
+                  className="accent-purple-500 disabled:opacity-40 mt-0.5" />
+              </label>
+
+              {/* Connexion Telegram agence */}
+              <div className="p-3 bg-blue-500/5 border border-blue-500/15 rounded-xl space-y-2">
+                <p className="text-xs font-semibold text-blue-300">Connexion Telegram de l'agence</p>
+                <p className="text-xs text-gray-600">Distinct du Bot Telegram modèles — pour recevoir vos alertes OmniFlow personnellement.</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="@username ou Chat ID"
+                    value={local.telegram_username || ''}
+                    onChange={e => setLocal((l: any) => ({ ...l, telegram_username: e.target.value }))}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500/40 focus:outline-none"
+                  />
+                  {local.telegram_username && (
+                    <button onClick={() => setLocal((l: any) => ({ ...l, telegram_username: '', notify_telegram: false }))}
+                      className="px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 hover:bg-red-500/20 transition-all">
+                      Retirer
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-700">Utilisez @userinfobot sur Telegram pour obtenir votre Chat ID</p>
+              </div>
             </div>
           </div>
 
@@ -93,15 +127,19 @@ function AlertConfigModal({ config, onSave, onClose }: {
             <label className="text-xs text-gray-500 block mb-2">Types d'alertes</label>
             <div className="space-y-2">
               {[
-                { key: 'alert_unhappy',     label: 'Fan mécontent détecté' },
-                { key: 'alert_missed',      label: 'Opportunité manquée' },
-                { key: 'alert_drop',        label: 'Baisse de performance' },
-                { key: 'alert_response',    label: 'Temps de réponse trop long' },
+                { key: 'alert_unhappy',  label: 'Fan mécontent détecté',    desc: 'Sentiment négatif ou plainte détectés' },
+                { key: 'alert_missed',   label: 'Opportunité manquée',       desc: 'Vente potentielle non convertie' },
+                { key: 'alert_drop',     label: 'Baisse de performance',     desc: 'Revenus ou messages en baisse' },
+                { key: 'alert_response', label: 'Temps de réponse trop long', desc: 'Délai de réponse au-delà du seuil' },
               ].map(a => (
-                <label key={a.key} className="flex items-center justify-between p-2.5 bg-white/3 border border-white/8 rounded-xl cursor-pointer hover:bg-white/5">
-                  <span className="text-xs text-gray-300">{a.label}</span>
-                  <input type="checkbox" checked={local[a.key]} onChange={e => setLocal((l: any) => ({ ...l, [a.key]: e.target.checked }))}
-                    className="accent-purple-500" />
+                <label key={a.key} className="flex items-start justify-between p-2.5 bg-white/3 border border-white/8 rounded-xl cursor-pointer hover:bg-white/5 gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-300 font-medium">{a.label}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{a.desc}</p>
+                  </div>
+                  <input type="checkbox" checked={local[a.key] !== false}
+                    onChange={e => setLocal((l: any) => ({ ...l, [a.key]: e.target.checked }))}
+                    className="accent-purple-500 mt-0.5 flex-shrink-0" />
                 </label>
               ))}
             </div>
@@ -127,10 +165,11 @@ const DEFAULT_ALERT_CONFIG = {
   inactivity_minutes: 20,
   notify_saas: true,
   notify_telegram: false,
+  telegram_username: '',
   alert_unhappy: true,
   alert_missed: true,
   alert_drop: true,
-  alert_response: false,
+  alert_response: true,
 }
 
 export default function ChattingReportsPage() {
@@ -586,11 +625,11 @@ export default function ChattingReportsPage() {
                 <div className="space-y-1.5">
                   <div className={cn('flex items-center gap-2 text-xs', alertConfig.notify_saas ? 'text-green-400' : 'text-gray-600')}>
                     {alertConfig.notify_saas ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                    Notification SaaS
+                    Notification OmniFlow (in-app)
                   </div>
-                  <div className={cn('flex items-center gap-2 text-xs', alertConfig.notify_telegram ? 'text-green-400' : 'text-gray-600')}>
-                    {alertConfig.notify_telegram ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                    Notification Telegram
+                  <div className={cn('flex items-center gap-2 text-xs', alertConfig.notify_telegram && (alertConfig as any).telegram_username ? 'text-green-400' : 'text-gray-600')}>
+                    {alertConfig.notify_telegram && (alertConfig as any).telegram_username ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+                    Telegram agence{(alertConfig as any).telegram_username ? ` — ${(alertConfig as any).telegram_username}` : ' — non connecté'}
                   </div>
                 </div>
               </div>
@@ -615,15 +654,23 @@ export default function ChattingReportsPage() {
           </div>
 
           {/* Accès Telegram */}
-          <div className="glass rounded-xl p-4 border border-white/5">
+          <div className="glass rounded-xl p-4 border border-white/5 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-white mb-0.5">Alertes via Telegram</p>
-                <p className="text-xs text-gray-600">Recevez vos alertes directement sur Telegram en connectant un canal.</p>
+                <p className="text-xs font-semibold text-white mb-0.5">Telegram agence (alertes OmniFlow)</p>
+                <p className="text-xs text-gray-600">
+                  {(alertConfig as any).telegram_username
+                    ? `Connecté : ${(alertConfig as any).telegram_username}`
+                    : 'Configurez votre Telegram personnel pour recevoir les alertes.'}
+                </p>
               </div>
-              <Link href="/telegram" className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-400 hover:bg-blue-500/15 transition-all flex-shrink-0">
+              <button onClick={() => setShowAlertConfig(true)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-400 hover:bg-blue-500/15 transition-all flex-shrink-0">
                 Configurer <ArrowUpRight size={10} />
-              </Link>
+              </button>
+            </div>
+            <div className="p-2.5 bg-white/3 border border-white/5 rounded-lg">
+              <p className="text-xs text-gray-600">Distinct du <Link href="/telegram" className="text-blue-400 hover:text-blue-300 underline">Bot Telegram modèles</Link> — celui-ci est réservé à vos notifications personnelles d'agence.</p>
+            </div>
             </div>
           </div>
         </div>
