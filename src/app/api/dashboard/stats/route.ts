@@ -61,13 +61,13 @@ export async function GET(request: NextRequest) {
     const agencyId = agencyData.id
 
 
-    // 1. Active models count
+    // 1. Active models count (tous les modèles, is_active peut être null)
     const models = await safeSelect(
       supabase
         .from('models')
         .select('id')
         .eq('agency_id', agencyId)
-        .eq('is_active', true)
+        .neq('is_active', false)
     )
     const activeModelsCount = models.length
 
@@ -227,6 +227,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       agency: {
         name: agencyData?.name || 'Omniflow',
+      },
+      plan: {
+        id: agencyData?.plan_id || 'starter',
       },
       stats: [
         {
