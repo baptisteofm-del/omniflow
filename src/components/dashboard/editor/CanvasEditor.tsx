@@ -60,12 +60,13 @@ export function CanvasEditor({ file, onExport, onCancel }: CanvasEditorProps) {
   const [dragging, setDragging]       = useState(false)
   const [dragStart, setDragStart]     = useState({ x: 0, y: 0, lx: 0, ly: 0 })
   const [canvasSize, setCanvasSize]   = useState({ w: CANVAS_W, h: CANVAS_H })
-  const [activeTab, setActiveTab]     = useState<'layers' | 'text' | 'stickers' | 'collage'>('layers')
-  const [caption, setCaption]         = useState('')
+  const [activeTab, setActiveTab]     = useState<'layers' | 'text' | 'stickers'>('layers')
   const [scale, setScale]             = useState(1)
   const [aspectRatio, setAspectRatio] = useState('9:16')
-  const [extraFiles, setExtraFiles]   = useState<File[]>([])
+  const [isVideo, setIsVideo]         = useState(false)
+  const [videoEl, setVideoEl]         = useState<HTMLVideoElement | null>(null)
   const extraInputRef = useRef<HTMLInputElement>(null)
+  const animFrameRef  = useRef<number>(0)
 
   const selectedLayer = layers.find(l => l.id === selected) ?? null
 
@@ -73,24 +74,47 @@ export function CanvasEditor({ file, onExport, onCancel }: CanvasEditorProps) {
   useEffect(() => {
     if (!file) return
     const url = URL.createObjectURL(file)
-    if (file.type.startsWith('image/')) {
+    const cw = canvasSize.w
+    const ch = canvasSize.h
+
+    if (file.type.startsWith('video/')) {
+      setIsVideo(true)
+      const vid = document.createElement('video')
+      vid.src = url; vid.muted = true; vid.playsInline = true; vid.crossOrigin = 'anonymous'
+      vid.onloadedmetadata = () => {
+        const aspect = vid.videoWidth / vid.videoHeight
+        const fitW = Math.min(cw, ch * aspect)
+        const fitH = fitW / aspect
+        setLayers([{ id: 'video-base', type: 'image', src: url, img: vid as any, x: (cw - fitW) / 2, y: (ch - fitH) / 2, width: fitW, height: fitH, rotation: 0, opacity: 1 }])
+        setVideoEl(vid)
+        vid.play().catch(() => {})
+      }
+      vid.load()
+    } else {
+      setIsVideo(false)
       const img = new window.Image()
       img.onload = () => {
         const aspect = img.width / img.height
-        const cw = canvasSize.w
-        const ch = canvasSize.h
         const fitW = Math.min(cw, ch * aspect)
         const fitH = fitW / aspect
-        const layer: Layer = {
-          id: genId(), type: 'image', src: url, img,
-          x: (cw - fitW) / 2, y: (ch - fitH) / 2,
-          width: fitW, height: fitH, rotation: 0, opacity: 1,
-        }
-        setLayers([layer])
+        setLayers([{ id: genId(), type: 'image', src: url, img, x: (cw - fitW) / 2, y: (ch - fitH) / 2, width: fitW, height: fitH, rotation: 0, opacity: 1 }])
       }
       img.src = url
     }
   }, [file])
+
+  // Animation loop pour vidéo en temps réel
+  useEffect(() => {
+    if (!isVideo || !videoEl) return
+    let running = true
+    const loop = () => {
+      if (!running) return
+      draw()
+      animFrameRef.current = requestAnimationFrame(loop)
+    }
+    animFrameRef.current = requestAnimationFrame(loop)
+    return () => { running = false; cancelAnimationFrame(animFrameRef.current) }
+  }, [isVideo, videoEl])
 
   // ── Compute preview scale ─────────────────────────────────
   useEffect(() => {
@@ -272,7 +296,7 @@ export function CanvasEditor({ file, onExport, onCancel }: CanvasEditorProps) {
   const handleExport = () => {
     const canvas = canvasRef.current!
     canvas.toBlob(blob => {
-      if (blob) onExport(blob, caption)
+      if (blob) onExport(blob, '')
     }, 'image/jpeg', 0.92)
   }
 
@@ -534,16 +558,7 @@ export function CanvasEditor({ file, onExport, onCancel }: CanvasEditorProps) {
             </div>
           )}
 
-          {/* Caption field */}
-          <div className="glass rounded-xl border border-white/5 p-4">
-            <label className="text-xs font-semibold text-gray-400 flex items-center gap-1.5 mb-2">
-              <Type size={12} />Caption
-            </label>
-            <textarea value={caption} onChange={e => setCaption(e.target.value)}
-              placeholder="Ajoutez une caption pour ce contenu..."
-              rows={2}
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-white text-sm placeholder-gray-600 focus:border-purple-500/40 focus:outline-none resize-none transition-colors" />
-          </div>
+
         </div>
       </div>
 

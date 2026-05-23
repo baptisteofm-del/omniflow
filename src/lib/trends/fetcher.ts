@@ -14,7 +14,7 @@ import { SEED_TRENDS } from './seed-data'
 
 export interface Trend {
   id: string
-  platform: 'tiktok' | 'instagram' | 'reddit' | 'youtube'
+  platform: 'tiktok' | 'instagram' | 'reddit'
   title: string
   description?: string
   url: string
@@ -23,9 +23,30 @@ export interface Trend {
   authorUrl?: string
   contentType: 'video' | 'photo' | 'text' | 'reel' | 'carousel'
   engagement: number
+  likes: number
+  postDate?: string
   category: string
   tags: string[]
   capturedAt: Date
+}
+
+// Détecte le vrai type de contenu depuis l'URL et l'ID
+function detectContentType(id: string, url: string, platform: string): 'video' | 'photo' | 'reel' | 'text' {
+  if (platform === 'tiktok') return 'video'
+  if (platform === 'reddit') return 'text'
+  // Instagram: /reel/ = reel, seed-ig-reel = reel
+  if (url.includes('/reel/') || id.includes('reel')) return 'reel'
+  // Thumbnails e15 = vidéo (15 = video flag Instagram)
+  if (url.includes('e15') || id.includes('video')) return 'video'
+  return 'photo'
+}
+
+// Dérive les likes depuis l'engagement (Instagram: ~5-8% du nb de vues pour les likes)
+function estimateLikes(engagement: number, platform: string): number {
+  if (platform === 'reddit') return Math.round(engagement * 0.95)
+  if (platform === 'tiktok') return Math.round(engagement * 0.08)
+  // Instagram: engagement = mostly views, likes ~5-7%
+  return Math.round(engagement * 0.06)
 }
 
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN
@@ -401,20 +422,26 @@ function extractHashtags(text: string): string[] {
  * Public export: Real seed trends as Trend objects
  */
 export const MOCK_TRENDS_FLAT: Trend[] = SEED_TRENDS.map(
-  (t) => ({
-    id: t.id,
-    platform: (t.platform === 'instagram' ? 'instagram' : 'tiktok') as 'instagram' | 'tiktok',
-    title: t.title,
-    url: t.url,
-    thumbnailUrl: t.thumbnailUrl,
-    authorUsername: t.authorUsername.replace('@', ''),
-    authorUrl: t.authorUrl,
-    contentType: t.contentType as 'video' | 'photo' | 'reel',
-    engagement: t.engagement,
-    category: t.category,
-    tags: t.tags,
-    capturedAt: new Date(t.capturedAt),
-  })
+  (t) => {
+    const platform = t.platform as 'instagram' | 'tiktok'
+    const detectedType = detectContentType(t.id, t.url, platform)
+    return {
+      id: t.id,
+      platform,
+      title: t.title,
+      url: t.url,
+      thumbnailUrl: t.thumbnailUrl,
+      authorUsername: t.authorUsername.replace('@', ''),
+      authorUrl: t.authorUrl,
+      contentType: detectedType,
+      engagement: t.engagement,
+      likes: estimateLikes(t.engagement, platform),
+      postDate: t.capturedAt,
+      category: t.category,
+      tags: t.tags,
+      capturedAt: new Date(t.capturedAt),
+    }
+  }
 ).sort((a, b) => b.engagement - a.engagement)
 
 /**

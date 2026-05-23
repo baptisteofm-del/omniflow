@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, TrendingUp, Loader2, AlertCircle, Filter, Zap, BarChart3, Eye } from 'lucide-react'
+import { OveruseModal } from '@/components/ui/OveruseModal'
 import toast from 'react-hot-toast'
 import { TrendCard } from '@/components/dashboard/trends/TrendCard'
 import { cn } from '@/lib/utils/cn'
@@ -43,6 +44,8 @@ export default function VeillePage() {
   const [error, setError]               = useState<string | null>(null)
   const [genAmount, setGenAmount]       = useState(5)
   const [genPlatform, setGenPlatform]   = useState<string>('tiktok')
+  const [quota, setQuota]               = useState<{ remaining: number; dailyLimit: number; canGenerate: boolean } | null>(null)
+  const [showOveruse, setShowOveruse]   = useState(false)
 
   const loadTrends = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -74,6 +77,14 @@ export default function VeillePage() {
   }, [platform, category])
 
   useEffect(() => { loadTrends() }, [loadTrends])
+
+  // Charge le quota
+  useEffect(() => {
+    fetch('/api/usage/trends')
+      .then(r => r.json())
+      .then(d => setQuota(d))
+      .catch(() => {})
+  }, [])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -121,7 +132,7 @@ export default function VeillePage() {
             Veille Trends
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Scraping & intelligence de tendances — TikTok, Instagram, Reddit, YouTube
+            Scraping & intelligence de tendances — TikTok, Instagram, Reddit
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -158,19 +169,31 @@ export default function VeillePage() {
             ))}
           </div>
 
+          {/* Quota indicator */}
+          {quota && (
+            <div className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border',
+              quota.canGenerate ? 'border-green-500/20 bg-green-500/5 text-green-400' : 'border-red-500/20 bg-red-500/5 text-red-400')}>
+              {quota.canGenerate ? `${quota.remaining}/${quota.dailyLimit} restants` : 'Quota journalier atteint'}
+            </div>
+          )}
+
           <button
-            onClick={handleRefresh}
+            onClick={() => quota?.canGenerate === false ? setShowOveruse(true) : handleRefresh()}
             disabled={refreshing}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
               refreshing
                 ? 'bg-white/5 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:opacity-90'
+                : quota?.canGenerate === false
+                  ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30'
+                  : 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:opacity-90'
             )}
           >
             {refreshing
               ? <><Loader2 size={15} className="animate-spin" />Génération...</>
-              : <><RefreshCw size={15} />Générer ({genAmount})</>
+              : quota?.canGenerate === false
+                ? <><Zap size={15} />Générer plus</>
+                : <><RefreshCw size={15} />Générer ({genAmount})</>
             }
           </button>
         </div>
@@ -323,5 +346,9 @@ export default function VeillePage() {
       </div>
 
     </div>
+
+    {showOveruse && (
+      <OveruseModal feature="trend_run" onClose={() => setShowOveruse(false)} onSuccess={() => { setShowOveruse(false); handleRefresh() }} />
+    )}
   )
 }

@@ -1,5 +1,5 @@
 'use client'
-import { ExternalLink, Sparkles, Play, TrendingUp, Image as ImageIcon, FileText, Film, Music, Layers } from 'lucide-react'
+import { ExternalLink, Sparkles, Play, Film, Image as ImageIcon, FileText, Layers, Heart, Eye, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils/cn'
 
@@ -8,6 +8,8 @@ interface TrendCardProps {
   platform: string
   title: string
   engagement: number
+  likes?: number
+  postDate?: string
   category: string
   url: string
   thumbnailUrl?: string
@@ -18,35 +20,10 @@ interface TrendCardProps {
   isTopTrend?: boolean
 }
 
-const PLATFORM_CONFIG: Record<string, { label: string; gradient: string; badge: string; text: string; border: string }> = {
-  tiktok: {
-    label: 'TikTok',
-    gradient: 'from-gray-900 to-black',
-    badge: 'bg-white text-black',
-    text: 'text-white',
-    border: 'border-white/10',
-  },
-  instagram: {
-    label: 'Instagram',
-    gradient: 'from-purple-900/40 via-pink-900/30 to-orange-900/20',
-    badge: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white',
-    text: 'text-pink-400',
-    border: 'border-pink-500/20',
-  },
-  reddit: {
-    label: 'Reddit',
-    gradient: 'from-orange-900/30 to-red-900/20',
-    badge: 'bg-orange-600 text-white',
-    text: 'text-orange-400',
-    border: 'border-orange-500/20',
-  },
-  youtube: {
-    label: 'YouTube',
-    gradient: 'from-red-900/30 to-red-950/20',
-    badge: 'bg-red-600 text-white',
-    text: 'text-red-400',
-    border: 'border-red-500/20',
-  },
+const PLATFORM_CONFIG: Record<string, { label: string; gradient: string; badge: string; border: string }> = {
+  tiktok:    { label: 'TikTok',    gradient: 'from-gray-900 to-black',                    badge: 'bg-white text-black',                              border: 'border-white/10' },
+  instagram: { label: 'Instagram', gradient: 'from-purple-900/40 via-pink-900/30 to-orange-900/20', badge: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white', border: 'border-pink-500/20' },
+  reddit:    { label: 'Reddit',    gradient: 'from-orange-900/30 to-red-900/20',           badge: 'bg-orange-600 text-white',                         border: 'border-orange-500/20' },
 }
 
 const CONTENT_TYPE_CONFIG: Record<string, { icon: any; label: string; color: string }> = {
@@ -57,30 +34,40 @@ const CONTENT_TYPE_CONFIG: Record<string, { icon: any; label: string; color: str
   text:     { icon: FileText,  label: 'Texte',    color: 'bg-gray-500/80' },
 }
 
-function formatEngagement(n: number): string {
+function fmtNum(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`
   return n.toString()
 }
 
-function formatDate(d: Date | string): string {
+function fmtRelative(d: Date | string): string {
   const date = d instanceof Date ? d : new Date(d)
   if (isNaN(date.getTime())) return '—'
-  const diffMs = Date.now() - date.getTime()
-  const mins  = Math.floor(diffMs / 60000)
-  const hours = Math.floor(diffMs / 3600000)
-  const days  = Math.floor(diffMs / 86400000)
+  const diff = Date.now() - date.getTime()
+  const mins  = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days  = Math.floor(diff / 86400000)
   if (mins  < 60) return `il y a ${mins}min`
   if (hours < 24) return `il y a ${hours}h`
   if (days  < 7)  return `il y a ${days}j`
-  return date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
-export function TrendCard({ id, platform, title, engagement, category, url, thumbnailUrl, authorUsername, authorUrl, contentType, capturedAt, isTopTrend = false }: TrendCardProps) {
-  const config = PLATFORM_CONFIG[platform] ?? PLATFORM_CONFIG.tiktok
-  const ctConfig = CONTENT_TYPE_CONFIG[contentType] ?? CONTENT_TYPE_CONFIG.video
-  const CtIcon = ctConfig.icon
-  const isMedia = contentType !== 'text'
+function fmtDate(d?: string): string {
+  if (!d) return '—'
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+export function TrendCard({
+  id, platform, title, engagement, likes, postDate, category,
+  url, thumbnailUrl, authorUsername, authorUrl, contentType, capturedAt, isTopTrend = false,
+}: TrendCardProps) {
+  const config   = PLATFORM_CONFIG[platform] ?? PLATFORM_CONFIG.tiktok
+  const ctConfig = CONTENT_TYPE_CONFIG[contentType] ?? CONTENT_TYPE_CONFIG.photo
+  const CtIcon   = ctConfig.icon
+  const isMedia  = contentType !== 'text'
   const generateLink = `/content/ai-generation?trend=${encodeURIComponent(title ?? '')}&platform=${platform}&category=${category}`
 
   return (
@@ -94,10 +81,16 @@ export function TrendCard({ id, platform, title, engagement, category, url, thum
       {/* Thumbnail */}
       <div className={cn('aspect-video relative overflow-hidden bg-gradient-to-br', config.gradient)}>
         {thumbnailUrl ? (
-          <img src={thumbnailUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img
+            src={thumbnailUrl}
+            alt={title}
+            loading="lazy"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-600">
-            <Film size={32} />
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-700">
+            <CtIcon size={28} />
             <span className="text-xs font-medium uppercase tracking-widest opacity-60">{config.label}</span>
           </div>
         )}
@@ -105,26 +98,24 @@ export function TrendCard({ id, platform, title, engagement, category, url, thum
         {/* Play overlay */}
         {isMedia && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Play size={24} className="text-white fill-white ml-1" />
+            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Play size={20} className="text-white fill-white ml-1" />
             </div>
           </div>
         )}
 
-        {/* Badges */}
+        {/* Badges top-left */}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           <span className={cn('px-2 py-1 rounded-md text-xs font-bold tracking-wide', config.badge)}>
             {config.label.toUpperCase()}
           </span>
           <span className={cn('px-2 py-1 rounded-md text-xs font-semibold text-white flex items-center gap-1', ctConfig.color)}>
-            <CtIcon size={10} />
-            {ctConfig.label}
+            <CtIcon size={10} />{ctConfig.label}
           </span>
         </div>
 
         {isTopTrend && (
-          <div className="absolute top-2.5 right-2.5 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-md text-xs font-bold flex items-center gap-1">
-            <TrendingUp size={10} />
+          <div className="absolute top-2.5 right-2.5 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-md text-xs font-bold">
             TOP
           </div>
         )}
@@ -132,58 +123,70 @@ export function TrendCard({ id, platform, title, engagement, category, url, thum
         {/* Hover actions */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3 gap-2">
           <a href={url || '#'} target="_blank" rel="noopener noreferrer"
-            className="flex-1 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-white/30 transition-colors">
-            <ExternalLink size={13} />Voir
+            className="flex-1 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-white/30 transition-colors">
+            <ExternalLink size={12} />Voir
           </a>
           {isMedia && (
             <Link href={generateLink}
-              className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity">
-              <Sparkles size={13} />Générer
+              className="flex-1 py-1.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:opacity-90">
+              <Sparkles size={12} />Générer
             </Link>
           )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
+      {/* Card body */}
+      <div className="p-3.5 space-y-2.5">
         {/* Author */}
         {authorUsername ? (
           <a href={authorUrl || '#'} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-2 hover:opacity-70 transition-opacity">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {authorUsername.charAt(0).toUpperCase()}
             </div>
             <span className="text-xs font-semibold text-cyan-400 truncate">@{authorUsername}</span>
           </a>
-        ) : (
-          <div className="h-7" />
-        )}
+        ) : <div className="h-6" />}
 
         {/* Title */}
-        <h3 className="text-xs font-semibold line-clamp-2 text-white leading-snug group-hover:text-cyan-100 transition-colors">
-          {title || 'Sans titre'}
-        </h3>
+        <h3 className="text-xs font-semibold line-clamp-2 text-white leading-snug">{title || 'Sans titre'}</h3>
 
-        {/* Engagement + Date */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/8 text-gray-300">
-            {formatEngagement(engagement || 0)} vues
+        {/* Metrics */}
+        <div className="flex items-center gap-3 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <Eye size={11} className="text-gray-600" />
+            <span className="text-gray-300 font-medium">{fmtNum(engagement || 0)}</span>
           </span>
-          <span className="text-xs text-gray-600">{formatDate(capturedAt)}</span>
+          {likes !== undefined && likes > 0 && (
+            <span className="flex items-center gap-1">
+              <Heart size={11} className="text-pink-600" />
+              <span className="text-gray-300 font-medium">{fmtNum(likes)}</span>
+            </span>
+          )}
+          {postDate && (
+            <span className="flex items-center gap-1 ml-auto">
+              <Calendar size={10} className="text-gray-600" />
+              <span className="text-gray-600">{fmtDate(postDate)}</span>
+            </span>
+          )}
         </div>
 
-        {/* Category + Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <span className="text-xs text-gray-500 capitalize">#{category}</span>
-          <div className="flex gap-1.5">
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-600 capitalize">#{category}</span>
+            <span className="text-gray-700 text-xs">·</span>
+            <span className="text-xs text-gray-700">{fmtRelative(capturedAt)}</span>
+          </div>
+          <div className="flex gap-1">
             <a href={url || '#'} target="_blank" rel="noopener noreferrer"
               className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-colors">
-              <ExternalLink size={12} className="text-gray-400" />
+              <ExternalLink size={11} className="text-gray-400" />
             </a>
             {isMedia && (
               <Link href={generateLink}
                 className="p-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 transition-colors">
-                <Sparkles size={12} className="text-purple-400" />
+                <Sparkles size={11} className="text-purple-400" />
               </Link>
             )}
           </div>
