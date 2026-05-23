@@ -122,6 +122,7 @@ export default function VeillePage() {
   ]
 
   return (
+    <>
     <div className="p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto">
 
       {/* ── HEADER ── */}
@@ -347,9 +348,9 @@ export default function VeillePage() {
 
     </div>
 
-      {showOveruse && (
-        <OveruseModal feature="trend_run" onClose={() => setShowOveruse(false)} onSuccess={() => { setShowOveruse(false); handleRefresh() }} />
-      )}
-    </div>
+    {showOveruse && (
+      <OveruseModal feature="trend_run" onClose={() => setShowOveruse(false)} onSuccess={() => { setShowOveruse(false); handleRefresh() }} />
+    )}
+    </>
   )
 }
