@@ -60,8 +60,52 @@ export default function ChattingPage() {
 
   if (loading) {
     return (
+      <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 text-sm">Chargement des rapports...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasIntegrations) {
+    return (
       <div className="p-8">
-        <div className="text-center text-gray-400">Chargement...</div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Rapports Chatting</h1>
+          <p className="text-gray-400 mt-1">Analyse complète de vos interactions et performances</p>
+        </div>
+        <div className="max-w-lg mx-auto mt-16 text-center">
+          <div className="glass rounded-2xl p-10 border border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-red-500/5">
+            <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <Zap size={28} className="text-orange-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Connexion requise</h2>
+            <p className="text-gray-400 text-sm leading-relaxed mb-2">
+              Les rapports chatting analysent vos vraies conversations, fans et performances.
+            </p>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              Pour y accéder, connectez au moins une plateforme <span className="text-white font-medium">OnlyFans</span> ou <span className="text-white font-medium">MYM</span> dans vos intégrations.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/settings/integrations"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all hover:scale-[1.02]">
+                <Zap size={15} />
+                Connecter OnlyFans / MYM
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm font-medium hover:bg-white/10 transition-all">
+                Retour au dashboard
+              </Link>
+            </div>
+            <p className="text-xs text-gray-600 mt-5">
+              Une fois connecté, vos données se synchronisent automatiquement.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -73,20 +117,6 @@ export default function ChattingPage() {
         <h1 className="text-3xl font-bold">Rapports Chatting</h1>
         <p className="text-gray-400 mt-1">Analyse complète de vos interactions et performances</p>
       </div>
-
-      {/* Integration banner */}
-      {!hasIntegrations && (
-        <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start gap-3">
-          <Lightbulb className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
-          <div>
-            <p className="font-medium text-blue-300">Connectez OnlyFans ou MYM pour analyser vos vrais fans</p>
-            <p className="text-sm text-blue-300/70 mt-1">Importez automatiquement vos messages, fans et gains pour des insights détaillés.</p>
-            <Link href="/settings/integrations" className="inline-block mt-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/50 rounded-lg text-sm font-medium text-blue-300 transition-all">
-              Aller aux intégrations →
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* KPIs */}
       <ChattingKPIs reports={reports} />
