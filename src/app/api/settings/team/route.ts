@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Envoyer l'email d'invitation via Resend
-    const inviteUrl = `\${process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'}/register?invitation=\${token}&email=\${encodeURIComponent(email)}&agency=\${agency.id}`
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'
+    const inviteUrl = `${appUrl}/join?invitation=${token}&email=${encodeURIComponent(email)}&agency=${agency.id}`
     try {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY || '')
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; background: #0a0a0f; color: white; border-radius: 12px;">
               <h1 style="color: #a855f7; margin-bottom: 16px;">Invitation OmniFlow</h1>
               <p style="color: #9ca3af; margin-bottom: 24px;">
-                Vous êtes invité(e) à rejoindre <strong style="color: white;">\${agency.name || 'une agence'}</strong> sur OmniFlow en tant que <strong style="color: #a855f7;">\${role}</strong>.
+                Vous avez été invité(e) à rejoindre <strong style="color: white;">\${agency.name || 'votre agence'}</strong> sur OmniFlow en tant que <strong style="color: #a78bfa;">\${({'video_editor':'Monteur Vidéo','chatting_manager':'Manager Chatting','marketing_manager':'Manager Marketing','admin':'Administrateur','member':'Membre'})[role] || role}</strong>.
               </p>
               <a href="\${inviteUrl}" style="display: inline-block; background: linear-gradient(to right, #7c3aed, #0891b2); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-bottom: 24px;">
                 Accepter l'invitation
