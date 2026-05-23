@@ -88,10 +88,10 @@ export default function DashboardPage() {
 
   const PLAN_FEATURES_COUNT: Record<string, number> = {
     starter: 7,  // veille, editor, posting, finance, referral, media, telegram
-    pro: 8,      // + ai_generation
-    agency: 12,  // + chatting_ai, chatting_reports, prospection, admin
+    pro: 9,      // + ai_generation, chatting_reports
+    agency: 11,  // + chatting_ai, prospection
   }
-  const MAX_TOOLS = 12
+  const MAX_TOOLS = 11
   const unlockedTools = PLAN_FEATURES_COUNT[planId] || 7
   const toolUsageRate = Math.round((unlockedTools / MAX_TOOLS) * 100)
   const contentsGenerated = editTotal + postsCount
@@ -178,7 +178,7 @@ export default function DashboardPage() {
     { label: 'Auto Posting',  icon: Calendar,      href: '/posting',                color: 'cyan',   minPlan: 'starter' },
     { label: 'Médias',        icon: Image,         href: '/media',                  color: 'pink',   minPlan: 'starter' },
     { label: 'Finance',       icon: Wallet,        href: '/finance',                color: 'yellow', minPlan: 'starter' },
-    { label: 'Rapports',      icon: BarChart3,     href: '/chatting',               color: 'orange', minPlan: 'starter' },
+    { label: 'Rapports',      icon: BarChart3,     href: '/chatting',               color: 'orange', minPlan: 'pro' },
   ]
 
   const actionColors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
