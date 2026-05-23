@@ -86,17 +86,14 @@ export default function DashboardPage() {
   const editGain = Math.round(editTotal * 8)
   const totalGain = chattingGain + postingGain + editGain
 
-  const totalTools = 7 // nombre total de features dans le SaaS
-  const unlockedTools = [
-    true, // posting (starter)
-    true, // finance (starter)
-    true, // media (starter)
-    true, // veille (starter)
-    hasFeature('pro'), // chatting IA
-    hasFeature('pro'), // generation IA
-    hasFeature('agency'), // recrutement
-  ].filter(Boolean).length
-  const toolUsageRate = Math.round((unlockedTools / totalTools) * 100)
+  const PLAN_FEATURES_COUNT: Record<string, number> = {
+    starter: 7,  // veille, editor, posting, finance, referral, media, telegram
+    pro: 8,      // + ai_generation
+    agency: 12,  // + chatting_ai, chatting_reports, prospection, admin
+  }
+  const MAX_TOOLS = 12
+  const unlockedTools = PLAN_FEATURES_COUNT[planId] || 7
+  const toolUsageRate = Math.round((unlockedTools / MAX_TOOLS) * 100)
   const contentsGenerated = editTotal + postsCount
 
   const revenueFormatted = monthlyRevenue > 0
@@ -150,8 +147,8 @@ export default function DashboardPage() {
       href: '/chatting',
     },
     {
-      label: 'Features débloquées',
-      value: `${unlockedTools}/${totalTools}`,
+      label: 'Outils disponibles',
+      value: `${unlockedTools}/${MAX_TOOLS}`,
       sub: `plan ${planLabel[planId] || planId}`,
       icon: Zap,
       color: 'text-orange-400',
