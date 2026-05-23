@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
     // Fetch trends from all sources (real APIs + mock fallback)
     let trends = await fetchAllTrends()
 
-    // Filter by platform (exclude YouTube always)
-    trends = trends.filter(t => t.platform !== 'youtube')
+    // Filter by platform (YouTube supprimé du système)
+    trends = trends.filter(t => (t.platform as string) !== 'youtube')
     if (platform && platform !== 'all') {
       trends = trends.filter(t => t.platform === platform)
     }
