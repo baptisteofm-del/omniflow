@@ -404,7 +404,7 @@ export default function TeamPage() {
                   </span>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => setEditingMember(member)}
                       className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-all">
                       <Edit2 size={11} />Permissions
@@ -441,7 +441,7 @@ export default function TeamPage() {
                   <span className="text-xs text-gray-600 flex-shrink-0 hidden sm:block tabular-nums">
                     Envoyé {fmtDate(inv.created_at)}
                   </span>
-                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       onClick={async () => {
                         const url = `${window.location.origin}/join?email=${encodeURIComponent(inv.email)}&agency=${typeof window !== 'undefined' ? '' : ''}`

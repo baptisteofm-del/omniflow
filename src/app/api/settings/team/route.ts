@@ -41,17 +41,43 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch team members' }, { status: 500 })
     }
 
-    // Get pending invitations
-    const { data: invitations, error: invitationsError } = await supabase
-      .from('team_invitations')
-      .select('id, email, role, created_at')
-      .eq('agency_id', agency.id)
-      .eq('accepted', false)
-      .order('created_at', { ascending: false })
+    // Get pending invitations — gestion souple des colonnes
+    let invitations: any[] = []
+    try {
+      // Tentative 1 : avec colonne accepted
+      const { data: inv1, error: err1 } = await supabase
+        .from('team_invitations')
+        .select('id, email, role, created_at')
+        .eq('agency_id', agency.id)
+        .eq('accepted', false)
+        .order('created_at', { ascending: false })
 
-    if (invitationsError) {
-      return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 })
+      if (!err1 && inv1) {
+        invitations = inv1
+      } else {
+        // Tentative 2 : sans filtre accepted (colonne peut-être absente)
+        const { data: inv2 } = await supabase
+          .from('team_invitations')
+          .select('id, email, role, created_at')
+          .eq('agency_id', agency.id)
+          .order('created_at', { ascending: false })
+        invitations = inv2 || []
+      }
+    } catch {
+      invitations = []
     }
+
+    // Aussi récupérer les membres avec status='invited' (fallback si team_invitations inexistante)
+    const invitedMembers = (filteredMembers || []).filter((m: any) => m.status === 'invited')
+    const activeMembers  = (filteredMembers || []).filter((m: any) => m.status !== 'invited')
+
+    // Fusionner : éviter les doublons entre invitations et invited members
+    const invitedEmails = new Set(invitations.map((i: any) => i.email?.toLowerCase()))
+    const extraInvitations = invitedMembers
+      .filter((m: any) => !invitedEmails.has(m.email?.toLowerCase()))
+      .map((m: any) => ({ id: m.id, email: m.email, role: m.role, created_at: m.joined_at }))
+
+    const allInvitations = [...invitations, ...extraInvitations]
 
     // Récupérer le profil du propriétaire
     const { data: ownerProfile } = await supabase
@@ -72,8 +98,8 @@ export async function GET(req: NextRequest) {
         status: 'active',
         joined_at: null, // créateur de l'agence
       },
-      members: filteredMembers,
-      invitations: invitations || [],
+      members: activeMembers,
+      invitations: allInvitations,
       isOwner: user.id === agency.owner_id,
     })
   } catch (error) {

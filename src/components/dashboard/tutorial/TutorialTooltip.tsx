@@ -222,5 +222,21 @@ export function TutorialTooltip() {
     </>
   )
 
-  return createPortal(overlay, document.body)
+  // Creer un div dedie a la fin du body pour eviter tout conflit de stacking context
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    let el = document.getElementById('__omniflow_tutorial_portal__')
+    if (!el) {
+      el = document.createElement('div')
+      el.id = '__omniflow_tutorial_portal__'
+      el.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483647;'
+      document.body.appendChild(el)
+    }
+    setPortalEl(el)
+    return () => {}
+  }, [])
+
+  if (!portalEl) return null
+  return createPortal(overlay, portalEl)
 }
