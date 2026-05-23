@@ -1,247 +1,297 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, TrendingUp, Loader2, AlertCircle } from 'lucide-react'
+import { RefreshCw, TrendingUp, Loader2, AlertCircle, Filter, Zap, BarChart3, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TrendCard } from '@/components/dashboard/trends/TrendCard'
-import { TrendFilters } from '@/components/dashboard/trends/TrendFilters'
 import { cn } from '@/lib/utils/cn'
 
 interface Trend {
   id: string
-  platform: 'tiktok' | 'instagram' | 'reddit' | 'youtube'
+  platform: string
   title: string
   url: string
   thumbnailUrl?: string
   authorUsername?: string
   authorUrl?: string
-  contentType: 'video' | 'photo' | 'text' | 'reel' | 'carousel'
+  contentType: string
   engagement: number
   category: string
   tags: string[]
-  capturedAt: Date
+  capturedAt: Date | string
 }
 
-const PLATFORMS: Array<'all' | 'tiktok' | 'instagram' | 'youtube' | 'reddit'> = ['all', 'tiktok', 'instagram', 'youtube', 'reddit']
-const CATEGORIES = [
-  'lifestyle',
-  'fitness',
-  'glamour',
-  'fashion',
-  'beauty',
-  'wellness',
-  'motivation',
-  'travel',
-  'music',
-  'dance',
-]
+const PLATFORMS = ['all', 'tiktok', 'instagram', 'youtube', 'reddit'] as const
+const PLATFORM_LABELS: Record<string, string> = { all: 'Toutes', tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', reddit: 'Reddit' }
+const PLATFORM_COLORS: Record<string, string> = {
+  all: 'border-white/20 hover:border-white/40',
+  tiktok: 'border-white/20 hover:border-white/40',
+  instagram: 'border-pink-500/30 hover:border-pink-500/60',
+  youtube: 'border-red-500/30 hover:border-red-500/60',
+  reddit: 'border-orange-500/30 hover:border-orange-500/60',
+}
+
+const CATEGORIES = ['lifestyle', 'fitness', 'glamour', 'fashion', 'beauty', 'wellness', 'motivation', 'travel', 'music', 'dance']
 
 export default function VeillePage() {
-  const [trends, setTrends] = useState<Trend[]>([])
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'tiktok' | 'instagram' | 'youtube' | 'reddit'>('all')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  const [trends, setTrends]             = useState<Trend[]>([])
+  const [loading, setLoading]           = useState(false)
+  const [refreshing, setRefreshing]     = useState(false)
+  const [platform, setPlatform]         = useState<string>('all')
+  const [category, setCategory]         = useState<string | null>(null)
+  const [lastRefresh, setLastRefresh]   = useState<Date | null>(null)
+  const [isDemo, setIsDemo]             = useState(false)
+  const [error, setError]               = useState<string | null>(null)
 
-  // Charger les trends sauvegardés
   const loadTrends = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
+    setError(null)
     try {
-      const url = new URL('/api/trends', window.location.origin)
-      if (selectedPlatform !== 'all') url.searchParams.set('platform', selectedPlatform)
-      if (selectedCategory) url.searchParams.set('category', selectedCategory)
-
-      const response = await fetch(url.toString())
-      if (!response.ok) throw new Error('Failed to load trends')
-
-      const data = await response.json()
+      const params = new URLSearchParams()
+      if (platform !== 'all') params.set('platform', platform)
+      if (category) params.set('category', category)
+      const res = await fetch(`/api/trends?${params}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
       if (data.success) {
-        setTrends(data.trends.map((t: any) => ({
+        setTrends((data.trends || []).map((t: any) => ({
           ...t,
           capturedAt: t.capturedAt ? new Date(t.capturedAt) : new Date(),
+          engagement: typeof t.engagement === 'number' ? t.engagement : 0,
         })))
+        setIsDemo(data.source === 'demo')
+      } else {
+        throw new Error(data.error || 'Erreur API')
       }
-    } catch (error) {
-      console.error('Load trends error:', error)
-      // silently fail — page already shows empty state
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(msg)
+      console.error('Load trends error:', err)
     } finally {
       setLoading(false)
     }
-  }, [selectedPlatform, selectedCategory])
+  }, [platform, category])
 
-  // Charger les trends au montage
-  useEffect(() => {
-    loadTrends()
-  }, [])
+  useEffect(() => { loadTrends() }, [loadTrends])
 
-  // Recharger quand les filtres changent
-  useEffect(() => {
-    loadTrends()
-  }, [selectedPlatform, selectedCategory, loadTrends])
-
-  // Rafraîchir les trends depuis les sources
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const response = await fetch('/api/trends/fetch', { method: 'POST' })
-      const data = await response.json()
+      const res = await fetch('/api/trends/fetch', { method: 'POST' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
       if (data.success) {
-        const msg = data.warning
-          ? `${data.trendsCount} trends chargés (mode démo)`
-          : `${data.trendsCount} trends récupérés ! 🎯`
-        toast.success(msg)
+        toast.success(data.warning ? `${data.trendsCount} trends chargés (mode démo)` : `${data.trendsCount} trends récupérés`)
         setLastRefresh(new Date())
         await loadTrends(true)
       } else {
-        toast.error(`Erreur: ${data.error || 'Inconnue'}`)
+        throw new Error(data.error || 'Erreur de génération')
       }
-    } catch (error) {
-      console.error('Refresh error:', error)
-      toast.error('Erreur réseau')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erreur réseau')
     } finally {
       setRefreshing(false)
     }
   }
 
-  // Filtrer les top trends (top 5 par engagement)
-  const topTrends = trends.slice(0, 5)
-  const otherTrends = trends.slice(5)
+  const topTrends   = trends.slice(0, 6)
+  const otherTrends = trends.slice(6)
+
+  const stats = [
+    { label: 'Trends captés',    value: trends.length,                                    color: 'text-purple-400' },
+    { label: 'TikTok',           value: trends.filter(t => t.platform === 'tiktok').length,    color: 'text-white' },
+    { label: 'Instagram',        value: trends.filter(t => t.platform === 'instagram').length, color: 'text-pink-400' },
+    { label: 'Reddit',           value: trends.filter(t => t.platform === 'reddit').length,    color: 'text-orange-400' },
+  ]
 
   return (
-    <div className="p-8 space-y-8" data-tutorial="trends-page">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto">
+
+      {/* ── HEADER ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <TrendingUp size={32} className="text-cyan-400" />
-            Veille Contenu
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <TrendingUp size={22} className="text-cyan-400" />
+            Veille Trends
           </h1>
-          <p className="text-gray-400 mt-2">
-            Découvre les tendances des réseaux sociaux et crée du contenu inspiré par les trends
+          <p className="text-gray-500 text-sm mt-0.5">
+            Scraping & intelligence de tendances — TikTok, Instagram, Reddit, YouTube
           </p>
         </div>
-
-        {/* Stats */}
-        <div className="flex flex-col gap-2 text-right">
-          <div className="text-2xl font-bold text-purple-400">{trends.length} trends</div>
-          {lastRefresh && (
-            <div className="text-xs text-gray-500">
-              Actualisé: {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-            </div>
+        <div className="flex items-center gap-3">
+          {isDemo && (
+            <span className="text-xs px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg">
+              Mode démo
+            </span>
           )}
+          {lastRefresh && (
+            <span className="text-xs text-gray-600">
+              Mis à jour {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
+              refreshing
+                ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:opacity-90'
+            )}
+          >
+            {refreshing
+              ? <><Loader2 size={15} className="animate-spin" />Génération...</>
+              : <><RefreshCw size={15} />Générer</>
+            }
+          </button>
         </div>
       </div>
 
-      {/* Refresh button */}
-      <button
-        onClick={handleRefresh}
-        disabled={refreshing}
-        className={cn(
-          'px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200',
-          refreshing
-            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:opacity-90'
-        )}
-        data-tutorial="trends-refresh"
-      >
-        {refreshing ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            Rafraîchissement...
-          </>
-        ) : (
-          <>
-            <RefreshCw size={18} />
-            Actualiser maintenant
-          </>
-        )}
-      </button>
+      {/* ── STATS STRIP ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map(s => (
+          <div key={s.label} className="glass rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between">
+            <span className="text-xs text-gray-500">{s.label}</span>
+            <span className={cn('text-lg font-bold tabular-nums', s.color)}>{s.value}</span>
+          </div>
+        ))}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Sidebar: Filtres */}
+      {/* ── ERROR ── */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span>{error}</span>
+          <button onClick={() => loadTrends()} className="ml-auto text-xs text-red-400 underline hover:no-underline">Réessayer</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        {/* ── FILTRES ── */}
         <div className="lg:col-span-1">
-          <div className="glass rounded-2xl p-6 sticky top-8" data-tutorial="trends-filters">
-            <h2 className="font-semibold text-white mb-6">Filtres</h2>
-            <TrendFilters
-              platforms={PLATFORMS}
-              selectedPlatform={selectedPlatform}
-              onPlatformChange={setSelectedPlatform}
-              categories={CATEGORIES}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-            />
+          <div className="glass rounded-2xl p-5 border border-white/5 sticky top-6 space-y-5">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Filter size={14} className="text-gray-500" />
+              Filtres
+            </h2>
+
+            {/* Plateforme */}
+            <div>
+              <p className="text-xs text-gray-600 uppercase tracking-widest mb-2.5">Plateforme</p>
+              <div className="flex flex-col gap-1.5">
+                {PLATFORMS.map(p => (
+                  <button key={p} onClick={() => setPlatform(p)}
+                    className={cn(
+                      'px-3 py-2 rounded-xl text-xs font-medium transition-all border text-left',
+                      platform === p
+                        ? 'bg-white/10 text-white border-purple-500/40'
+                        : `text-gray-500 hover:text-gray-300 bg-transparent ${PLATFORM_COLORS[p]}`
+                    )}>
+                    {PLATFORM_LABELS[p]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Catégorie */}
+            <div>
+              <p className="text-xs text-gray-600 uppercase tracking-widest mb-2.5">Catégorie</p>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setCategory(null)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-all border',
+                    category === null ? 'bg-white/10 text-white border-white/20' : 'text-gray-500 border-white/5 hover:text-gray-300'
+                  )}>
+                  Tous
+                </button>
+                {CATEGORIES.map(c => (
+                  <button key={c} onClick={() => setCategory(category === c ? null : c)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-medium transition-all border capitalize',
+                      category === c ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'text-gray-500 border-white/5 hover:text-gray-300'
+                    )}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="pt-3 border-t border-white/5">
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Cliquez sur <strong className="text-gray-400">Générer</strong> pour lancer un scraping et récupérer de nouveaux trends.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Main content: Trends grid */}
-        <div className="lg:col-span-3">
-          {loading && !trends.length ? (
-            <div className="glass rounded-2xl p-16 text-center">
-              <Loader2 size={48} className="mx-auto mb-4 animate-spin text-purple-400" />
-              <p className="text-gray-400">Chargement des trends...</p>
+        {/* ── CONTENT ── */}
+        <div className="lg:col-span-3 space-y-8">
+          {loading && trends.length === 0 ? (
+            <div className="glass rounded-2xl p-16 text-center border border-white/5">
+              <Loader2 size={36} className="mx-auto mb-4 animate-spin text-purple-400" />
+              <p className="text-gray-500 text-sm">Chargement des trends...</p>
             </div>
-          ) : trends.length === 0 ? (
-            <div className="glass rounded-2xl p-16 text-center">
-              <AlertCircle size={48} className="mx-auto mb-4 text-gray-500" />
-              <p className="text-gray-400 font-medium">Aucun trend trouvé</p>
-              <p className="text-gray-600 text-sm mt-2">Clique sur "Actualiser maintenant" pour récupérer les trends</p>
+          ) : trends.length === 0 && !loading ? (
+            <div className="glass rounded-2xl p-16 text-center border border-white/5">
+              <Eye size={36} className="mx-auto mb-4 text-gray-600" />
+              <p className="text-gray-400 font-medium mb-1">Aucun trend disponible</p>
+              <p className="text-gray-600 text-sm mb-5">Cliquez sur "Générer" pour lancer le scraping</p>
+              <button onClick={handleRefresh} disabled={refreshing}
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all">
+                Générer maintenant
+              </button>
             </div>
           ) : (
-            <div className="space-y-8">
-              {/* Section: Tendances du jour (Top 5) */}
+            <>
+              {/* Top trends */}
               {topTrends.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-2xl">🔥</span>
+                  <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                    <TrendingUp size={15} className="text-yellow-400" />
                     Tendances du jour
+                    <span className="text-xs text-gray-600 font-normal ml-1">Top {topTrends.length}</span>
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {topTrends.map(trend => (
-                      <TrendCard
-                        key={trend.id}
-                        {...trend}
-                        isTopTrend={true}
-                      />
+                      <TrendCard key={trend.id} {...trend} isTopTrend />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Section: Autres tendances */}
+              {/* Other trends */}
               {otherTrends.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span>📊</span>
+                  <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                    <BarChart3 size={15} className="text-gray-500" />
                     Autres tendances
+                    <span className="text-xs text-gray-600 font-normal ml-1">{otherTrends.length} résultats</span>
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {otherTrends.map(trend => (
-                      <TrendCard
-                        key={trend.id}
-                        {...trend}
-                        isTopTrend={false}
-                      />
+                      <TrendCard key={trend.id} {...trend} isTopTrend={false} />
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* Info section */}
-      <div className="glass rounded-2xl p-6 border border-cyan-500/20 bg-cyan-500/5">
-        <h3 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2">
-          💡 Comment utiliser ce module
-        </h3>
-        <ul className="text-sm text-gray-400 space-y-1 list-disc list-inside">
-          <li>Clique sur <strong>"Actualiser maintenant"</strong> pour scanner les derniers trends</li>
-          <li>Utilise les filtres pour trouver des tendances pertinentes pour ton niche</li>
-          <li>Clique sur <strong>"Générer"</strong> pour créer du contenu IA inspiré par le trend</li>
-          <li>Le prompt sera pré-rempli avec le contexte du trend — personnalise-le si besoin</li>
-        </ul>
+      {/* Info */}
+      <div className="glass rounded-xl p-4 border border-cyan-500/15 bg-cyan-500/3">
+        <div className="flex items-start gap-3">
+          <Zap size={15} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+          <div className="space-y-1 text-xs text-gray-500">
+            <p><strong className="text-gray-300">Générer</strong> — scrape TikTok, Instagram, Reddit et YouTube en temps réel</p>
+            <p><strong className="text-gray-300">Générer IA</strong> sur une carte — crée du contenu inspiré du trend dans la Génération IA</p>
+            <p><strong className="text-gray-300">Voir le post</strong> — redirige vers la source originale</p>
+          </div>
+        </div>
       </div>
+
     </div>
   )
 }
