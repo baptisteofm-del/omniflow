@@ -354,7 +354,7 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
                       <span className="text-gray-700 ml-1">(1 ligne = 1 exemple, min. 20 recommandés)</span>
                     </label>
                     <span className="text-xs text-gray-600">
-                      {form.ai_examples.split('\n').filter(e => e.trim()).length} exemples
+                      {form.ai_examples.split('\n').filter((e: string) => e.trim()).length} exemples
                     </span>
                   </div>
                   <textarea
