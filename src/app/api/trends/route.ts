@@ -22,16 +22,20 @@ export async function GET(request: NextRequest) {
       .single()
 
     const { searchParams } = new URL(request.url)
-    const platform = searchParams.get('platform') || 'all'
+    let platform = searchParams.get('platform') || 'all'
     const category = searchParams.get('category')
     const limit = parseInt(searchParams.get('limit') || '40', 10)
 
+    // YouTube interdit dans cette page
+    if (platform === 'youtube') platform = 'all'
+
     // If no agency or table doesn't exist yet → return mock trends
     if (!agency) {
+      const mock = filterMock(platform, category, limit)
       return NextResponse.json({
         success: true,
-        trends: filterMock(platform, category, limit),
-        total: MOCK_TRENDS_FLAT.length,
+        trends: mock,
+        total: mock.length,
         source: 'demo',
       })
     }
@@ -90,7 +94,7 @@ export async function GET(request: NextRequest) {
 }
 
 function filterMock(platform: string, category: string | null, limit: number) {
-  let trends = [...MOCK_TRENDS_FLAT]
+  let trends = MOCK_TRENDS_FLAT.filter(t => t.platform !== 'youtube')
   if (platform !== 'all') trends = trends.filter((t) => t.platform === platform)
   if (category) trends = trends.filter((t) => t.category === category)
   return trends.slice(0, limit)

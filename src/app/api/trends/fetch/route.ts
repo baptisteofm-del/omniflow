@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAllTrends } from '@/lib/trends/fetcher'
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -21,8 +21,26 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Agency not found' }, { status: 404 })
     }
 
+    // Parse body params
+    let platform = 'all'
+    let limit = 5
+    try {
+      const body = await request.json()
+      platform = body.platform || 'all'
+      limit = Math.min(Math.max(parseInt(body.limit) || 5, 1), 10)
+    } catch {}
+
     // Fetch trends from all sources (real APIs + mock fallback)
-    const trends = await fetchAllTrends()
+    let trends = await fetchAllTrends()
+
+    // Filter by platform (exclude YouTube always)
+    trends = trends.filter(t => t.platform !== 'youtube')
+    if (platform && platform !== 'all') {
+      trends = trends.filter(t => t.platform === platform)
+    }
+
+    // Respect requested limit
+    trends = trends.slice(0, limit)
 
     if (!trends.length) {
       return NextResponse.json({ success: true, trendsCount: 0 })

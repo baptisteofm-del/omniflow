@@ -20,15 +20,15 @@ interface Trend {
   capturedAt: Date | string
 }
 
-const PLATFORMS = ['all', 'tiktok', 'instagram', 'youtube', 'reddit'] as const
-const PLATFORM_LABELS: Record<string, string> = { all: 'Toutes', tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', reddit: 'Reddit' }
+const PLATFORMS = ['all', 'tiktok', 'instagram', 'reddit'] as const
+const PLATFORM_LABELS: Record<string, string> = { all: 'Toutes', tiktok: 'TikTok', instagram: 'Instagram', reddit: 'Reddit' }
 const PLATFORM_COLORS: Record<string, string> = {
   all: 'border-white/20 hover:border-white/40',
   tiktok: 'border-white/20 hover:border-white/40',
   instagram: 'border-pink-500/30 hover:border-pink-500/60',
-  youtube: 'border-red-500/30 hover:border-red-500/60',
   reddit: 'border-orange-500/30 hover:border-orange-500/60',
 }
+const GEN_AMOUNTS = [1, 5, 10]
 
 const CATEGORIES = ['lifestyle', 'fitness', 'glamour', 'fashion', 'beauty', 'wellness', 'motivation', 'travel', 'music', 'dance']
 
@@ -41,6 +41,8 @@ export default function VeillePage() {
   const [lastRefresh, setLastRefresh]   = useState<Date | null>(null)
   const [isDemo, setIsDemo]             = useState(false)
   const [error, setError]               = useState<string | null>(null)
+  const [genAmount, setGenAmount]       = useState(5)
+  const [genPlatform, setGenPlatform]   = useState<string>('tiktok')
 
   const loadTrends = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -76,11 +78,16 @@ export default function VeillePage() {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      const res = await fetch('/api/trends/fetch', { method: 'POST' })
+      const res = await fetch('/api/trends/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: genPlatform, limit: genAmount }),
+      })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       if (data.success) {
-        toast.success(data.warning ? `${data.trendsCount} trends chargés (mode démo)` : `${data.trendsCount} trends récupérés`)
+        const count = data.trendsCount || 0
+        toast.success(data.warning ? `${count} trend${count > 1 ? 's' : ''} chargé${count > 1 ? 's' : ''} (mode démo)` : `${count} trend${count > 1 ? 's' : ''} récupéré${count > 1 ? 's' : ''}`)
         setLastRefresh(new Date())
         await loadTrends(true)
       } else {
@@ -97,10 +104,10 @@ export default function VeillePage() {
   const otherTrends = trends.slice(6)
 
   const stats = [
-    { label: 'Trends captés',    value: trends.length,                                    color: 'text-purple-400' },
-    { label: 'TikTok',           value: trends.filter(t => t.platform === 'tiktok').length,    color: 'text-white' },
-    { label: 'Instagram',        value: trends.filter(t => t.platform === 'instagram').length, color: 'text-pink-400' },
-    { label: 'Reddit',           value: trends.filter(t => t.platform === 'reddit').length,    color: 'text-orange-400' },
+    { label: 'Trends captés', value: trends.length,                                        color: 'text-purple-400' },
+    { label: 'TikTok',         value: trends.filter(t => t.platform === 'tiktok').length,    color: 'text-white' },
+    { label: 'Instagram',      value: trends.filter(t => t.platform === 'instagram').length, color: 'text-pink-400' },
+    { label: 'Reddit',         value: trends.filter(t => t.platform === 'reddit').length,    color: 'text-orange-400' },
   ]
 
   return (
@@ -117,7 +124,7 @@ export default function VeillePage() {
             Scraping & intelligence de tendances — TikTok, Instagram, Reddit, YouTube
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {isDemo && (
             <span className="text-xs px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg">
               Mode démo
@@ -125,9 +132,32 @@ export default function VeillePage() {
           )}
           {lastRefresh && (
             <span className="text-xs text-gray-600">
-              Mis à jour {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
+
+          {/* Plateforme */}
+          <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
+            {(['tiktok', 'instagram', 'reddit'] as const).map(p => (
+              <button key={p} onClick={() => setGenPlatform(p)}
+                className={cn('px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  genPlatform === p ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300')}>
+                {PLATFORM_LABELS[p]}
+              </button>
+            ))}
+          </div>
+
+          {/* Volume */}
+          <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
+            {GEN_AMOUNTS.map(n => (
+              <button key={n} onClick={() => setGenAmount(n)}
+                className={cn('px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all tabular-nums',
+                  genAmount === n ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300')}>
+                {n}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -140,7 +170,7 @@ export default function VeillePage() {
           >
             {refreshing
               ? <><Loader2 size={15} className="animate-spin" />Génération...</>
-              : <><RefreshCw size={15} />Générer</>
+              : <><RefreshCw size={15} />Générer ({genAmount})</>
             }
           </button>
         </div>
