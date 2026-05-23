@@ -4,37 +4,37 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
-    // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Get user's agency
     const { data: agency } = await supabase
       .from('agencies')
-      .select('id')
+      .select('id, referral_code')
       .eq('owner_id', user.id)
       .single()
 
-    if (!agency?.id) {
-      return NextResponse.json({ error: 'No agency found' }, { status: 404 })
+    if (!agency?.id) return NextResponse.json({ error: 'No agency found' }, { status: 404 })
+
+    // Use stored referral_code if available, otherwise generate from agency ID
+    const referralCode = agency.referral_code || agency.id.substring(0, 8).toUpperCase()
+
+    // If no stored code, persist it
+    if (!agency.referral_code) {
+      await supabase.from('agencies').update({ referral_code: referralCode }).eq('id', agency.id)
     }
 
     const agencyId = agency.id
-    const referralCode = agency.id.substring(0, 8).toUpperCase()
+    const referralLink = `https://omniflowapp.ai/register?ref=${referralCode}`
 
-    // Count total referrals
+    // Count referrals
     const { count: totalReferrals } = await supabase
       .from('referrals')
       .select('*', { count: 'exact', head: true })
       .eq('referrer_agency_id', agencyId)
 
-    // Count active referrals (subscribed agencies)
     const { data: referrals } = await supabase
       .from('referrals')
-      .select('referred_agency_id')
+      .select('referred_agency_id, commission_percent')
       .eq('referrer_agency_id', agencyId)
 
     let activeReferrals = 0
@@ -42,47 +42,53 @@ export async function GET(request: NextRequest) {
     let totalCommission = 0
 
     if (referrals && referrals.length > 0) {
-      // Check subscription status for each referred agency
+      const referredIds = referrals.map(r => r.referred_agency_id).filter(Boolean)
+
       const { data: referredAgencies } = await supabase
         .from('agencies')
-        .select('subscription_status, id')
-        .in('id', referrals.map(r => r.referred_agency_id).filter(Boolean))
+        .select('id, subscription_status')
+        .in('id', referredIds)
 
       if (referredAgencies) {
         activeReferrals = referredAgencies.filter(a => a.subscription_status === 'active').length
 
-        // Calculate commission (10% per active referral)
-        // This is simplified - in production you'd calculate from actual transactions
-        const { data: transactions } = await supabase
-          .from('transactions')
+        // Commission from Paddle/Stripe webhooks or billing transactions
+        const { data: commissionTx } = await supabase
+          .from('referral_commissions')
           .select('amount, created_at')
-          .eq('agency_id', agencyId)
+          .eq('referrer_agency_id', agencyId)
 
-        if (transactions) {
+        if (commissionTx) {
           const now = new Date()
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-
-          transactions.forEach(tx => {
-            const txDate = new Date(tx.created_at)
-            const commission = (Number(tx.amount) || 0) * 0.1 * activeReferrals / Math.max(totalReferrals || 1, 1)
-            totalCommission += commission
-            if (txDate >= monthStart) {
-              monthlyCommission += commission
-            }
+          commissionTx.forEach(tx => {
+            totalCommission += Number(tx.amount) || 0
+            if (new Date(tx.created_at) >= monthStart) monthlyCommission += Number(tx.amount) || 0
           })
+        } else {
+          // Fallback estimation: 10% of referred agencies' plan value × active count
+          const planValues: Record<string, number> = { starter: 49, pro: 99, agency: 199 }
+          const { data: activePlans } = await supabase
+            .from('agencies').select('plan_id').in('id', referredIds).eq('subscription_status', 'active')
+          if (activePlans) {
+            const monthly = activePlans.reduce((s, a) => s + (planValues[a.plan_id] || 49) * 0.10, 0)
+            monthlyCommission = monthly
+            totalCommission = monthly // We don't have history, estimate
+          }
         }
       }
     }
 
     return NextResponse.json({
       referralCode,
+      referralLink,
       totalReferrals: totalReferrals || 0,
       activeReferrals,
       monthlyCommission: Math.round(monthlyCommission * 100) / 100,
       totalCommission: Math.round(totalCommission * 100) / 100,
     })
   } catch (error) {
-    console.error('Error fetching referral stats:', error)
+    console.error('Referral stats error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
