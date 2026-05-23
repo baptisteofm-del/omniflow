@@ -74,22 +74,6 @@ const LogoCoinbase = () => (
   </div>
 )
 
-const LogoStripe = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#635BFF' }}>
-    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
-      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
-    </svg>
-  </div>
-)
-
-const LogoPayPal = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#003087' }}>
-    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
-      <path d="M15.607 4.653H8.941L6.645 19.251H1.82L4.862 0h7.995c3.754 0 6.375 2.294 6.473 5.513-.648-.478-2.105-.86-3.722-.86m6.57 5.546c0 3.41-3.01 6.853-6.958 6.853h-2.493L11.595 24H6.74l1.845-11.538h3.592c4.208 0 7.346-3.634 7.153-6.949a5.24 5.24 0 0 1 2.848 4.686M9.653 5.546h6.408c.907 0 1.942.222 2.363.541-.195 2.741-2.655 5.483-6.441 5.483H8.714Z" />
-    </svg>
-  </div>
-)
-
 const LogoRevolut = () => (
   <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#191C1F' }}>
     <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
@@ -98,29 +82,7 @@ const LogoRevolut = () => (
   </div>
 )
 
-const LogoWise = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#9FE870' }}>
-    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="#163300">
-      <path d="M6.488 7.469 0 15.05h11.585l1.301-3.576H7.922l3.033-3.507.01-.092L8.993 4.48h8.873l-6.878 18.925h4.706L24 .595H2.543l3.945 6.874Z" />
-    </svg>
-  </div>
-)
 
-const LogoN8n = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#EA4B27' }}>
-    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 10c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-7 0c-.83 0-1.5-.67-1.5-1.5S7.67 9 8.5 9s1.5.67 1.5 1.5S9.33 12 8.5 12zm3.5 6.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" />
-    </svg>
-  </div>
-)
-
-const LogoZapier = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FF4A00' }}>
-    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
-      <path d="M18.4 1H5.6A1.6 1.6 0 0 0 4 2.6v3.2h4.8V2.8h6.4v2.8V9.6H20V2.6A1.6 1.6 0 0 0 18.4 1zm1.6 6.4h-4.8v3.2h4.8V7.4zM4 9.6h4.8v3.2H4V9.6zm0 4.8h4.8v3.2H4v-3.2zm6.4 0h4.8v3.2h-4.8v-3.2zm6.4 0H20v3.2h-3.2v-3.2zM4 18.8h4.8V22H5.6A1.6 1.6 0 0 1 4 20.4v-1.6zm6.4 0h4.8V22h-4.8v-3.2zm6.4 0H20V22h-3.2v-3.2z" />
-    </svg>
-  </div>
-)
 
 const integrations = [
   // CHATTING IA - Creator Platforms
@@ -182,26 +144,7 @@ const integrations = [
     category: 'finance',
     fields: ['api_key'],
   },
-  {
-    id: 'stripe',
-    name: 'Stripe',
-    description: 'Synchronisez vos paiements et revenus Stripe',
-    logo: LogoStripe,
-    requiresUrl: false,
-    category: 'finance',
-    fields: ['api_key'],
-    comingSoon: true,
-  },
-  {
-    id: 'paypal',
-    name: 'PayPal',
-    description: 'Importez vos transactions PayPal',
-    logo: LogoPayPal,
-    requiresUrl: false,
-    category: 'finance',
-    fields: ['client_id', 'client_secret'],
-    comingSoon: true,
-  },
+
   {
     id: 'revolut',
     name: 'Revolut Business',
@@ -212,44 +155,13 @@ const integrations = [
     fields: ['api_key'],
     comingSoon: true,
   },
-  {
-    id: 'wise',
-    name: 'Wise',
-    description: 'Synchronisez vos virements internationaux',
-    logo: LogoWise,
-    requiresUrl: false,
-    category: 'finance',
-    fields: ['api_key'],
-    comingSoon: true,
-  },
-  // AUTOMATION
-  {
-    id: 'n8n',
-    name: 'n8n Webhook',
-    description: 'Connectez vos workflows n8n pour automatiser',
-    logo: LogoN8n,
-    requiresUrl: false,
-    category: 'automation',
-    fields: ['webhook_url'],
-    comingSoon: false,
-  },
-  {
-    id: 'zapier',
-    name: 'Zapier',
-    description: 'Connectez OmniFlow à 5000+ applications',
-    logo: LogoZapier,
-    requiresUrl: false,
-    category: 'automation',
-    fields: ['webhook_url'],
-    comingSoon: true,
-  },
+
 ]
 
 const categories = [
   { id: 'chatting', label: 'Chatting IA' },
   { id: 'posting', label: 'Posting & Anti-detect' },
   { id: 'finance', label: 'Finance & Crypto' },
-  { id: 'automation', label: 'Automatisation' },
 ]
 
 export default function IntegrationsPage() {
@@ -419,9 +331,6 @@ export default function IntegrationsPage() {
                 {category.id === 'finance' && (
                   <p className="text-sm text-gray-400 mb-4">Synchronisez vos portefeuilles et paiements pour le suivi financier</p>
                 )}
-                {category.id === 'automation' && (
-                  <p className="text-sm text-gray-400 mb-4">Connectez vos outils d'automatisation pour intégrer OmniFlow</p>
-                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {categoryIntegrations.map(integration => {
@@ -561,34 +470,9 @@ export default function IntegrationsPage() {
                               ⚠️ Entrez l'email et le mot de passe du compte MYM de ce modèle. La 2FA doit être désactivée.
                             </p>
                           )}
-                          {integration.id === 'stripe' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Générez une clé API secrète sur votre dashboard Stripe
-                            </p>
-                          )}
-                          {integration.id === 'paypal' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Créez une application sur le compte développeur PayPal
-                            </p>
-                          )}
                           {integration.id === 'revolut' && (
                             <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
                               💡 Obtenez votre clé API dans les paramètres Revolut Business
-                            </p>
-                          )}
-                          {integration.id === 'wise' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Générez une clé API sur le panel développeur Wise
-                            </p>
-                          )}
-                          {integration.id === 'n8n' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Créez un webhook dans vos workflows n8n
-                            </p>
-                          )}
-                          {integration.id === 'zapier' && (
-                            <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Générez un webhook Zapier pour connecter OmniFlow
                             </p>
                           )}
                           {integration.id === 'binance' && (
