@@ -45,30 +45,39 @@ const NAV_COLLAPSIBLE = [
   },
 ]
 
-const NAV_SETTINGS = [
-  { label: 'Profil',        href: '/settings/profile',       icon: User },
-  { label: 'Abonnement',    href: '/settings/billing',       icon: CreditCard },
-  { label: 'Équipe',        href: '/settings/team',          icon: Users },
-  { label: 'Intégrations',  href: '/settings/integrations',  icon: Settings },
-]
+const NAV_SETTINGS = {
+  id: 'settings',
+  label: 'Paramètres',
+  icon: Settings,
+  color: 'text-gray-400',
+  items: [
+    { label: 'Profil',        href: '/settings/profile',       icon: User },
+    { label: 'Abonnement',    href: '/settings/billing',       icon: CreditCard },
+    { label: 'Équipe',        href: '/settings/team',          icon: Users },
+    { label: 'Intégrations',  href: '/settings/integrations',  icon: Settings },
+  ],
+}
 
 // ── Composant principal ──────────────────────────────────────
 export function Sidebar() {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isHovered, setIsHovered]       = useState(false)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ chatting: true, marketing: true })
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ chatting: true, marketing: true, settings: false })
   const [planId, setPlanId]             = useState('starter')
   const [agencyName, setAgencyName]     = useState('')
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Expand sidebar if current page is inside a collapsible section
+  // Auto-expand section si page active dedans
   useEffect(() => {
     NAV_COLLAPSIBLE.forEach(sec => {
       if (sec.items.some(item => pathname.startsWith(item.href))) {
         setOpenSections(prev => ({ ...prev, [sec.id]: true }))
       }
     })
+    if (NAV_SETTINGS.items.some(item => pathname.startsWith(item.href))) {
+      setOpenSections(prev => ({ ...prev, settings: true }))
+    }
   }, [pathname])
 
   useEffect(() => {
@@ -218,11 +227,8 @@ export function Sidebar() {
         {/* Séparateur */}
         <div className="my-3 border-t border-white/5 mx-1" />
 
-        {/* Paramètres */}
-        {isExpanded && (
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-widest px-3 mb-1">Paramètres</p>
-        )}
-        {NAV_SETTINGS.map(item => <NavLink key={item.href} item={item} />)}
+        {/* Paramètres — collapsible */}
+        <SectionToggle sec={NAV_SETTINGS} />
       </nav>
 
       {/* Footer agence */}
