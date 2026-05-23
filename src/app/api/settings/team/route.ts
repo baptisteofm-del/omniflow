@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Envoyer l'email d'invitation via Resend
-    const inviteUrl = \`\${process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'}/register?invitation=\${token}&email=\${encodeURIComponent(email)}&agency=\${agency.id}\`
+    const inviteUrl = `\${process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'}/register?invitation=\${token}&email=\${encodeURIComponent(email)}&agency=\${agency.id}`
     try {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY || '')
@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
           to: email,
-          subject: \`Invitation à rejoindre \${agency.name || 'OmniFlow'}\`,
-          html: \`
+          subject: `Invitation à rejoindre \${agency.name || 'OmniFlow'}`,
+          html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; background: #0a0a0f; color: white; border-radius: 12px;">
               <h1 style="color: #a855f7; margin-bottom: 16px;">Invitation OmniFlow</h1>
               <p style="color: #9ca3af; margin-bottom: 24px;">
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
               </a>
               <p style="color: #6b7280; font-size: 12px;">Ce lien expire dans 7 jours. Si vous n'avez pas demandé cette invitation, ignorez cet email.</p>
             </div>
-          \`
+          `
         })
       }
     } catch (emailErr) {
@@ -166,8 +166,8 @@ export async function POST(req: NextRequest) {
       invitation,
       inviteUrl, // utile pour tests
       message: process.env.RESEND_API_KEY
-        ? \`Invitation envoyée à \${email}\`
-        : \`Invitation créée pour \${email} (email non configuré — partagez ce lien : \${inviteUrl})\`
+        ? `Invitation envoyée à \${email}`
+        : `Invitation créée pour \${email} (email non configuré — partagez ce lien : \${inviteUrl})`
     }, { status: 201 })
 
   } catch (error) {
