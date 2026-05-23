@@ -111,9 +111,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!['member', 'admin', 'owner'].includes(role)) {
+    const VALID_ROLES = ['member', 'admin', 'owner', 'video_editor', 'chatting_manager', 'marketing_manager']
+    if (!VALID_ROLES.includes(role)) {
       return NextResponse.json(
-        { error: 'Invalid role' },
+        { error: `Rôle invalide : ${role}. Roles valides : ${VALID_ROLES.join(', ')}` },
         { status: 400 }
       )
     }
@@ -149,13 +150,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Create invitation
+    // Create invitation (avec permissions si fournies)
+    const { permissions = [] } = body
     const { data: invitation, error: invitationError } = await supabase
       .from('team_invitations')
       .insert({
         agency_id: agency.id,
         email,
         role,
+        permissions: permissions.length > 0 ? permissions : null,
+        accepted: false,
       })
       .select()
       .single()
@@ -193,14 +197,33 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
     }
 
-    const body = await req.json()
-    const { memberId } = body
+    // Support query params (?id=xxx&type=xxx) ET body JSON
+    const { searchParams } = new URL(req.url)
+    const idFromQuery = searchParams.get('id')
+    const typeFromQuery = searchParams.get('type') // 'member' | 'invitation'
+
+    let memberId = idFromQuery
+    let deleteType = typeFromQuery || 'member'
+
+    if (!memberId) {
+      try {
+        const body = await req.json()
+        memberId = body.memberId || body.id
+        deleteType = body.type || deleteType
+      } catch {}
+    }
 
     if (!memberId) {
       return NextResponse.json(
         { error: 'Member ID is required' },
         { status: 400 }
       )
+    }
+
+    // Si c'est une invitation, supprimer de team_invitations
+    if (deleteType === 'invitation') {
+      await supabase.from('team_invitations').delete().eq('id', memberId).eq('agency_id', agency.id)
+      return NextResponse.json({ success: true })
     }
 
     // Get member to check if they're the owner
