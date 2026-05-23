@@ -114,10 +114,31 @@ export function NotificationBell() {
       {showDropdown && (
         <div className="absolute right-0 mt-2 w-96 glass rounded-2xl border border-purple-500/20 shadow-xl z-50 max-h-96 overflow-y-auto">
           {/* Header */}
-          <div className="sticky top-0 p-4 border-b border-purple-500/20 bg-white/5 backdrop-blur">
-            <h3 className="font-bold">Notifications</h3>
+          <div className="sticky top-0 p-4 border-b border-purple-500/20 bg-white/5 backdrop-blur flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm">Notifications</h3>
+              {unreadCount > 0 && (
+                <p className="text-xs text-purple-300 mt-0.5">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
+              )}
+            </div>
             {unreadCount > 0 && (
-              <p className="text-xs text-purple-300 mt-1">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
+              <button
+                onClick={async () => {
+                  // Marquer toutes comme lues
+                  const unread = notifications.filter(n => !n.read)
+                  await Promise.all(unread.map(n =>
+                    fetch('/api/notifications', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ notificationId: n.id }),
+                    })
+                  ))
+                  await loadNotifications()
+                }}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Tout marquer lu
+              </button>
             )}
           </div>
 
