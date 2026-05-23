@@ -227,7 +227,7 @@ export function Sidebar() {
         {/* Séparateur */}
         <div className="my-1.5 border-t border-white/5 mx-1" />
 
-        {/* Paramètres — collapsible */
+        {/* Paramètres — collapsible */}
         <SectionToggle sec={NAV_SETTINGS} />
       </nav>
 
