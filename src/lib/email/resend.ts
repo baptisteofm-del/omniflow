@@ -18,7 +18,7 @@ export async function sendWelcomeEmail(email: string, agencyName: string): Promi
   try {
     const template = welcomeTemplate()
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
       to: email,
       subject: template.subject,
       html: template.html,
@@ -56,7 +56,7 @@ export async function sendOnboardingEmail(
 
   try {
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
       to: email,
       subject: template.subject,
       html: template.html,
@@ -78,7 +78,7 @@ export async function sendPaymentConfirmedEmail(
   try {
     const template = paymentConfirmedTemplate(plan, renewalDate)
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
       to: email,
       subject: template.subject,
       html: template.html,
@@ -101,7 +101,7 @@ export async function sendInvoiceEmail(
   try {
     const template = invoiceTemplate(month, amount, invoiceUrl)
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
       to: email,
       subject: template.subject,
       html: template.html,
@@ -131,7 +131,7 @@ export async function sendInvoiceEmailWithPdf(
     )
     
     await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+      from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
       to: email,
       subject: `Votre facture OmniFlow — ${invoiceData.invoiceNumber}`,
       html: template.html,

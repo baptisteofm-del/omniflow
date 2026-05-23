@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
       const resend = new Resend(process.env.RESEND_API_KEY || '')
       if (process.env.RESEND_API_KEY) {
         await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+          from: process.env.FROM_EMAIL || 'OmniFlow <hello@omniflowapp.ai>',
           to: email,
           subject: subjectLine,
           html: emailHtml,
