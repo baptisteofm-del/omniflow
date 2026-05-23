@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <TutorialButton />
             <NotificationBell />
           </header>
-          <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+          <main className="flex-1 overflow-y-auto pt-14 lg:pt-0 scroll-smooth">
             {children}
           </main>
         </div>

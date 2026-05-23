@@ -61,7 +61,7 @@ export default function DashboardPage() {
   }, [])
 
   // ── Data ──
-  const agencyName = dashboardData?.agency?.name || 'Mon Agence'
+  const agencyName = dashboardData?.agency?.name || null
   const planId = dashboardData?.plan?.id || 'starter'
   const planRank: Record<string, number> = { starter: 0, pro: 1, agency: 2 }
   const hasFeature = (minPlan: string) => (planRank[planId] || 0) >= (planRank[minPlan] || 0)
@@ -215,7 +215,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
               <span className="text-white">Bonjour, </span>
-              <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">{agencyName}</span>
+              {agencyName
+                ? <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">{agencyName}</span>
+                : <span className="inline-block h-8 w-40 bg-white/10 rounded-xl animate-pulse align-middle" />
+              }
             </h1>
             <span className="px-2.5 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs font-bold text-purple-300 tracking-wide">
               ✨ {planLabel[planId] || planId}
