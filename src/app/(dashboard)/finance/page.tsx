@@ -1,771 +1,768 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
-  TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight,
-  Plus, Download, Upload, X, AlertTriangle, Lightbulb, Info,
-  Calendar, BarChart3, PieChart, Wallet, ChevronRight, Zap,
-  Check, Loader2, RefreshCw, Filter
+  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
+  Plus, Download, X, AlertTriangle, Info, ChevronDown,
+  BarChart3, RefreshCw, Filter, Trash2, Check, Loader2,
+  DollarSign, Wallet, Activity, Target, Layers
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { cn } from '@/lib/utils/cn'
 
-// ── Constantes catégories dépenses OFM ──
-const EXPENSE_CATEGORIES = [
-  { id: 'chatters',    label: 'Salaires chatters',   color: '#8b5cf6' },
-  { id: 'ads',         label: 'Publicité',            color: '#06b6d4' },
-  { id: 'software',   label: 'Logiciels / SaaS',     color: '#3b82f6' },
-  { id: 'editors',    label: 'Monteurs',              color: '#ec4899' },
-  { id: 'ai',         label: 'IA / Outils',           color: '#a855f7' },
-  { id: 'marketing',  label: 'Marketing',             color: '#f59e0b' },
-  { id: 'commissions',label: 'Commissions',           color: '#10b981' },
-  { id: 'freelance',  label: 'Freelances',            color: '#64748b' },
-  { id: 'crypto',     label: 'Crypto',                color: '#f97316' },
-  { id: 'other',      label: 'Autres',                color: '#6b7280' },
+// ── Catégories ──────────────────────────────────────────────
+const EXPENSE_CATS = [
+  { id: 'chatters',    label: 'Salaires chatters',  color: '#8b5cf6' },
+  { id: 'ads',         label: 'Publicité',           color: '#06b6d4' },
+  { id: 'software',    label: 'Logiciels / SaaS',    color: '#3b82f6' },
+  { id: 'editors',     label: 'Monteurs',             color: '#ec4899' },
+  { id: 'ai',          label: 'IA / Outils',          color: '#a855f7' },
+  { id: 'marketing',   label: 'Marketing',            color: '#f59e0b' },
+  { id: 'commissions', label: 'Commissions',          color: '#10b981' },
+  { id: 'freelance',   label: 'Freelances',           color: '#64748b' },
+  { id: 'crypto',      label: 'Crypto',               color: '#f97316' },
+  { id: 'other',       label: 'Autres',               color: '#6b7280' },
+]
+const REVENUE_CATS = [
+  { id: 'onlyfans', label: 'OnlyFans', color: '#00aff0' },
+  { id: 'mym',      label: 'MYM',      color: '#ff6b6b' },
+  { id: 'other',    label: 'Autres',   color: '#6b7280' },
 ]
 
-const REVENUE_CATEGORIES = [
-  { id: 'onlyfans',   label: 'OnlyFans',  color: '#00aff0' },
-  { id: 'mym',        label: 'MYM',       color: '#ff6b6b' },
-  { id: 'other',      label: 'Autres',    color: '#6b7280' },
+const fmt  = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+const fmt2 = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n)
+
+const PRESETS = [
+  { label: '7 jours',    days: 7 },
+  { label: '30 jours',   days: 30 },
+  { label: '3 mois',     days: 90 },
+  { label: '12 mois',    days: 365 },
 ]
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+// ── SVG Area Chart ──────────────────────────────────────────
+function AreaChart({ data, height = 140 }: { data: { label: string; revenue: number; expense: number }[]; height?: number }) {
+  const W = 800; const H = height
+  const pad = { top: 12, bottom: 24, left: 0, right: 0 }
+  const iW = W - pad.left - pad.right
+  const iH = H - pad.top - pad.bottom
+  const allVals = data.flatMap(d => [d.revenue, d.expense])
+  const maxVal = Math.max(...allVals, 1)
 
-const fmtSmall = (n: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n)
+  const toX = (i: number) => pad.left + (i / Math.max(data.length - 1, 1)) * iW
+  const toY = (v: number) => pad.top + iH - (v / maxVal) * iH
 
-// ── Composant barre de chart ──
-function BarChart({ data, maxVal }: { data: { label: string; revenue: number; expense: number }[]; maxVal: number }) {
-  return (
-    <div className="flex items-end gap-2 h-32 w-full">
-      {data.map((d, i) => {
-        const revH = maxVal > 0 ? Math.round((d.revenue / maxVal) * 100) : 0
-        const expH = maxVal > 0 ? Math.round((d.expense / maxVal) * 100) : 0
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-            {/* Tooltip */}
-            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10 bg-gray-900 border border-white/10 rounded-lg p-2 text-xs whitespace-nowrap shadow-xl">
-              <div className="text-green-400">+{fmt(d.revenue)}</div>
-              <div className="text-red-400">-{fmt(d.expense)}</div>
-              <div className={d.revenue - d.expense >= 0 ? 'text-white' : 'text-red-300'}>
-                = {fmt(d.revenue - d.expense)}
-              </div>
-            </div>
-            <div className="flex items-end gap-0.5 w-full justify-center h-28">
-              <div
-                className="w-[45%] bg-gradient-to-t from-green-600 to-green-400 rounded-t-sm transition-all duration-500 hover:opacity-80"
-                style={{ height: `${revH}%`, minHeight: revH > 0 ? '2px' : '0' }}
-              />
-              <div
-                className="w-[45%] bg-gradient-to-t from-red-600 to-red-400 rounded-t-sm transition-all duration-500 hover:opacity-80"
-                style={{ height: `${expH}%`, minHeight: expH > 0 ? '2px' : '0' }}
-              />
-            </div>
-            <span className="text-[9px] text-gray-600 truncate w-full text-center">{d.label}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ── Composant donut ──
-function DonutChart({ data, total }: { data: { label: string; value: number; color: string }[]; total: number }) {
-  if (total === 0) return (
-    <div className="flex items-center justify-center h-28 text-gray-600 text-xs">Aucune donnée</div>
-  )
-  let offset = 0
-  const r = 40
-  const circ = 2 * Math.PI * r
-  return (
-    <div className="flex items-center gap-4">
-      <svg width="100" height="100" viewBox="0 0 100 100" className="flex-shrink-0">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="#ffffff08" strokeWidth="16" />
-        {data.map((d, i) => {
-          const pct = d.value / total
-          const dash = pct * circ
-          const gap = circ - dash
-          const ro = offset * circ
-          offset += pct
-          return (
-            <circle
-              key={i}
-              cx="50" cy="50" r={r}
-              fill="none"
-              stroke={d.color}
-              strokeWidth="16"
-              strokeDasharray={`${dash} ${gap}`}
-              strokeDashoffset={-ro + circ * 0.25}
-              className="transition-all duration-700"
-            />
-          )
-        })}
-      </svg>
-      <div className="space-y-1.5 flex-1 min-w-0">
-        {data.slice(0, 5).map((d, i) => (
-          <div key={i} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
-              <span className="text-xs text-gray-400 truncate">{d.label}</span>
-            </div>
-            <span className="text-xs font-semibold text-white flex-shrink-0">
-              {Math.round((d.value / total) * 100)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Modal ajout transaction ──
-function AddTransactionModal({ onClose, onSave, models }: { onClose: () => void; onSave: (data: any) => void; models: any[] }) {
-  const [type, setType] = useState<'revenue' | 'expense'>('expense')
-  const [form, setForm] = useState({
-    amount: '',
-    category: 'other',
-    description: '',
-    model_id: '',
-    date: new Date().toISOString().split('T')[0],
-    payment_method: 'card',
-    notes: '',
-  })
-  const [saving, setSaving] = useState(false)
-
-  const categories = type === 'expense' ? EXPENSE_CATEGORIES : REVENUE_CATEGORIES
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.amount || !form.description) return
-    setSaving(true)
-    await onSave({ ...form, type, amount: parseFloat(form.amount) })
-    setSaving(false)
+  const bezier = (pts: {x: number; y: number}[]) => {
+    if (pts.length < 2) return ''
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`
+    for (let i = 1; i < pts.length; i++) {
+      const cx = (pts[i - 1].x + pts[i].x) / 2
+      d += ` C ${cx.toFixed(1)} ${pts[i-1].y.toFixed(1)}, ${cx.toFixed(1)} ${pts[i].y.toFixed(1)}, ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`
+    }
+    return d
   }
 
+  const revPts = data.map((d, i) => ({ x: toX(i), y: toY(d.revenue) }))
+  const expPts = data.map((d, i) => ({ x: toX(i), y: toY(d.expense) }))
+  const revPath = bezier(revPts)
+  const expPath = bezier(expPts)
+  const revArea = `${revPath} L ${toX(data.length-1)} ${H} L ${toX(0)} ${H} Z`
+  const expArea = `${expPath} L ${toX(data.length-1)} ${H} L ${toX(0)} ${H} Z`
+
+  // Labels (every ~3 points)
+  const step = Math.max(1, Math.floor(data.length / 6))
+  const labelPts = data.filter((_, i) => i % step === 0 || i === data.length - 1)
+    .map((d, _, arr) => d)
+    .map((d) => ({ label: d.label, x: toX(data.indexOf(d)) }))
+
+  if (data.length === 0) return <div className="h-36 flex items-center justify-center text-gray-700 text-sm">Aucune donnée</div>
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="glass rounded-2xl border border-white/10 w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-white">Ajouter une transaction</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-all"><X size={16} className="text-gray-400" /></button>
-        </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#ef4444" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {/* Grid lines */}
+      {[0.25, 0.5, 0.75, 1].map(f => (
+        <line key={f} x1={pad.left} x2={W} y1={pad.top + iH * (1 - f)} y2={pad.top + iH * (1 - f)}
+          stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+      ))}
+      <path d={revArea} fill="url(#gRev)" />
+      <path d={expArea} fill="url(#gExp)" />
+      <path d={revPath} stroke="#22c55e" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d={expPath} stroke="#ef4444" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeDasharray="4 2" />
+      {/* Dots at last point */}
+      {revPts.length > 0 && <circle cx={revPts[revPts.length-1].x} cy={revPts[revPts.length-1].y} r="3" fill="#22c55e" />}
+      {expPts.length > 0 && <circle cx={expPts[expPts.length-1].x} cy={expPts[expPts.length-1].y} r="3" fill="#ef4444" />}
+      {/* Labels */}
+      {labelPts.map((p, i) => (
+        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fill="rgba(156,163,175,0.7)" fontSize="11">{p.label}</text>
+      ))}
+    </svg>
+  )
+}
 
-        {/* Toggle type */}
-        <div className="flex gap-2 mb-5 p-1 bg-white/5 rounded-xl">
-          {(['expense', 'revenue'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => { setType(t); setForm(f => ({ ...f, category: 'other' })) }}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${type === t
-                ? t === 'expense' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'
-                : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              {t === 'expense' ? '💸 Dépense' : '💰 Revenu'}
+// ── Sparkline ───────────────────────────────────────────────
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data.length) return null
+  const W = 80; const H = 28
+  const max = Math.max(...data, 1)
+  const pts = data.map((v, i) => ({ x: (i / (data.length - 1)) * W, y: H - (v / max) * H * 0.8 + 2 }))
+  const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="opacity-70">
+      <path d={path} stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── Horizontal Bar ──────────────────────────────────────────
+function HBar({ label, value, max, color, pct }: { label: string; value: number; max: number; color: string; pct: number }) {
+  const w = max > 0 ? Math.max((value / max) * 100, value > 0 ? 2 : 0) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: color }} />
+      <span className="text-xs text-gray-400 w-28 truncate flex-shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${w}%`, background: color }} />
+      </div>
+      <span className="text-xs font-semibold text-white w-16 text-right tabular-nums flex-shrink-0">{fmt(value)}</span>
+      <span className="text-xs text-gray-600 w-8 text-right flex-shrink-0">{pct}%</span>
+    </div>
+  )
+}
+
+// ── Date Range Picker ───────────────────────────────────────
+function DateRangePicker({ from, to, onChange }: { from: string; to: string; onChange: (f: string, t: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [localFrom, setLocalFrom] = useState(from)
+  const [localTo, setLocalTo] = useState(to)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setLocalFrom(from); setLocalTo(to) }, [from, to])
+  useEffect(() => {
+    const fn = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [])
+
+  const apply = (f: string, t: string) => { onChange(f, t); setOpen(false) }
+  const applyPreset = (days: number) => {
+    const t = new Date(); const f = new Date(t.getTime() - days * 86400000)
+    apply(f.toISOString().split('T')[0], t.toISOString().split('T')[0])
+  }
+
+  const fromLabel = new Date(from).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' })
+  const toLabel   = new Date(to).toLocaleDateString('fr-FR',   { day: 'numeric', month: 'short', year: '2-digit' })
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:bg-white/10 transition-all">
+        <Filter size={12} className="text-gray-500" />
+        <span className="tabular-nums">{fromLabel}</span>
+        <span className="text-gray-600">—</span>
+        <span className="tabular-nums">{toLabel}</span>
+        <ChevronDown size={12} className={cn('text-gray-500 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="absolute top-full mt-2 right-0 z-50 bg-[#12121c] border border-white/10 rounded-2xl p-4 shadow-2xl w-72">
+          {/* Presets */}
+          <div className="grid grid-cols-2 gap-1.5 mb-3">
+            {PRESETS.map(p => (
+              <button key={p.days} onClick={() => applyPreset(p.days)}
+                className="px-3 py-1.5 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all text-center">
+                {p.label}
+              </button>
+            ))}
+            <button onClick={() => { const y = new Date(); const f = new Date(y.getFullYear(), 0, 1); apply(f.toISOString().split('T')[0], y.toISOString().split('T')[0]) }}
+              className="px-3 py-1.5 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+              Cette année
             </button>
-          ))}
+            <button onClick={() => { const y = new Date(); const f = new Date(y.getFullYear(), y.getMonth(), 1); apply(f.toISOString().split('T')[0], y.toISOString().split('T')[0]) }}
+              className="px-3 py-1.5 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all">
+              Ce mois
+            </button>
+          </div>
+          <div className="border-t border-white/5 pt-3 space-y-2">
+            <p className="text-xs text-gray-600 mb-2">Période personnalisée</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Du</label>
+                <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Au</label>
+                <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-purple-500/50 focus:outline-none" />
+              </div>
+            </div>
+            <button onClick={() => apply(localFrom, localTo)}
+              className="w-full py-2 mt-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg text-white text-xs font-semibold hover:opacity-90 transition-all">
+              Appliquer
+            </button>
+          </div>
         </div>
+      )}
+    </div>
+  )
+}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+// ── Modal Transaction ───────────────────────────────────────
+function TransactionModal({ onClose, onSave, models }: { onClose: () => void; onSave: (d: any) => Promise<void>; models: any[] }) {
+  const [type, setType] = useState<'expense' | 'revenue'>('expense')
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ amount: '', category: 'other', description: '', model_id: '', date: new Date().toISOString().split('T')[0], payment_method: 'virement', notes: '' })
+  const cats = type === 'expense' ? EXPENSE_CATS : REVENUE_CATS
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+          <h3 className="font-semibold text-white text-sm">Nouvelle transaction</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-all"><X size={15} className="text-gray-400" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-2 p-1 bg-white/5 rounded-xl">
+            {(['expense', 'revenue'] as const).map(t => (
+              <button key={t} onClick={() => { setType(t); set('category', 'other') }}
+                className={cn('flex-1 py-2 rounded-lg text-xs font-medium transition-all',
+                  type === t ? (t === 'expense' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30')
+                  : 'text-gray-500 hover:text-gray-300')}>
+                {t === 'expense' ? 'Dépense' : 'Revenu'}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Montant (€) *</label>
-              <input
-                type="number" step="0.01" min="0" required
-                value={form.amount}
-                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-              />
+              <label className="text-xs text-gray-500 mb-1.5 block">Montant (€) *</label>
+              <input type="number" step="0.01" min="0" required value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0.00"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Date *</label>
-              <input
-                type="date" required
-                value={form.date}
-                onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-              />
+              <label className="text-xs text-gray-500 mb-1.5 block">Date *</label>
+              <input type="date" required value={form.date} onChange={e => set('date', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors" />
             </div>
           </div>
-
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Catégorie *</label>
-            <select
-              value={form.category}
-              onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-            >
-              {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            <label className="text-xs text-gray-500 mb-1.5 block">Catégorie *</label>
+            <select value={form.category} onChange={e => set('category', e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors">
+              {cats.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
           </div>
-
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Description *</label>
-            <input
-              type="text" required
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="ex: Salaire chatter Mai"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-            />
+            <label className="text-xs text-gray-500 mb-1.5 block">Description *</label>
+            <input type="text" required value={form.description} onChange={e => set('description', e.target.value)} placeholder="ex: Abonnement AdsPower"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors" />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Modèle</label>
-              <select
-                value={form.model_id}
-                onChange={e => setForm(f => ({ ...f, model_id: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-              >
-                <option value="">— Aucun —</option>
+              <label className="text-xs text-gray-500 mb-1.5 block">Modèle <span className="text-gray-700">(optionnel)</span></label>
+              <select value={form.model_id} onChange={e => set('model_id', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors">
+                <option value="">— Global agence —</option>
                 {models.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Paiement</label>
-              <select
-                value={form.payment_method}
-                onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-              >
-                <option value="card">Carte</option>
-                <option value="crypto">Crypto</option>
+              <label className="text-xs text-gray-500 mb-1.5 block">Méthode</label>
+              <select value={form.payment_method} onChange={e => set('payment_method', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/50 focus:outline-none transition-colors">
                 <option value="virement">Virement</option>
-                <option value="cash">Espèces</option>
+                <option value="crypto">Crypto</option>
+                <option value="card">Carte</option>
               </select>
             </div>
           </div>
-
-          <div>
-            <label className="text-xs text-gray-500 mb-1 block">Notes</label>
-            <input
-              type="text"
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder="Notes optionnelles..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 focus:outline-none"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm hover:bg-white/5 transition-all">
               Annuler
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            <button onClick={async () => { if (!form.amount || !form.description) return; setSaving(true); await onSave({ ...form, type }); setSaving(false) }} disabled={saving || !form.amount || !form.description}
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+              Enregistrer
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
 }
 
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 // PAGE PRINCIPALE
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 export default function FinancePage() {
+  const now = new Date()
   const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month')
-  const [showAddModal, setShowAddModal] = useState(false)
   const [models, setModels] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'expenses' | 'revenues'>('overview')
+  const [showModal, setShowModal] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [platform, setPlatform] = useState<'all' | 'onlyfans' | 'mym'>('all')
+  const [modelFilter, setModelFilter] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<'overview' | 'revenues' | 'expenses' | 'models'>('overview')
 
-  const fetchSummary = useCallback(async () => {
+  const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const defaultTo   = now.toISOString().split('T')[0]
+  const [from, setFrom] = useState(defaultFrom)
+  const [to, setTo]     = useState(defaultTo)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-      const res = await fetch(`/api/finance/summary?period=${period}`)
-      if (!res.ok) throw new Error('Erreur API')
-      setSummary(await res.json())
-    } catch (e) {
-      toast.error('Erreur de chargement')
-    } finally {
-      setLoading(false)
-    }
-  }, [period])
+      const params = new URLSearchParams({ from, to, platform: platform === 'all' ? '' : platform })
+      if (modelFilter !== 'all') params.set('model_id', modelFilter)
+      const res = await fetch(`/api/finance/summary?${params}`)
+      if (res.ok) setSummary(await res.json())
+    } catch { toast.error('Erreur de chargement') }
+    finally { setLoading(false) }
+  }, [from, to, platform, modelFilter])
 
+  useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
-    fetchSummary()
-    // Fetch models for modal
     fetch('/api/models').then(r => r.json()).then(d => setModels(d.models || d || [])).catch(() => {})
-  }, [fetchSummary])
+  }, [])
 
-  const handleAddTransaction = async (data: any) => {
-    try {
-      const res = await fetch('/api/finance/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error()
-      toast.success('Transaction ajoutée ✓')
-      setShowAddModal(false)
-      fetchSummary()
-    } catch {
-      toast.error('Erreur lors de l\'ajout')
-    }
+  const handleSave = async (data: any) => {
+    const res = await fetch('/api/finance/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    if (!res.ok) { toast.error('Erreur lors de l\'ajout'); return }
+    toast.success('Transaction ajoutée')
+    setShowModal(false)
+    fetchData()
+  }
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id)
+    const res = await fetch(`/api/finance/transactions?id=${id}`, { method: 'DELETE' })
+    if (res.ok) { toast.success('Transaction supprimée'); fetchData() } else toast.error('Erreur')
+    setDeletingId(null)
   }
 
   const handleSync = async () => {
     setSyncing(true)
-    try {
-      await Promise.all([
-        fetch('/api/integrations/onlyfans/sync', { method: 'POST' }).catch(() => null),
-        fetch('/api/integrations/mym/sync', { method: 'POST' }).catch(() => null),
-      ])
-      await fetchSummary()
-      toast.success('Données synchronisées ✓')
-    } catch {
-      toast.error('Erreur de synchronisation')
-    } finally {
-      setSyncing(false)
-    }
+    await Promise.all([
+      fetch('/api/integrations/onlyfans/sync', { method: 'POST' }).catch(() => null),
+      fetch('/api/integrations/mym/sync', { method: 'POST' }).catch(() => null),
+    ])
+    await fetchData()
+    toast.success('Synchronisé')
+    setSyncing(false)
   }
 
   const exportCSV = () => {
     if (!summary?.recentTransactions?.length) return
-    const header = 'type,montant,categorie,description,date,modele'
+    const h = 'type,montant,categorie,description,date,modele,methode'
     const rows = summary.recentTransactions.map((t: any) =>
-      `${t.type},${t.amount},"${t.category}","${(t.description||'').replace(/"/g,'""')}",${t.date?.split('T')[0]||''},${t.model_id||''}`
-    )
-    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url
-    a.download = `omniflow-finances-${new Date().toISOString().split('T')[0]}.csv`
-    a.click(); URL.revokeObjectURL(url)
+      `${t.type},${t.amount},"${t.category}","${(t.description||'').replace(/"/g,'""')}",${t.date?.split('T')[0]||''},${t.model_id||''},${t.payment_method||''}`)
+    const b = new Blob([[h, ...rows].join('\n')], { type: 'text/csv' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b)
+    a.download = `finances-${from}-${to}.csv`; a.click()
   }
 
   // Computed
-  const maxTrend = Math.max(...(summary?.monthlyTrend || []).map((d: any) => Math.max(d.revenue, d.expense)), 1)
+  const s = summary || {}
+  const chartData = s.monthlyTrend || []
+  const sparkRevenue = chartData.map((d: any) => d.revenue)
+  const sparkExpense = chartData.map((d: any) => d.expense)
+  const sparkMargin  = chartData.map((d: any) => d.margin)
 
-  const expenseChartData = EXPENSE_CATEGORIES
-    .map(c => ({ label: c.label, value: summary?.expenseByCategory?.[c.id] || 0, color: c.color }))
-    .filter(d => d.value > 0)
-    .sort((a, b) => b.value - a.value)
+  const expenseRows = EXPENSE_CATS
+    .map(c => ({ ...c, value: s.expenseByCategory?.[c.id] || 0 }))
+    .filter(r => r.value > 0).sort((a, b) => b.value - a.value)
+  const maxExp = Math.max(...expenseRows.map(r => r.value), 1)
 
-  const revenueChartData = REVENUE_CATEGORIES
-    .map(c => ({ label: c.label, value: summary?.byPlatform?.[c.id] || 0, color: c.color }))
-    .filter(d => d.value > 0)
+  const platformRows = REVENUE_CATS
+    .map(c => ({ ...c, value: s.byPlatform?.[c.id] || 0 }))
+    .filter(r => r.value > 0)
+  const maxPlatform = Math.max(...platformRows.map(r => r.value), 1)
 
-  const periodLabels = { month: 'Ce mois', quarter: 'Ce trimestre', year: 'Cette année' }
-
-  const recTips = summary?.recommendations || []
+  const KPICard = ({ title, value, sub, growth, sparkData, sparkColor, icon: Icon, accent }: any) => (
+    <div className={cn('glass rounded-2xl p-5 border transition-all duration-300 hover:scale-[1.01] group', accent)}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="p-2 rounded-xl bg-white/5 group-hover:bg-white/10 transition-all">
+          <Icon size={16} className="text-gray-400" />
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          {growth !== null && growth !== undefined && (
+            <span className={cn('flex items-center gap-0.5 text-xs font-semibold tabular-nums', growth >= 0 ? 'text-green-400' : 'text-red-400')}>
+              {growth >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              {growth > 0 ? '+' : ''}{growth}%
+            </span>
+          )}
+          {sparkData && <Sparkline data={sparkData} color={sparkColor} />}
+        </div>
+      </div>
+      <div className="text-2xl font-bold text-white tabular-nums tracking-tight">{value}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{title}</div>
+      {sub && <div className="text-xs text-gray-700 mt-0.5">{sub}</div>}
+    </div>
+  )
 
   return (
     <div className="p-6 lg:p-8 max-w-screen-2xl mx-auto">
 
-      {/* ── HEADER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* ── HEADER ─────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Finance</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Suivi des revenus, dépenses et rentabilité</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Finance</h1>
+          <p className="text-xs text-gray-600 mt-0.5 tabular-nums">{from} — {to} · {s.transactionCount || 0} transactions</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Period selector */}
+          {/* Platform filter */}
           <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
-            {(['month', 'quarter', 'year'] as const).map(p => (
-              <button key={p} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${period === p ? 'bg-purple-500/30 text-purple-300 border border-purple-500/30' : 'text-gray-500 hover:text-gray-300'}`}>
-                {periodLabels[p]}
+            {(['all', 'onlyfans', 'mym'] as const).map(p => (
+              <button key={p} onClick={() => setPlatform(p)}
+                className={cn('px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  platform === p ? 'bg-white/15 text-white' : 'text-gray-600 hover:text-gray-300')}>
+                {p === 'all' ? 'Toutes plates.' : p === 'onlyfans' ? 'OnlyFans' : 'MYM'}
               </button>
             ))}
           </div>
+          {/* Model filter */}
+          {models.length > 0 && (
+            <select value={modelFilter} onChange={e => setModelFilter(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-purple-500/50 transition-colors">
+              <option value="all">Tous les modèles</option>
+              {models.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          )}
+          <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} />
           <button onClick={handleSync} disabled={syncing}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-xs hover:bg-white/10 transition-all disabled:opacity-50">
-            <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-400 hover:bg-white/10 transition-all disabled:opacity-40">
+            <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
             Sync
           </button>
-          <button onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition-all">
-            <Plus size={13} />
+          <button onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition-all">
+            <Plus size={12} />
             Ajouter
           </button>
           <button onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 text-xs hover:bg-white/10 transition-all">
-            <Download size={13} />
-            Export
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-400 hover:bg-white/10 transition-all">
+            <Download size={12} />
           </button>
         </div>
       </div>
 
-      {/* ── RECOMMENDATIONS ── */}
-      {!loading && recTips.length > 0 && (
-        <div className="mb-5 space-y-2">
-          {recTips.map((r: any, i: number) => {
-            const iconMap: Record<string, any> = { warning: AlertTriangle, alert: AlertTriangle, info: Lightbulb }
-            const colorMap: Record<string, string> = {
-              warning: 'bg-amber-500/5 border-amber-500/20 text-amber-300',
-              alert: 'bg-red-500/5 border-red-500/20 text-red-300',
-              info: 'bg-blue-500/5 border-blue-500/20 text-blue-300',
-            }
-            const Icon = iconMap[r.type] || Info
-            return (
-              <div key={i} className={`flex items-center justify-between p-3 rounded-xl border ${colorMap[r.type]}`}>
-                <div className="flex items-center gap-2">
-                  <Icon size={14} className="flex-shrink-0" />
-                  <span className="text-xs">{r.message}</span>
-                </div>
-                {r.href && r.action && (
-                  <Link href={r.href} className="text-xs font-medium flex items-center gap-1 hover:opacity-80 transition-all flex-shrink-0 ml-4">
-                    {r.action} <ChevronRight size={11} />
-                  </Link>
-                )}
+      {/* ── RECOMMENDATIONS ────────────────────────────────── */}
+      {!loading && (s.recommendations || []).length > 0 && (
+        <div className="mb-5 space-y-1.5">
+          {s.recommendations.map((r: any, i: number) => (
+            <div key={i} className={cn('flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs',
+              r.type === 'alert' ? 'bg-red-950/30 border-red-500/20 text-red-300' : r.type === 'warning' ? 'bg-amber-950/30 border-amber-500/20 text-amber-300' : 'bg-blue-950/30 border-blue-500/20 text-blue-300')}>
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={12} className="flex-shrink-0" />
+                <span>{r.message}</span>
               </div>
-            )
-          })}
+              {r.href && <Link href={r.href} className="flex items-center gap-1 font-medium hover:opacity-70 transition-opacity flex-shrink-0 ml-4">Voir <ArrowUpRight size={10} /></Link>}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* ── KPI CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {loading ? (
-          [...Array(4)].map((_, i) => <div key={i} className="glass rounded-2xl border border-white/5 h-28 animate-pulse" />)
-        ) : (
-          <>
-            {/* Revenus */}
-            <Link href="#revenues"
-              className="glass rounded-2xl p-5 border border-green-500/20 hover:border-green-500/40 bg-gradient-to-br from-green-500/10 to-transparent hover:scale-[1.02] transition-all duration-300 group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-1.5 bg-green-500/20 rounded-lg"><DollarSign size={15} className="text-green-400" /></div>
-                {summary?.revenueGrowth !== null && (
-                  <span className={`flex items-center gap-0.5 text-xs font-semibold ${(summary?.revenueGrowth || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {(summary?.revenueGrowth || 0) >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                    {summary?.revenueGrowth > 0 ? '+' : ''}{summary?.revenueGrowth}%
-                  </span>
-                )}
-              </div>
-              <div className="text-2xl font-bold text-white tabular-nums">{summary?.formatted?.totalRevenue || '0 €'}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Revenus {periodLabels[period].toLowerCase()}</div>
-              {summary?.todayRevenue > 0 && (
-                <div className="text-xs text-green-400 mt-1">+{fmt(summary.todayRevenue)} aujourd'hui</div>
-              )}
-            </Link>
-
-            {/* Dépenses */}
-            <div className="glass rounded-2xl p-5 border border-red-500/20 hover:border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-              onClick={() => setActiveTab('expenses')}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-1.5 bg-red-500/20 rounded-lg"><ArrowDownRight size={15} className="text-red-400" /></div>
-              </div>
-              <div className="text-2xl font-bold text-white tabular-nums">{summary?.formatted?.totalExpense || '0 €'}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Dépenses {periodLabels[period].toLowerCase()}</div>
-              <div className="text-xs text-gray-600 mt-1">{summary?.transactionCount || 0} transactions</div>
-            </div>
-
-            {/* Bénéfice net */}
-            <div className={`glass rounded-2xl p-5 border hover:scale-[1.02] transition-all duration-300 ${(summary?.netProfit || 0) >= 0 ? 'border-cyan-500/20 hover:border-cyan-500/40 bg-gradient-to-br from-cyan-500/10 to-transparent' : 'border-red-500/20 hover:border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className={`p-1.5 rounded-lg ${(summary?.netProfit || 0) >= 0 ? 'bg-cyan-500/20' : 'bg-red-500/20'}`}>
-                  <Wallet size={15} className={(summary?.netProfit || 0) >= 0 ? 'text-cyan-400' : 'text-red-400'} />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-white tabular-nums">{summary?.formatted?.netProfit || '0 €'}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Bénéfice net</div>
-              <div className="text-xs text-gray-600 mt-1">Marge : <span className={(summary?.margin || 0) >= 30 ? 'text-green-400' : 'text-amber-400'}>{summary?.margin || 0}%</span></div>
-            </div>
-
-            {/* Marge visuelle */}
-            <div className="glass rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 bg-gradient-to-br from-purple-500/10 to-transparent hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-1.5 bg-purple-500/20 rounded-lg"><BarChart3 size={15} className="text-purple-400" /></div>
-                <span className="text-xs text-gray-500">{periodLabels[period]}</span>
-              </div>
-              <div className="text-2xl font-bold text-white">{summary?.margin || 0}%</div>
-              <div className="text-xs text-gray-500 mt-0.5">Taux de marge</div>
-              <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${(summary?.margin || 0) >= 50 ? 'bg-green-500' : (summary?.margin || 0) >= 30 ? 'bg-amber-500' : 'bg-red-500'}`}
-                  style={{ width: `${Math.min(Math.max(summary?.margin || 0, 0), 100)}%` }}
-                />
-              </div>
-            </div>
-          </>
-        )}
+      {/* ── KPI CARDS ──────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
+        {loading ? [...Array(5)].map((_, i) => <div key={i} className="h-32 glass rounded-2xl border border-white/5 animate-pulse" />) : <>
+          <KPICard title="Chiffre d'affaires" value={s.formatted?.totalRevenue || '0 €'} growth={s.revenueGrowth} sparkData={sparkRevenue} sparkColor="#22c55e" icon={DollarSign} accent="border-green-500/15 hover:border-green-500/30" sub={s.todayRevenue > 0 ? `+${fmt(s.todayRevenue)} auj.` : null} />
+          <KPICard title="Dépenses totales" value={s.formatted?.totalExpense || '0 €'} growth={s.expenseGrowth} sparkData={sparkExpense} sparkColor="#ef4444" icon={ArrowDownRight} accent="border-red-500/15 hover:border-red-500/30" sub={s.expenseRatio > 0 ? `${s.expenseRatio}% du CA` : null} />
+          <KPICard title="Bénéfice net" value={s.formatted?.netProfit || '0 €'} sparkData={chartData.map((d: any) => Math.max(d.profit, 0))} sparkColor={(s.netProfit || 0) >= 0 ? '#06b6d4' : '#ef4444'} icon={Wallet} accent={(s.netProfit || 0) >= 0 ? 'border-cyan-500/15 hover:border-cyan-500/30' : 'border-red-500/15'} />
+          <KPICard title="Marge nette" value={`${s.margin || 0}%`} sparkData={sparkMargin} sparkColor="#a855f7" icon={Target} accent="border-purple-500/15 hover:border-purple-500/30" sub={(s.margin || 0) >= 30 ? 'Saine' : 'À améliorer'} />
+          <KPICard title="Revenu / jour moy." value={s.formatted?.dailyAvg || '0 €'} icon={Activity} accent="border-white/5 hover:border-white/15" sub={`sur ${s.period?.days || 30} jours`} />
+        </>}
       </div>
 
-      {/* ── TABS ── */}
+      {/* ── TABS ───────────────────────────────────────────── */}
       <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-5 w-fit">
         {[
-          { id: 'overview', label: '📊 Vue d\'ensemble' },
-          { id: 'revenues', label: '💰 Revenus' },
-          { id: 'expenses', label: '💸 Dépenses' },
+          { id: 'overview',  label: 'Vue globale' },
+          { id: 'revenues',  label: 'Revenus' },
+          { id: 'expenses',  label: 'Dépenses' },
+          { id: 'models',    label: 'Modèles' },
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === tab.id ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}>
+            className={cn('px-4 py-1.5 rounded-lg text-xs font-medium transition-all',
+              activeTab === tab.id ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300')}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* ════════════════════════ VUE D'ENSEMBLE ════════════════════════ */}
+      {/* ════════════ VUE GLOBALE ════════════ */}
       {activeTab === 'overview' && (
         <div className="space-y-5">
-          {/* Chart évolution mensuelle */}
-          <div className="glass rounded-2xl p-5 border border-white/5 hover:border-purple-500/20 transition-all">
+          {/* Main Chart */}
+          <div className="glass rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <BarChart3 size={15} className="text-purple-400" />
-                Évolution sur 12 mois
-              </h2>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-500 inline-block" />Revenus</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />Dépenses</span>
+              <div>
+                <h2 className="text-sm font-semibold text-white">Évolution mensuelle</h2>
+                <p className="text-xs text-gray-600 mt-0.5">Revenus vs dépenses sur 12 mois</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-green-500 inline-block rounded" />Revenus</span>
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-red-500 inline-block rounded border-dashed" />Dépenses</span>
               </div>
             </div>
-            {loading ? (
-              <div className="h-32 bg-white/5 rounded-xl animate-pulse" />
-            ) : (
-              <BarChart data={summary?.monthlyTrend || []} maxVal={maxTrend} />
-            )}
+            {loading ? <div className="h-36 bg-white/5 rounded-xl animate-pulse" /> : <AreaChart data={chartData} height={140} />}
           </div>
 
+          {/* Two columns */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Répartition dépenses */}
-            <div className="glass rounded-2xl p-5 border border-white/5 hover:border-red-500/20 transition-all">
-              <h2 className="font-semibold flex items-center gap-2 text-sm mb-4">
-                <PieChart size={15} className="text-red-400" />
-                Répartition des dépenses
-              </h2>
-              {loading ? (
-                <div className="h-28 bg-white/5 rounded-xl animate-pulse" />
-              ) : expenseChartData.length > 0 ? (
-                <DonutChart data={expenseChartData} total={summary?.totalExpense || 0} />
-              ) : (
-                <div className="flex flex-col items-center gap-3 py-6 text-center">
-                  <div className="p-3 bg-white/5 rounded-xl"><PieChart size={20} className="text-gray-600" /></div>
-                  <p className="text-xs text-gray-600">Aucune dépense ce mois</p>
-                  <button onClick={() => { setShowAddModal(true) }} className="text-xs text-purple-400 hover:text-purple-300">+ Ajouter une dépense</button>
-                </div>
-              )}
-            </div>
-
-            {/* Top modèles */}
-            <div className="glass rounded-2xl p-5 border border-white/5 hover:border-purple-500/20 transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold flex items-center gap-2 text-sm">
-                  <TrendingUp size={15} className="text-purple-400" />
-                  Revenus par modèle
-                </h2>
-                <Link href="/accounts" className="text-xs text-gray-600 hover:text-purple-400 transition-colors">Voir tous →</Link>
-              </div>
-              {loading ? (
-                <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-8 bg-white/5 rounded-xl animate-pulse" />)}</div>
-              ) : summary?.byModel?.length > 0 ? (
+            {/* Platform breakdown */}
+            <div className="glass rounded-2xl border border-white/5 p-5">
+              <h2 className="text-sm font-semibold text-white mb-4">Revenus par plateforme</h2>
+              {platformRows.length > 0 ? (
                 <div className="space-y-3">
-                  {summary.byModel.slice(0, 5).map((m: any, i: number) => {
-                    const pct = summary.totalRevenue > 0 ? Math.round((m.revenue / summary.totalRevenue) * 100) : 0
-                    return (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="text-xs text-gray-600 w-4">{i + 1}</span>
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                          {m.name?.charAt(0)?.toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-white truncate">{m.name}</span>
-                            <span className="text-xs font-bold text-green-400 flex-shrink-0 ml-2">{fmt(m.revenue)}</span>
-                          </div>
-                          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {platformRows.map(r => (
+                    <HBar key={r.id} label={r.label} value={r.value} max={maxPlatform} color={r.color}
+                      pct={s.totalRevenue > 0 ? Math.round((r.value / s.totalRevenue) * 100) : 0} />
+                  ))}
+                  {s.byPlatform && Object.entries(s.byPlatform).filter(([k]) => !REVENUE_CATS.find(c => c.id === k)).map(([k, v]) => (
+                    <HBar key={k} label={k} value={v as number} max={maxPlatform} color="#6b7280"
+                      pct={s.totalRevenue > 0 ? Math.round(((v as number) / s.totalRevenue) * 100) : 0} />
+                  ))}
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-xs text-gray-600 mb-2">Aucune donnée de revenus</p>
-                  <button onClick={() => setShowAddModal(true)} className="text-xs text-purple-400 hover:text-purple-300">+ Ajouter un revenu</button>
+                <div className="py-8 text-center">
+                  <p className="text-xs text-gray-600 mb-3">Connectez OnlyFans ou MYM pour voir vos revenus par plateforme</p>
+                  <Link href="/settings/integrations" className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 justify-center">
+                    Connecter les intégrations <ArrowUpRight size={11} />
+                  </Link>
                 </div>
               )}
             </div>
+
+            {/* Expense ratio */}
+            <div className="glass rounded-2xl border border-white/5 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-white">Ratio dépenses / CA</h2>
+                <span className={cn('text-xs font-semibold tabular-nums', (s.expenseRatio || 0) > 60 ? 'text-red-400' : (s.expenseRatio || 0) > 40 ? 'text-amber-400' : 'text-green-400')}>
+                  {s.expenseRatio || 0}%
+                </span>
+              </div>
+              <div className="mb-5">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+                  <span>0%</span><span className="text-green-400">Optimal &lt;40%</span><span>100%</span>
+                </div>
+                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-green-500 via-amber-500 to-red-500"
+                    style={{ width: `${Math.min(s.expenseRatio || 0, 100)}%` }} />
+                </div>
+                <div className="flex justify-between text-xs mt-1.5">
+                  <span className="text-gray-600">CA : <span className="text-green-400 tabular-nums">{s.formatted?.totalRevenue || '0 €'}</span></span>
+                  <span className="text-gray-600">Dép. : <span className="text-red-400 tabular-nums">{s.formatted?.totalExpense || '0 €'}</span></span>
+                </div>
+              </div>
+              {/* Top expense categories */}
+              <div className="space-y-2">
+                {expenseRows.slice(0, 4).map(r => (
+                  <HBar key={r.id} label={r.label} value={r.value} max={maxExp} color={r.color}
+                    pct={s.totalExpense > 0 ? Math.round((r.value / s.totalExpense) * 100) : 0} />
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Transactions récentes */}
-          <div className="glass rounded-2xl p-5 border border-white/5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <Calendar size={15} className="text-cyan-400" />
-                Transactions récentes
-              </h2>
-              <button onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors">
-                <Plus size={11} /> Ajouter
-              </button>
-            </div>
-            <TransactionList transactions={summary?.recentTransactions || []} loading={loading} />
-          </div>
+          {/* Transactions */}
+          <TxTable transactions={s.recentTransactions || []} loading={loading} onDelete={handleDelete} deletingId={deletingId} onAdd={() => setShowModal(true)} />
         </div>
       )}
 
-      {/* ════════════════════════ REVENUS ════════════════════════ */}
+      {/* ════════════ REVENUS ════════════ */}
       {activeTab === 'revenues' && (
         <div className="space-y-5">
-          <div className="glass rounded-2xl p-5 border border-white/5">
+          <div className="glass rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <DollarSign size={15} className="text-green-400" />
-                Revenus par plateforme
-              </h2>
-              <button onClick={() => setShowAddModal(true)}
+              <h2 className="text-sm font-semibold text-white">Revenus par plateforme</h2>
+              <button onClick={() => setShowModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-xs text-green-400 hover:bg-green-500/20 transition-all">
-                <Plus size={11} /> Ajouter
+                <Plus size={11} />Ajouter
               </button>
             </div>
-            {revenueChartData.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <DonutChart data={revenueChartData} total={summary?.totalRevenue || 0} />
+            {platformRows.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  {revenueChartData.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                        <span className="text-sm text-white">{d.label}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-white">{fmt(d.value)}</div>
-                        <div className="text-xs text-gray-500">{Math.round((d.value / (summary?.totalRevenue || 1)) * 100)}%</div>
-                      </div>
+                  {platformRows.map(r => (
+                    <div key={r.id} className="flex items-center justify-between p-3 bg-white/3 rounded-xl border border-white/5">
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm" style={{ background: r.color }} /><span className="text-sm text-white">{r.label}</span></div>
+                      <div className="text-right"><div className="text-sm font-bold text-white tabular-nums">{fmt(r.value)}</div><div className="text-xs text-gray-600">{s.totalRevenue > 0 ? Math.round((r.value / s.totalRevenue) * 100) : 0}% du CA</div></div>
                     </div>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-gray-500 text-sm mb-3">Connectez OnlyFans ou MYM pour synchroniser vos revenus automatiquement</p>
-                <div className="flex gap-3 justify-center">
-                  <Link href="/settings/integrations" className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all">
-                    <Zap size={14} /> Connecter les intégrations
-                  </Link>
-                  <button onClick={() => setShowAddModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm hover:bg-white/10 transition-all">
-                    <Plus size={14} /> Ajouter manuellement
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="glass rounded-2xl p-5 border border-white/5">
-            <h2 className="font-semibold flex items-center gap-2 text-sm mb-4">
-              <TrendingUp size={15} className="text-green-400" />
-              Revenus par modèle
-            </h2>
-            <TransactionList transactions={(summary?.recentTransactions || []).filter((t: any) => t.type === 'revenue')} loading={loading} />
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════ DÉPENSES ════════════════════════ */}
-      {activeTab === 'expenses' && (
-        <div className="space-y-5">
-          <div className="glass rounded-2xl p-5 border border-white/5">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <PieChart size={15} className="text-red-400" />
-                Dépenses par catégorie
-              </h2>
-              <button onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 hover:bg-red-500/20 transition-all">
-                <Plus size={11} /> Ajouter une dépense
-              </button>
-            </div>
-            {expenseChartData.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                  <DonutChart data={expenseChartData} total={summary?.totalExpense || 0} />
-                  <div className="space-y-2">
-                    {expenseChartData.map((d, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 bg-white/3 rounded-xl border border-white/5 hover:bg-white/8 transition-all">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-                          <span className="text-xs text-gray-300">{d.label}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${Math.round((d.value / (summary?.totalExpense || 1)) * 100)}%`, background: d.color }} />
-                          </div>
-                          <span className="text-xs font-bold text-white w-16 text-right tabular-nums">{fmt(d.value)}</span>
-                        </div>
-                      </div>
-                    ))}
+                <div className="space-y-3">
+                  <div className="p-4 bg-white/3 rounded-xl border border-white/5">
+                    <div className="text-xs text-gray-500 mb-1">CA total</div>
+                    <div className="text-2xl font-bold text-white tabular-nums">{s.formatted?.totalRevenue || '0 €'}</div>
+                    {s.revenueGrowth !== null && <div className={cn('text-xs mt-1', (s.revenueGrowth || 0) >= 0 ? 'text-green-400' : 'text-red-400')}>{(s.revenueGrowth || 0) > 0 ? '+' : ''}{s.revenueGrowth}% vs période préc.</div>}
+                  </div>
+                  <div className="p-4 bg-white/3 rounded-xl border border-white/5">
+                    <div className="text-xs text-gray-500 mb-1">Revenu journalier moyen</div>
+                    <div className="text-xl font-bold text-white tabular-nums">{s.formatted?.dailyAvg || '0 €'}</div>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm mb-3">Aucune dépense enregistrée</p>
-                <button onClick={() => setShowAddModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm hover:bg-white/10 transition-all">
-                  <Plus size={14} /> Ajouter une dépense
-                </button>
+              <div className="text-center py-10 space-y-3">
+                <p className="text-sm text-gray-500">Connectez OnlyFans ou MYM pour synchroniser vos revenus</p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/settings/integrations" className="px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition-all">Connecter les intégrations</Link>
+                  <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-xs hover:bg-white/10 transition-all">Saisie manuelle</button>
+                </div>
               </div>
             )}
           </div>
-
-          <div className="glass rounded-2xl p-5 border border-white/5">
-            <h2 className="font-semibold flex items-center gap-2 text-sm mb-4">
-              <Filter size={15} className="text-red-400" />
-              Liste des dépenses
-            </h2>
-            <TransactionList transactions={(summary?.recentTransactions || []).filter((t: any) => t.type === 'expense')} loading={loading} />
-          </div>
+          <TxTable transactions={(s.recentTransactions || []).filter((t: any) => t.type === 'revenue')} loading={loading} onDelete={handleDelete} deletingId={deletingId} onAdd={() => setShowModal(true)} />
         </div>
       )}
 
-      {/* Modal */}
-      {showAddModal && (
-        <AddTransactionModal
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddTransaction}
-          models={models}
-        />
+      {/* ════════════ DÉPENSES ════════════ */}
+      {activeTab === 'expenses' && (
+        <div className="space-y-5">
+          <div className="glass rounded-2xl border border-white/5 p-5">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-white">Répartition des dépenses</h2>
+              <button onClick={() => setShowModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 hover:bg-red-500/20 transition-all">
+                <Plus size={11} />Ajouter
+              </button>
+            </div>
+            {expenseRows.length > 0 ? (
+              <div className="space-y-2.5">
+                {expenseRows.map(r => (
+                  <HBar key={r.id} label={r.label} value={r.value} max={maxExp} color={r.color}
+                    pct={s.totalExpense > 0 ? Math.round((r.value / s.totalExpense) * 100) : 0} />
+                ))}
+                <div className="flex justify-between text-xs pt-2 border-t border-white/5">
+                  <span className="text-gray-500">Total dépenses</span>
+                  <span className="text-white font-bold tabular-nums">{s.formatted?.totalExpense || '0 €'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 space-y-3">
+                <p className="text-xs text-gray-600">Aucune dépense enregistrée pour cette période</p>
+                <button onClick={() => setShowModal(true)} className="text-xs text-purple-400 hover:text-purple-300 transition-colors">Ajouter une dépense</button>
+              </div>
+            )}
+          </div>
+          <TxTable transactions={(s.recentTransactions || []).filter((t: any) => t.type === 'expense')} loading={loading} onDelete={handleDelete} deletingId={deletingId} onAdd={() => setShowModal(true)} />
+        </div>
       )}
+
+      {/* ════════════ MODÈLES ════════════ */}
+      {activeTab === 'models' && (
+        <div className="glass rounded-2xl border border-white/5 p-5">
+          <h2 className="text-sm font-semibold text-white mb-5">Performance par modèle</h2>
+          {(s.byModel || []).length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-xs text-gray-600 uppercase tracking-wider border-b border-white/5">
+                    <th className="text-left pb-3 font-medium">Modèle</th>
+                    <th className="text-right pb-3 font-medium">CA</th>
+                    <th className="text-right pb-3 font-medium">Dépenses</th>
+                    <th className="text-right pb-3 font-medium">Bénéfice</th>
+                    <th className="text-right pb-3 font-medium">Marge</th>
+                    <th className="pb-3 w-24">Performance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {s.byModel.map((m: any, i: number) => {
+                    const totalRev = s.totalRevenue || 1
+                    const share = Math.round((m.revenue / totalRev) * 100)
+                    return (
+                      <tr key={m.id || i} className="group hover:bg-white/3 transition-colors">
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                              {m.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <span className="text-sm text-white font-medium">{m.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-right text-sm text-green-400 font-semibold tabular-nums">{fmt(m.revenue)}</td>
+                        <td className="py-3 text-right text-sm text-red-400 tabular-nums">{fmt(m.expense)}</td>
+                        <td className={cn('py-3 text-right text-sm font-semibold tabular-nums', m.profit >= 0 ? 'text-cyan-400' : 'text-red-400')}>{fmt(m.profit)}</td>
+                        <td className={cn('py-3 text-right text-xs tabular-nums font-semibold', m.margin >= 30 ? 'text-green-400' : m.margin >= 0 ? 'text-amber-400' : 'text-red-400')}>{m.margin}%</td>
+                        <td className="py-3 pl-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full transition-all duration-700" style={{ width: `${share}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-600 w-8 text-right">{share}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-600 text-sm">Aucune donnée de revenus par modèle</div>
+          )}
+        </div>
+      )}
+
+      {showModal && <TransactionModal onClose={() => setShowModal(false)} onSave={handleSave} models={models} />}
     </div>
   )
 }
 
-// ── Liste transactions ──
-function TransactionList({ transactions, loading }: { transactions: any[]; loading: boolean }) {
-  if (loading) return (
-    <div className="space-y-2">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />)}
-    </div>
-  )
-  if (!transactions.length) return (
-    <div className="text-center py-6 text-gray-600 text-xs">Aucune transaction</div>
-  )
-  const allCats = [...EXPENSE_CATEGORIES, ...REVENUE_CATEGORIES]
+// ── Transaction Table ────────────────────────────────────────
+function TxTable({ transactions, loading, onDelete, deletingId, onAdd }: { transactions: any[]; loading: boolean; onDelete: (id: string) => void; deletingId: string | null; onAdd: () => void }) {
+  const allCats = [...EXPENSE_CATS, ...REVENUE_CATS]
   return (
-    <div className="space-y-1.5">
-      {transactions.map((t: any, i: number) => {
-        const catInfo = allCats.find(c => c.id === t.category)
-        const isRevenue = t.type === 'revenue'
-        const dateStr = t.date ? new Date(t.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'
-        return (
-          <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/3 hover:bg-white/8 border border-white/5 hover:border-white/10 transition-all">
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isRevenue ? 'bg-green-400' : 'bg-red-400'}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{t.description || '—'}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                {catInfo && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: catInfo.color + '20', color: catInfo.color }}>{catInfo.label}</span>}
-                <span className="text-xs text-gray-600">{dateStr}</span>
+    <div className="glass rounded-2xl border border-white/5 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-white">Transactions</h2>
+        <button onClick={onAdd} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-purple-400 transition-colors">
+          <Plus size={12} />Ajouter
+        </button>
+      </div>
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />)}</div>
+      ) : transactions.length === 0 ? (
+        <div className="text-center py-8 text-xs text-gray-600">Aucune transaction pour cette période</div>
+      ) : (
+        <div className="space-y-1">
+          {transactions.map((t: any, i: number) => {
+            const cat = allCats.find(c => c.id === t.category)
+            const isRev = t.type === 'revenue'
+            const dateStr = t.date ? new Date(t.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'
+            return (
+              <div key={t.id || i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 group transition-all">
+                <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isRev ? 'bg-green-400' : 'bg-red-400')} />
+                <span className="text-xs text-gray-600 w-16 flex-shrink-0 tabular-nums">{dateStr}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-white truncate block">{t.description || '—'}</span>
+                </div>
+                {cat && <span className="text-xs px-2 py-0.5 rounded-md flex-shrink-0 hidden sm:block" style={{ background: cat.color + '18', color: cat.color }}>{cat.label}</span>}
+                {t.payment_method && <span className="text-xs text-gray-700 flex-shrink-0 hidden md:block uppercase tracking-wide">{t.payment_method}</span>}
+                <span className={cn('text-xs font-bold tabular-nums flex-shrink-0 w-20 text-right', isRev ? 'text-green-400' : 'text-red-400')}>
+                  {isRev ? '+' : '-'}{fmt2(t.amount || 0)}
+                </span>
+                <button onClick={() => onDelete(t.id)} disabled={deletingId === t.id}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/10 transition-all disabled:opacity-50 flex-shrink-0">
+                  {deletingId === t.id ? <Loader2 size={12} className="animate-spin text-gray-500" /> : <Trash2 size={12} className="text-gray-600 hover:text-red-400 transition-colors" />}
+                </button>
               </div>
-            </div>
-            <span className={`text-xs font-bold flex-shrink-0 tabular-nums ${isRevenue ? 'text-green-400' : 'text-red-400'}`}>
-              {isRevenue ? '+' : '-'}{fmtSmall(t.amount || 0)}
-            </span>
-          </div>
-        )
-      })}
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
