@@ -166,7 +166,7 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
   const [generating, setGenerating] = useState(false)
 
   const handlePreviewGenerate = async () => {
-    const examples = form.ai_examples.split('\n').filter(e => e.trim())
+    const examples = form.ai_examples.split('\n').filter((e: string) => e.trim())
     if (examples.length < 3 && !form.ai_auto) {
       toast.error('Ajoutez au moins 3 exemples pour prévisualiser')
       return
