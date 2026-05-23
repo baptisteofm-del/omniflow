@@ -27,13 +27,16 @@ export interface PlanFeature {
 }
 
 export interface PlanLimits {
-  accounts: number        // Nombre de comptes OF gérés
-  models: number          // Nombre de modèles
-  postSchedules: number   // Posts schedulés/mois
-  teamMembers: number     // Membres d'équipe
-  telegramBots: number    // Bots Telegram
-  aiGenerations: number   // Générations IA/mois
-  contentWatches: number  // Alertes veille contenu
+  accounts: number          // Nombre de comptes OF gérés
+  models: number            // Nombre de modèles
+  postSchedules: number     // Posts schedulés/mois
+  teamMembers: number       // Membres d'équipe
+  telegramBots: number      // Bots Telegram
+  aiGenerations: number     // Générations vidéo Kling/mois (coût ~0.25$/vidéo)
+  contentWatches: number    // Alertes veille contenu
+  trendRuns?: number        // Générations trends Apify/jour
+  chattingMessages?: number // Messages Chatting IA/mois (coût ~0.002$/msg)
+  prospectionRuns?: number  // Runs scraping recrutement/mois (coût Apify)
 }
 
 // --- Utilisateur & Agence ---
