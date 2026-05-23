@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
         recentActivity: [],
         upcomingPosts: [],
         connections: [],
+      roi: { editCount: 0, spoofCount: 0, postsCount: 0, aiMessagesCount: 0, activeModelsCount: 0, monthlyRevenue: 0 },
       })
     }
 
@@ -177,6 +178,17 @@ export async function GET(request: NextRequest) {
         .gte('created_at', monthStart)
     )
     const aiMessagesCount = messages.length
+
+    // 5b. Content edited this month (edition + spoof)
+    const contentEdited = await safeSelect(
+      supabase
+        .from('content')
+        .select('id, spoofed')
+        .eq('agency_id', agencyId)
+        .gte('created_at', monthStart)
+    )
+    const editCount = contentEdited.length
+    const spoofCount = contentEdited.filter((c: any) => c.spoofed === true).length
 
     // 6. At-risk fans count
     const fans = await safeSelect(
@@ -330,6 +342,14 @@ export async function GET(request: NextRequest) {
       recentActivity,
       upcomingPosts,
       connections,
+      roi: {
+        editCount,
+        spoofCount,
+        postsCount: postsThisMonth,
+        aiMessagesCount,
+        activeModelsCount,
+        monthlyRevenue,
+      },
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)

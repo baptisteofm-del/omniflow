@@ -12,7 +12,6 @@ const DAILY_QUOTES = [
   "Les grandes choses commencent par un petit pas",
   "Votre audience vous attend, créez des moments inoubliables",
   "Chaque post est une opportunité de briller",
-  "La consistance crée la communauté",
   "Osez être authentique, c'est ça qui marche",
   "Le contenu de qualité se paie toujours",
   "Transformez vos passions en revenus",
@@ -76,7 +75,7 @@ function getRelativeTime(dateString: string): string {
 function FeatureMiniCards({ stats, data }: { stats: any[]; data: any }) {
   const planRank: Record<string, number> = { starter: 0, pro: 1, agency: 2 }
   const featureMinPlan: Record<string, string> = {
-    chatting_ai: 'agency',
+    chatting_ai: 'pro',
     prospection: 'agency',
     ai_generation: 'pro',
   }
@@ -88,7 +87,6 @@ function FeatureMiniCards({ stats, data }: { stats: any[]; data: any }) {
   }
 
   const features = [
-    { id: 'accounts', name: 'Comptes & Modèles', href: '/accounts', icon: Database, stat: stats[0]?.value || '0', label: 'modèles actifs' },
     { id: 'chatting_ai', name: 'Chatting IA', href: '/chatting/ai', icon: Sparkles, stat: stats[4]?.value || '0', label: 'messages/mois' },
     { id: 'veille', name: 'Veille Trends', href: '/content/veille', icon: TrendingUpIcon, stat: stats[3]?.value || '0', label: 'trends captés' },
     { id: 'finance', name: 'Finance', href: '/finance', icon: BarChart3, stat: stats[2]?.value || '0,00 €', label: 'ce mois' },
@@ -244,40 +242,62 @@ export default function DashboardPage() {
       )}
 
       {/* ROI Section */}
-      {!loading && dashboardData?.stats && (() => {
-        const aiMessages = dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0
-        const aiMessagesNum = parseInt(aiMessages.toString().replace(/[^0-9]/g, '')) || 0
-        const hoursStr = (aiMessagesNum * 2) / 60
-        const hourssaved = hoursStr >= 1 ? Math.round(hoursStr) : Math.round(hoursStr * 10) / 10
-        const estimatedValue = Math.round(hoursStr * 12)
+      {!loading && dashboardData?.roi !== undefined && (() => {
+        const roi = dashboardData.roi || {}
+        const editCount = roi.editCount || 0
+        const spoofCount = roi.spoofCount || 0
+        const postsCount = roi.postsCount || 0
+        const aiMessagesCount = roi.aiMessagesCount || 0
+        const activeModelsCount = roi.activeModelsCount || 0
+        const monthlyRevenue = roi.monthlyRevenue || 0
+
+        // Édition & Spoof : 20min économisées par fichier traité
+        const editSpoofTotal = editCount + spoofCount
+        const editSpoofMinutes = editSpoofTotal * 20
+        const editSpoofHours = editSpoofMinutes >= 60
+          ? `${Math.round(editSpoofMinutes / 60)}h`
+          : `${editSpoofMinutes}min`
+
+        // Posting Auto : ~15€ économisés par compte/mois vs un VA (750€ pour 50 comptes)
+        const postingGain = Math.round(activeModelsCount * 15)
+
+        // Chatting IA : différence de commission (chatter humain 15% vs Omniflow 10% = 5% économisé)
+        const chattingGain = Math.round(monthlyRevenue * 0.05)
+
         const currentMonthLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-        
+
         return (
-          <div className="glass rounded-2xl p-6 border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-cyan-500/5">
+          <div className="glass rounded-2xl p-6 border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-cyan-500/5 mb-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-semibold flex items-center gap-2">
                 <Zap size={18} className="text-yellow-400" />
-                Ce que l'IA a fait pour vous ce mois
+                Ce que vos outils vous font gagner ce mois
               </h2>
               <span className="text-xs text-gray-500">{currentMonthLabel}</span>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-purple-400">{hourssaved}h</p>
-                <p className="text-xs text-gray-500 mt-1">économisées</p>
+              {/* Édition & Spoof */}
+              <div className="text-center p-4 bg-white/5 rounded-xl">
+                <p className="text-2xl font-bold text-purple-400">{editSpoofHours}</p>
+                <p className="text-xs font-semibold text-white mt-1">Édition & Spoof</p>
+                <p className="text-xs text-gray-500 mt-0.5">{editSpoofTotal} fichiers traités</p>
+                <p className="text-xs text-gray-600 mt-1">temps économisé</p>
               </div>
-              <div className="text-center border-x border-white/10">
-                <p className="text-3xl font-bold text-cyan-400">{aiMessagesNum}</p>
-                <p className="text-xs text-gray-500 mt-1">messages envoyés</p>
+              {/* Posting Auto */}
+              <div className="text-center p-4 bg-white/5 rounded-xl border-x border-white/10">
+                <p className="text-2xl font-bold text-cyan-400">{postingGain}€</p>
+                <p className="text-xs font-semibold text-white mt-1">Posting Auto</p>
+                <p className="text-xs text-gray-500 mt-0.5">{activeModelsCount} comptes gérés</p>
+                <p className="text-xs text-gray-600 mt-1">vs VA externalisé</p>
               </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-green-400">{estimatedValue}€</p>
-                <p className="text-xs text-gray-500 mt-1">valeur estimée</p>
+              {/* Chatting IA */}
+              <div className="text-center p-4 bg-white/5 rounded-xl">
+                <p className="text-2xl font-bold text-green-400">{chattingGain}€</p>
+                <p className="text-xs font-semibold text-white mt-1">Chatting IA</p>
+                <p className="text-xs text-gray-500 mt-0.5">5% de commission économisée</p>
+                <p className="text-xs text-gray-600 mt-1">vs chatter humain (15%)</p>
               </div>
             </div>
-            <p className="text-xs text-gray-600 mt-4 text-center">
-              Basé sur {aiMessagesNum} messages IA × 2min × 12€/h
-            </p>
           </div>
         )
       })()}
@@ -391,89 +411,95 @@ export default function DashboardPage() {
             Actions recommandées
           </h2>
           <div className="space-y-2">
-            {/* Intégrations non connectées */}
-            {dashboardData?.connections?.filter((c:any) => !c.is_active).map((c:any, i:number) => (
-              <Link key={i} href={`/settings/integrations?tool=${c.tool || c.name?.toLowerCase()}`}
-                className="flex items-center justify-between p-3 bg-orange-500/5 border border-orange-500/20 rounded-xl hover:bg-orange-500/10 transition-all">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                  <span className="text-sm text-orange-300">{c.name} non connecté</span>
+            {(() => {
+              const actions = []
+              const connections = dashboardData?.connections || []
+              const stats = dashboardData?.stats || []
+              const modelsCount = parseInt(stats.find((s:any) => s.label === 'Modèles')?.value || '0') || 0
+              const aiMessages = parseInt(stats.find((s:any) => s.label === 'Messages IA')?.value?.toString().replace(/[^0-9]/g, '') || '0') || 0
+              const postsPlanned = parseInt(stats.find((s:any) => s.label === 'Posts planifiés')?.value || '0') || 0
+              
+              // Intégrations non connectées
+              connections.filter((c:any) => !c.is_active).forEach((c:any) => {
+                actions.push(
+                  <Link key={`conn-${c.name}`} href={`/settings/integrations?tool=${c.tool || c.name?.toLowerCase()}`}
+                    className="flex items-center justify-between p-3 bg-orange-500/5 border border-orange-500/20 rounded-xl hover:bg-orange-500/10 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                      <span className="text-sm text-orange-300">🔗 {c.name} non connecté</span>
+                    </div>
+                    <span className="text-xs text-orange-400 font-medium">Connecter →</span>
+                  </Link>
+                )
+              })
+              
+              // Si modèles créés mais pas de chatting IA
+              if (modelsCount > 0 && aiMessages === 0) {
+                actions.push(
+                  <Link key="chatting-ai" href="/chatting/ai"
+                    className="flex items-center justify-between p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:bg-purple-500/10 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                      <span className="text-sm text-purple-300">🤖 Activer le Chatting IA pour vos modèles</span>
+                    </div>
+                    <span className="text-xs text-purple-400 font-medium">Configurer →</span>
+                  </Link>
+                )
+              }
+              
+              // Si aucun modèle
+              if (modelsCount === 0) {
+                actions.push(
+                  <Link key="add-model" href="/accounts"
+                    className="flex items-center justify-between p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl hover:bg-blue-500/10 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <span className="text-sm text-blue-300">👤 Créer votre premier modèle</span>
+                    </div>
+                    <span className="text-xs text-blue-400 font-medium">Créer →</span>
+                  </Link>
+                )
+              }
+              
+              // Si pas de posting planifié mais des modèles
+              if (postsPlanned === 0 && modelsCount > 0) {
+                actions.push(
+                  <Link key="posting" href="/posting"
+                    className="flex items-center justify-between p-3 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/10 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      <span className="text-sm text-cyan-300">📅 Planifier du contenu automatiquement</span>
+                    </div>
+                    <span className="text-xs text-cyan-400 font-medium">Planifier →</span>
+                  </Link>
+                )
+              }
+              
+              // Si tout va bien, suggestions positives
+              if (actions.length === 0) {
+                actions.push(
+                  <Link key="prospection" href="/accounts/prospection"
+                    className="flex items-center justify-between p-3 bg-green-500/5 border border-green-500/20 rounded-xl hover:bg-green-500/10 transition-all">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <span className="text-sm text-green-300">✨ Explorez la Prospection pour recruter</span>
+                    </div>
+                    <span className="text-xs text-green-400 font-medium">Explorer →</span>
+                  </Link>
+                )
+              }
+              
+              return actions.length > 0 ? actions : [
+                <div key="empty" className="p-3 bg-gray-500/5 border border-gray-500/20 rounded-xl text-center">
+                  <span className="text-sm text-gray-400">✓ Aucune action urgente</span>
                 </div>
-                <span className="text-xs text-orange-400 font-medium">Connecter →</span>
-              </Link>
-            ))}
-            
-            {/* Modèles sans config IA */}
-            {(dashboardData?.stats?.find((s:any) => s.label === 'Modèles actifs')?.value || 0) > 0 && 
-             (dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0) === 0 && (
-              <Link href="/chatting/ai"
-                className="flex items-center justify-between p-3 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:bg-purple-500/10 transition-all">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                  <span className="text-sm text-purple-300">Chatting IA non configuré</span>
-                </div>
-                <span className="text-xs text-purple-400 font-medium">Configurer →</span>
-              </Link>
-            )}
-            
-            {/* Fans à risque */}
-            {(dashboardData?.stats?.find((s:any) => s.label?.includes('risque'))?.value || 0) > 0 && (
-              <Link href="/chatting"
-                className="flex items-center justify-between p-3 bg-red-500/5 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                  <span className="text-sm text-red-300">
-                    {dashboardData?.stats?.find((s:any) => s.label?.includes('risque'))?.value} fans à risque
-                  </span>
-                </div>
-                <span className="text-xs text-red-400 font-medium">Voir →</span>
-              </Link>
-            )}
-
-            {/* Tout va bien */}
-            {(!dashboardData?.connections?.some((c:any) => !c.is_active) && 
-              (dashboardData?.stats?.find((s:any) => s.label === 'Messages IA')?.value || 0) > 0) && (
-              <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-xl text-center">
-                <span className="text-sm text-green-400">✓ Tout fonctionne correctement</span>
-              </div>
-            )}
+              ]
+            })()}
           </div>
         </div>
       </div>
 
-      {/* Suggestions IA contextuelles */}
-      {!loading && (() => {
-        const aiMsgs = dashboardData?.stats?.find((s: any) => s.label === 'Messages IA')?.value || 0
-        const modelsCount = dashboardData?.stats?.find((s: any) => s.label === 'Modèles actifs')?.value || 0
-        const trendsCount = dashboardData?.stats?.find((s: any) => s.label === 'Trends captés')?.value || 0
-        const hasDisconnected = dashboardData?.connections?.some((c: any) => !c.is_active)
-        
-        const suggestions = []
-        if (hasDisconnected) suggestions.push({ emoji: '🔗', text: 'Connecter une intégration', href: '/settings/integrations' })
-        if (aiMsgs === 0 && modelsCount > 0) suggestions.push({ emoji: '🤖', text: 'Activer le Chatting IA', href: '/chatting/ai' })
-        if (trendsCount < 5) suggestions.push({ emoji: '🔥', text: 'Actualiser les trends', href: '/content/veille' })
-        if (modelsCount === 0) suggestions.push({ emoji: '👤', text: 'Ajouter un modèle', href: '/accounts' })
-        suggestions.push({ emoji: '📊', text: 'Voir les rapports', href: '/chatting' })
-        suggestions.push({ emoji: '💰', text: 'Finance', href: '/finance' })
-        suggestions.push({ emoji: '🎯', text: 'Prospecter des modèles', href: '/accounts/prospection' })
-        
-        return (
-          <div className="glass rounded-2xl p-5 border border-cyan-500/20 bg-gradient-to-r from-cyan-500/3 to-purple-500/3">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={15} className="text-cyan-400" />
-              <span className="text-sm font-semibold text-cyan-300">Suggestions</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {suggestions.slice(0, 6).map((s, i) => (
-                <Link key={i} href={s.href} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 rounded-xl text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all border border-white/10">
-                  <span>{s.emoji}</span>
-                  <span>{s.text}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )
-      })()}
+
     </div>
   )
 }
