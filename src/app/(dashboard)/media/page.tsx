@@ -4,7 +4,7 @@ import {
   Upload, Download, Trash2, Search, Grid3x3, List, X, Plus,
   Folder, FolderOpen, Film, Image as ImageIcon, ChevronRight,
   FolderPlus, ArrowLeft, MoreVertical, Move, Tag, Check,
-  Instagram, Layers, Send, Calendar, Zap, Copy
+  Star, Layers, Send, Calendar, Zap, Copy
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
@@ -36,7 +36,7 @@ interface Folder {
 const PRESET_FOLDERS: Folder[] = [
   { id: 'all',          name: 'Tous les médias', icon: 'grid',      preset: true },
   { id: 'auto_posting', name: 'Auto Posting',    icon: 'calendar',  preset: true },
-  { id: 'instagram',    name: 'Instagram Reels', icon: 'instagram', preset: true },
+  { id: 'star',    name: 'Instagram Reels', icon: 'star', preset: true },
   { id: 'tiktok',       name: 'TikTok',          icon: 'film',      preset: true },
   { id: 'twitter',      name: 'X / Twitter',     icon: 'twitter',   preset: true },
   { id: 'reddit',       name: 'Reddit',          icon: 'layers',    preset: true },
@@ -63,7 +63,7 @@ function FolderIcon({ type, size = 16 }: { type: string; size?: number }) {
   const props = { size, className: 'text-gray-400' }
   switch (type) {
     case 'calendar':  return <Calendar {...props} />
-    case 'instagram': return <Instagram {...props} />
+    case 'star': return <Star {...props} />
     case 'film':      return <Film {...props} />
     case 'send':      return <Send {...props} />
     case 'layers':    return <Layers {...props} />
