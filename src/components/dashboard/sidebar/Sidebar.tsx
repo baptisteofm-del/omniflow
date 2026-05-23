@@ -221,7 +221,7 @@ export function Sidebar() {
         {/* Séparateur */}
         <div className="my-1.5 border-t border-white/5 mx-1" />
 
-        {/* Sections collapsibles */
+        {/* Sections collapsibles */}
         {NAV_COLLAPSIBLE.map(sec => <SectionToggle key={sec.id} sec={sec} />)}
 
         {/* Séparateur */}
