@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Get team members — exclure le propriétaire pour éviter les doublons
     const { data: members, error: membersError } = await supabase
       .from('team_members')
-      .select('id, email, role, joined_at, user_id')
+      .select('id, email, role, permissions, status, joined_at, user_id')
       .eq('agency_id', agency.id)
       .order('joined_at', { ascending: false })
 

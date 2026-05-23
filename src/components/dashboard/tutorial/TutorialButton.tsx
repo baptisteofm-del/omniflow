@@ -52,7 +52,7 @@ export function TutorialButton() {
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 top-12 w-64 bg-[#1a1a2e] border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-500/20 overflow-hidden z-50 animate-slideDown">
+        <div className="absolute right-0 top-12 w-64 bg-[#1a1a2e] border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-500/20 overflow-hidden z-[9999] animate-slideDown">
           {/* Header */}
           <div className="px-4 py-3 border-b border-white/5 bg-white/5">
             <h3 className="text-sm font-semibold text-white">Tutoriels disponibles</h3>
