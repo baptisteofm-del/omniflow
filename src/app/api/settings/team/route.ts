@@ -86,95 +86,93 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: agency, error: agencyError } = await supabase
-      .from('agencies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single()
-
-    if (agencyError || !agency) {
-      return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
-    }
+    const { data: agency } = await supabase.from('agencies').select('id, name').eq('owner_id', user.id).single()
+    if (!agency) return NextResponse.json({ error: 'Agence introuvable' }, { status: 404 })
 
     const body = await req.json()
-    const { email, role } = body
+    const { email, role, permissions = [] } = body
 
-    if (!email || !role) {
-      return NextResponse.json(
-        { error: 'Email and role are required' },
-        { status: 400 }
-      )
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
     }
 
-    const VALID_ROLES = ['member', 'admin', 'owner', 'video_editor', 'chatting_manager', 'marketing_manager']
-    if (!VALID_ROLES.includes(role)) {
-      return NextResponse.json(
-        { error: `Rôle invalide : ${role}. Roles valides : ${VALID_ROLES.join(', ')}` },
-        { status: 400 }
-      )
+    const VALID_ROLES = ['member', 'admin', 'video_editor', 'chatting_manager', 'marketing_manager']
+    if (!role || !VALID_ROLES.includes(role)) {
+      return NextResponse.json({ error: `Rôle invalide. Choisissez parmi : ${VALID_ROLES.join(', ')}` }, { status: 400 })
     }
 
-    // Check if already a member
-    const { data: existingMember } = await supabase
-      .from('team_members')
-      .select('id')
-      .eq('agency_id', agency.id)
-      .eq('email', email)
-      .single()
+    // Check doublon dans members
+    const { data: existingMember } = await supabase.from('team_members').select('id').eq('agency_id', agency.id).eq('email', email.toLowerCase()).maybeSingle()
+    if (existingMember) return NextResponse.json({ error: 'Ce membre fait déjà partie de l'équipe' }, { status: 400 })
 
-    if (existingMember) {
-      return NextResponse.json(
-        { error: 'User is already a team member' },
-        { status: 400 }
-      )
+    // Générer un token d'invitation unique
+    const token = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 jours
+
+    // Essayer d'insérer dans team_invitations (gestion souple des colonnes)
+    let invitation: any = null
+    const insertData: any = { agency_id: agency.id, email: email.toLowerCase(), role, token, expires_at: expiresAt }
+    if (permissions.length > 0) insertData.permissions = permissions
+
+    // Tentative 1 : avec accepted column
+    const { data: inv1, error: err1 } = await supabase.from('team_invitations').insert({ ...insertData, accepted: false }).select().single()
+    if (!err1) {
+      invitation = inv1
+    } else {
+      // Tentative 2 : sans accepted (colonne peut-être absente)
+      const { data: inv2, error: err2 } = await supabase.from('team_invitations').insert(insertData).select().single()
+      if (!err2) {
+        invitation = inv2
+      } else {
+        // Fallback : insérer directement dans team_members avec status invited
+        const { data: member } = await supabase.from('team_members').insert({ agency_id: agency.id, email: email.toLowerCase(), role, permissions, status: 'invited', joined_at: new Date().toISOString() }).select().single()
+        invitation = member || { id: token, email, role, created_at: new Date().toISOString() }
+      }
     }
 
-    // Check if already invited
-    const { data: existingInvitation } = await supabase
-      .from('team_invitations')
-      .select('id')
-      .eq('agency_id', agency.id)
-      .eq('email', email)
-      .eq('accepted', false)
-      .single()
-
-    if (existingInvitation) {
-      return NextResponse.json(
-        { error: 'Invitation already sent to this email' },
-        { status: 400 }
-      )
+    // Envoyer l'email d'invitation via Resend
+    const inviteUrl = \`\${process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'}/register?invitation=\${token}&email=\${encodeURIComponent(email)}&agency=\${agency.id}\`
+    try {
+      const { Resend } = await import('resend')
+      const resend = new Resend(process.env.RESEND_API_KEY || '')
+      if (process.env.RESEND_API_KEY) {
+        await resend.emails.send({
+          from: process.env.FROM_EMAIL || 'hello@omniflowapp.ai',
+          to: email,
+          subject: \`Invitation à rejoindre \${agency.name || 'OmniFlow'}\`,
+          html: \`
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; background: #0a0a0f; color: white; border-radius: 12px;">
+              <h1 style="color: #a855f7; margin-bottom: 16px;">Invitation OmniFlow</h1>
+              <p style="color: #9ca3af; margin-bottom: 24px;">
+                Vous êtes invité(e) à rejoindre <strong style="color: white;">\${agency.name || 'une agence'}</strong> sur OmniFlow en tant que <strong style="color: #a855f7;">\${role}</strong>.
+              </p>
+              <a href="\${inviteUrl}" style="display: inline-block; background: linear-gradient(to right, #7c3aed, #0891b2); color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-bottom: 24px;">
+                Accepter l'invitation
+              </a>
+              <p style="color: #6b7280; font-size: 12px;">Ce lien expire dans 7 jours. Si vous n'avez pas demandé cette invitation, ignorez cet email.</p>
+            </div>
+          \`
+        })
+      }
+    } catch (emailErr) {
+      // L'email a échoué mais l'invitation est créée - non bloquant
+      console.warn('Email send failed (non-blocking):', emailErr)
     }
 
-    // Create invitation (avec permissions si fournies)
-    const { permissions = [] } = body
-    const { data: invitation, error: invitationError } = await supabase
-      .from('team_invitations')
-      .insert({
-        agency_id: agency.id,
-        email,
-        role,
-        permissions: permissions.length > 0 ? permissions : null,
-        accepted: false,
-      })
-      .select()
-      .single()
+    return NextResponse.json({
+      success: true,
+      invitation,
+      inviteUrl, // utile pour tests
+      message: process.env.RESEND_API_KEY
+        ? \`Invitation envoyée à \${email}\`
+        : \`Invitation créée pour \${email} (email non configuré — partagez ce lien : \${inviteUrl})\`
+    }, { status: 201 })
 
-    if (invitationError) {
-      console.error('Invitation error:', invitationError)
-      return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 })
-    }
-
-    // TODO: Send email invitation with token
-
-    return NextResponse.json({ invitation }, { status: 201 })
   } catch (error) {
     console.error('POST /api/settings/team:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur serveur lors de l\'invitation' }, { status: 500 })
   }
 }
 

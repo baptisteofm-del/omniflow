@@ -247,8 +247,14 @@ export default function TeamPage() {
           permissions: ROLES.find(r => r.id === form.role)?.permissions || [],
         }),
       })
-      if (!res.ok) throw new Error((await res.json()).error || 'Erreur')
-      toast.success(`Invitation envoyée à ${form.email}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'invitation')
+      if (data.inviteUrl && data.message?.includes('lien')) {
+        toast.success('Invitation créée. Lien copié dans le presse-papier !')
+        try { await navigator.clipboard.writeText(data.inviteUrl) } catch {}
+      } else {
+        toast.success(`Invitation envoyée à ${form.email}`)
+      }
       setShowInviteModal(false)
       setForm({ email: '', role: 'chatting_manager' })
       await loadTeam()
