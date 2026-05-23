@@ -1,189 +1,239 @@
 'use client'
-
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useTutorial } from './TutorialProvider'
 
 export function TutorialTooltip() {
   const { activeTutorial, currentStep, nextStep, prevStep, skipTutorial } = useTutorial()
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
-  const [elementRect, setElementRect] = useState<DOMRect | null>(null)
+  const [pos, setPos]           = useState({ top: 0, left: 0 })
+  const [rect, setRect]         = useState<DOMRect | null>(null)
+  const [mounted, setMounted]   = useState(false)
+  const rafRef = useRef<number>(0)
 
-  const currentTutorial = activeTutorial
-  const currentTutorialStep = currentTutorial?.steps[currentStep]
+  // Portal mount guard (SSR safety)
+  useEffect(() => { setMounted(true) }, [])
+
+  const step = activeTutorial?.steps[currentStep]
 
   useEffect(() => {
-    if (!currentTutorialStep) return
+    if (!step) { setRect(null); return }
 
-    const updatePosition = () => {
-      const element = document.querySelector(currentTutorialStep.target)
-      if (!element) return
+    const compute = () => {
+      const el = document.querySelector(step.target)
+      if (!el) {
+        // Fallback: centre de l'écran si élément non trouvé
+        setRect(null)
+        setPos({
+          top: window.innerHeight / 2 - 150,
+          left: window.innerWidth / 2 - 160,
+        })
+        return
+      }
 
-      const rect = element.getBoundingClientRect()
-      setElementRect(rect)
+      const r = el.getBoundingClientRect()
+      setRect(r)
 
-      const padding = 16
-      let top = 0
-      let left = 0
+      const PAD = 16
+      const TW = 320 // tooltip width
+      const TH = 260 // tooltip height (approx)
+      let top = 0, left = 0
 
-      switch (currentTutorialStep.position) {
+      switch (step.position) {
         case 'top':
-          top = rect.top - 320 // Assume tooltip height ~300px
-          left = rect.left + rect.width / 2 - 150 // Tooltip width ~300px
+          top  = r.top - TH - PAD
+          left = r.left + r.width / 2 - TW / 2
           break
         case 'bottom':
-          top = rect.bottom + padding
-          left = rect.left + rect.width / 2 - 150
+          top  = r.bottom + PAD
+          left = r.left + r.width / 2 - TW / 2
           break
         case 'left':
-          top = rect.top + rect.height / 2 - 150
-          left = rect.left - 320 - padding
+          top  = r.top + r.height / 2 - TH / 2
+          left = r.left - TW - PAD
           break
         case 'right':
-          top = rect.top + rect.height / 2 - 150
-          left = rect.right + padding
+        default:
+          top  = r.top + r.height / 2 - TH / 2
+          left = r.right + PAD
           break
       }
 
-      // Clamp to viewport
-      left = Math.max(8, Math.min(left, window.innerWidth - 308))
-      top = Math.max(8, Math.min(top, window.innerHeight - 308))
+      // Clamp within viewport
+      left = Math.max(8, Math.min(left, window.innerWidth  - TW - 8))
+      top  = Math.max(8, Math.min(top,  window.innerHeight - TH - 8))
 
-      setTooltipPosition({ top, left })
+      setPos({ top, left })
     }
 
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition)
+    compute()
 
+    const onResize = () => { cancelAnimationFrame(rafRef.current); rafRef.current = requestAnimationFrame(compute) }
+    window.addEventListener('resize', onResize, { passive: true })
+    window.addEventListener('scroll', onResize, { passive: true })
     return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('scroll', onResize)
+      cancelAnimationFrame(rafRef.current)
     }
-  }, [currentTutorialStep])
+  }, [step])
 
-  if (!currentTutorial || !currentTutorialStep) return null
+  if (!activeTutorial || !step || !mounted) return null
 
-  const totalSteps = currentTutorial.steps.length
-  const isFirstStep = currentStep === 0
-  const isLastStep = currentStep === totalSteps - 1
+  const total = activeTutorial.steps.length
+  const isFirst = currentStep === 0
+  const isLast  = currentStep === total - 1
 
-  return (
-    <>
-      {/* Overlay */}
+  const content = (
+    <div style={{ isolation: 'isolate' }}>
+      {/* ── OVERLAY — z-index 9990 ── */}
       <div
-        className="fixed inset-0 bg-black/70 z-40 pointer-events-none"
         style={{
-          ...(elementRect && {
-            clipPath: `
-              polygon(
-                0 0, 0 100%, 100% 100%, 100% 0, 0 0,
-                ${elementRect.left - 8}px ${elementRect.top - 8}px,
-                ${elementRect.left - 8}px ${elementRect.bottom + 8}px,
-                ${elementRect.right + 8}px ${elementRect.bottom + 8}px,
-                ${elementRect.right + 8}px ${elementRect.top - 8}px,
-                ${elementRect.left - 8}px ${elementRect.top - 8}px
-              )
-            `,
-          }),
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.75)',
+          zIndex: 9990,
+          pointerEvents: 'auto',
         }}
+        onClick={skipTutorial}
+        aria-hidden="true"
       />
 
-      {/* Spotlight on target element */}
-      {elementRect && (
-        <div
-          className="fixed border-2 border-purple-500/50 rounded-lg pointer-events-none z-40 shadow-lg shadow-purple-500/30"
-          style={{
-            top: elementRect.top - 8,
-            left: elementRect.left - 8,
-            width: elementRect.width + 16,
-            height: elementRect.height + 16,
-          }}
-        />
+      {/* ── SPOTLIGHT sur l'élément cible ── */}
+      {rect && (
+        <>
+          {/* Cutout effect — 4 rectangles autour de l'élément */}
+          {[
+            // top
+            { top: 0,              left: 0,              width: '100%',                   height: rect.top - 8 },
+            // bottom
+            { top: rect.bottom + 8, left: 0,             width: '100%',                   height: `calc(100% - ${rect.bottom + 8}px)` },
+            // left
+            { top: rect.top - 8,   left: 0,              width: rect.left - 8,             height: rect.height + 16 },
+            // right
+            { top: rect.top - 8,   left: rect.right + 8, width: `calc(100% - ${rect.right + 8}px)`, height: rect.height + 16 },
+          ].map((s, i) => (
+            <div key={i} style={{ position: 'fixed', background: 'rgba(0,0,0,0.75)', zIndex: 9991, pointerEvents: 'none', ...s }} />
+          ))}
+
+          {/* Bordure spotlight */}
+          <div style={{
+            position: 'fixed',
+            top:    rect.top    - 6,
+            left:   rect.left   - 6,
+            width:  rect.width  + 12,
+            height: rect.height + 12,
+            border: '2px solid rgba(168,85,247,0.7)',
+            borderRadius: 10,
+            boxShadow: '0 0 20px rgba(168,85,247,0.4)',
+            zIndex: 9992,
+            pointerEvents: 'none',
+          }} />
+        </>
       )}
 
-      {/* Tooltip */}
+      {/* ── TOOLTIP — z-index 9999 ── */}
       <div
-        className="fixed z-50 w-80 bg-[#1a1a2e] border border-purple-500/30 rounded-2xl p-6 shadow-2xl shadow-purple-500/20 backdrop-blur-sm animate-fadeIn"
         style={{
-          top: `${tooltipPosition.top}px`,
-          left: `${tooltipPosition.left}px`,
+          position: 'fixed',
+          top: pos.top,
+          left: pos.left,
+          width: 320,
+          zIndex: 9999,
+          pointerEvents: 'auto',
         }}
       >
-        {/* Close button */}
-        <button
-          onClick={skipTutorial}
-          className="absolute top-4 right-4 p-1 hover:bg-white/10 rounded-lg transition-colors"
-          aria-label="Fermer"
-        >
-          <X size={16} className="text-gray-400" />
-        </button>
-
-        {/* Content */}
-        <div className="mb-4">
-          <h3 className="text-lg font-bold mb-2 text-white">{currentTutorialStep.title}</h3>
-          <p className="text-sm text-gray-300 leading-relaxed">{currentTutorialStep.content}</p>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-1">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1 rounded-full transition-all ${
-                  i <= currentStep ? 'bg-purple-500 w-3' : 'bg-white/20 w-2'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-400">
-            {currentStep + 1} / {totalSteps}
-          </span>
-        </div>
-
-        {/* Controls */}
-        <div className="flex gap-2">
-          <button
-            onClick={prevStep}
-            disabled={isFirstStep}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-          >
-            <ChevronLeft size={16} />
-            Précédent
-          </button>
+        <div style={{
+          background: '#12111a',
+          border: '1px solid rgba(168,85,247,0.35)',
+          borderRadius: 16,
+          padding: '20px 20px 16px',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 30px rgba(168,85,247,0.15)',
+          backdropFilter: 'blur(20px)',
+          animation: 'tutFadeIn 0.25s ease-out',
+        }}>
+          {/* Close */}
           <button
             onClick={skipTutorial}
-            className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm text-gray-300"
+            style={{ position: 'absolute', top: 12, right: 12, padding: 6, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}
+            aria-label="Fermer"
           >
-            Passer
+            <X size={14} />
           </button>
-          <button
-            onClick={nextStep}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-600/60 hover:bg-purple-600 transition-colors text-sm font-medium ml-auto"
-          >
-            {isLastStep ? 'Terminer' : 'Suivant'}
-            {!isLastStep && <ChevronRight size={16} />}
-          </button>
+
+          {/* Step label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a855f7' }} />
+            <span style={{ fontSize: 10, color: '#a855f7', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {activeTutorial.name} · étape {currentStep + 1}/{total}
+            </span>
+          </div>
+
+          {/* Content */}
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'white', margin: '0 0 8px', paddingRight: 20, lineHeight: 1.3 }}>
+            {step.title}
+          </h3>
+          <p style={{ fontSize: 13, color: '#d1d5db', margin: '0 0 16px', lineHeight: 1.6 }}>
+            {step.content}
+          </p>
+
+          {/* Progress dots */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+            {Array.from({ length: total }).map((_, i) => (
+              <div key={i} style={{
+                height: 3, borderRadius: 2,
+                width: i <= currentStep ? 12 : 8,
+                background: i <= currentStep ? '#a855f7' : 'rgba(255,255,255,0.15)',
+                transition: 'all 0.2s',
+              }} />
+            ))}
+          </div>
+
+          {/* Controls */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={prevStep}
+              disabled={isFirst}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '7px 12px', borderRadius: 8, border: 'none',
+                background: 'rgba(255,255,255,0.07)', color: isFirst ? '#4b5563' : '#d1d5db',
+                cursor: isFirst ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 500,
+              }}
+            >
+              <ChevronLeft size={14} />Précédent
+            </button>
+            <button
+              onClick={skipTutorial}
+              style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.05)', color: '#6b7280', cursor: 'pointer', fontSize: 12 }}
+            >
+              Passer
+            </button>
+            <button
+              onClick={nextStep}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '7px 14px', borderRadius: 8, border: 'none',
+                background: 'linear-gradient(135deg, #7c3aed, #0891b2)',
+                color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                marginLeft: 'auto',
+              }}
+            >
+              {isLast ? 'Terminer' : 'Suivant'}
+              {!isLast && <ChevronRight size={14} />}
+            </button>
+          </div>
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
+      <style>{`
+        @keyframes tutFadeIn {
+          from { opacity: 0; transform: scale(0.94) translateY(6px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
         }
       `}</style>
-    </>
+    </div>
   )
+
+  // Portal vers document.body pour éviter tout stacking context
+  return createPortal(content, document.body)
 }
