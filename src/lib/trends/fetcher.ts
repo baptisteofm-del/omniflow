@@ -374,7 +374,7 @@ async function fetchYouTubeTrends(): Promise<Trend[]> {
           if (titleMatch && videoIdMatch) {
             trends.push({
               id: `youtube-${channel.name}-${index}`,
-              platform: 'youtube' as const,
+              platform: 'tiktok' as const, // YouTube supprimé — remappé en tiktok
               title: titleMatch[1],
               url: `https://www.youtube.com/watch?v=${videoIdMatch[1]}`,
               authorUsername: channel.name,
