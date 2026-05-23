@@ -347,8 +347,9 @@ export default function VeillePage() {
 
     </div>
 
-    {showOveruse && (
-      <OveruseModal feature="trend_run" onClose={() => setShowOveruse(false)} onSuccess={() => { setShowOveruse(false); handleRefresh() }} />
-    )}
+      {showOveruse && (
+        <OveruseModal feature="trend_run" onClose={() => setShowOveruse(false)} onSuccess={() => { setShowOveruse(false); handleRefresh() }} />
+      )}
+    </div>
   )
 }
