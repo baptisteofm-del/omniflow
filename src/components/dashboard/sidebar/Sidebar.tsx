@@ -114,7 +114,7 @@ export function Sidebar() {
         title={!isExpanded ? item.label : undefined}
         data-tutorial={item.tutorial}
         className={cn(
-          'flex items-center gap-3 px-2.5 py-1.5 rounded-xl text-xs transition-all duration-200 group relative',
+          'flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 group relative',
           active
             ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
             : locked
@@ -122,7 +122,7 @@ export function Sidebar() {
               : 'text-gray-400 hover:text-white hover:bg-white/5'
         )}
       >
-        <item.icon size={15} className={cn('flex-shrink-0 transition-colors', active ? 'text-purple-400' : locked ? 'text-gray-700' : '')} />
+        <item.icon size={17} className={cn('flex-shrink-0 transition-colors', active ? 'text-purple-400' : locked ? 'text-gray-700' : '')} />
         <span className={cn(
           'truncate transition-all duration-200 whitespace-nowrap',
           isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
@@ -155,11 +155,11 @@ export function Sidebar() {
           onClick={() => isExpanded && setOpenSections(prev => ({ ...prev, [sec.id]: !prev[sec.id] }))}
           title={!isExpanded ? sec.label : undefined}
           className={cn(
-            'w-full flex items-center gap-3 px-2.5 py-1.5 rounded-xl text-xs transition-all duration-200 group relative',
+            'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 group relative',
             isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300'
           )}
         >
-          <sec.icon size={15} className={cn('flex-shrink-0', sec.color)} />
+          <sec.icon size={17} className={cn('flex-shrink-0', sec.color)} />
           <span className={cn(
             'font-semibold uppercase tracking-wider text-xs transition-all duration-200 whitespace-nowrap',
             isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
@@ -199,13 +199,13 @@ export function Sidebar() {
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className={cn('flex items-center border-b border-white/5 transition-all duration-300', isExpanded ? 'px-4 py-3 gap-3' : 'px-3 py-3 justify-center')}>
+      <div className={cn('flex items-center border-b border-white/5 transition-all duration-300', isExpanded ? 'px-5 py-4 gap-3' : 'px-3 py-4 justify-center')}>
         <Link href="/dashboard" onClick={() => setIsMobileOpen(false)}
-          className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0 hover:opacity-90 transition-opacity">
-          <Zap size={14} className="text-white" />
+          className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center flex-shrink-0 hover:opacity-90 transition-opacity">
+          <Zap size={16} className="text-white" />
         </Link>
         <span className={cn(
-          'font-bold text-base bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap transition-all duration-200',
+          'font-bold text-lg bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap transition-all duration-200',
           isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
         )}>
           OmniFlow
@@ -213,7 +213,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-1.5 space-y-0.5 scrollbar-none">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-0.5 scrollbar-none">
 
         {/* Top items — sans catégorie */}
         {NAV_TOP.map(item => <NavLink key={item.href} item={item} />)}
@@ -232,18 +232,18 @@ export function Sidebar() {
       </nav>
 
       {/* Footer agence */}
-      <div className={cn('border-t border-white/5 transition-all duration-300', isExpanded ? 'p-2' : 'p-1.5')}>
+      <div className={cn('border-t border-white/5 transition-all duration-300', isExpanded ? 'p-3' : 'p-2')}>
         <Link href="/settings/billing" onClick={() => setIsMobileOpen(false)}
           className={cn(
-            'flex items-center gap-2.5 rounded-xl hover:bg-white/5 transition-all group',
-            isExpanded ? 'p-2' : 'p-1.5 justify-center'
+            'flex items-center gap-3 rounded-xl hover:bg-white/5 transition-all group',
+            isExpanded ? 'p-2.5' : 'p-2 justify-center'
           )}>
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
             {agencyName ? agencyName.charAt(0).toUpperCase() : 'A'}
           </div>
           <div className={cn('transition-all duration-200 min-w-0', isExpanded ? 'opacity-100 flex-1' : 'opacity-0 w-0 overflow-hidden')}>
             <p className="text-xs font-medium text-white truncate">{agencyName || '—'}</p>
-            <p className="text-[10px] text-purple-400 capitalize">Plan {planId}</p>
+            <p className="text-xs text-purple-400 capitalize">Plan {planId}</p>
           </div>
         </Link>
       </div>
