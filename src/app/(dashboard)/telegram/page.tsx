@@ -325,11 +325,8 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
                   <p className="text-xs text-gray-500 mt-0.5">L'IA génère tous les posts sans texte supplémentaire</p>
                 </div>
                 <button onClick={() => set('ai_auto', !form.ai_auto)}
-                  className="flex-shrink-0 transition-all">
-                  {form.ai_auto
-                    ? <ToggleRight size={28} className="text-purple-400" />
-                    : <ToggleLeft size={28} className="text-gray-600" />
-                  }
+                  className={cn('flex-shrink-0 w-11 h-6 rounded-full border transition-all relative', form.ai_auto ? 'bg-purple-500 border-purple-500' : 'bg-white/10 border-white/20')}>
+                  <span className={cn('absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all', form.ai_auto ? 'left-[22px]' : 'left-0.5')} />
                 </button>
               </div>
 
