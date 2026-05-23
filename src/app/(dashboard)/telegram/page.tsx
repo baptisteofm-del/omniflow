@@ -374,7 +374,7 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
               <div>
                 <button onClick={handlePreviewGenerate} disabled={generating}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-xs text-purple-300 hover:bg-purple-500/10 transition-all disabled:opacity-50">
-                  {generating ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+                  {generating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
                   {generating ? 'Génération en cours...' : 'Prévisualiser 3 posts générés'}
                 </button>
 
