@@ -21,12 +21,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
     }
 
-    // Get team members
+    // Get team members — exclure le propriétaire pour éviter les doublons
     const { data: members, error: membersError } = await supabase
       .from('team_members')
-      .select('id, email, role, joined_at')
+      .select('id, email, role, joined_at, user_id')
       .eq('agency_id', agency.id)
       .order('joined_at', { ascending: false })
+
+    // Résoudre l'email du propriétaire maintenant pour le filtrage
+    const ownerUserEmail = user.email || ''
+
+    // Filtrer le propriétaire des membres (il peut être dans team_members avec un ancien rôle)
+    const filteredMembers = (members || []).filter(m =>
+      m.user_id !== agency.owner_id &&
+      m.email?.toLowerCase() !== ownerUserEmail.toLowerCase()
+    )
 
     if (membersError) {
       return NextResponse.json({ error: 'Failed to fetch team members' }, { status: 500 })
@@ -51,8 +60,8 @@ export async function GET(req: NextRequest) {
       .eq('id', agency.owner_id)
       .single()
 
-    // Fallback si pas de table profiles
-    const ownerEmail = ownerProfile?.email || user.email || 'Propriétaire'
+    // Email final pour l'affichage owner
+    const ownerEmail = ownerProfile?.email || ownerUserEmail || 'Propriétaire'
 
     return NextResponse.json({
       owner: {
@@ -63,7 +72,7 @@ export async function GET(req: NextRequest) {
         status: 'active',
         joined_at: null, // créateur de l'agence
       },
-      members: members || [],
+      members: filteredMembers,
       invitations: invitations || [],
       isOwner: user.id === agency.owner_id,
     })
