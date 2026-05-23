@@ -14,12 +14,15 @@ export const PLANS: Plan[] = [
       postSchedules: 1000,
       teamMembers: 2,
       telegramBots: 2,
-      aiGenerations: 0,  // NO AI generation for Starter
-      contentWatches: -1,  // illimité
+      aiGenerations: 0,       // Pas de génération IA (coût Kling ~0.25$/vidéo)
+      trendRuns: 5,           // 5 générations trends/jour (seed data = gratuit)
+      chattingMessages: 0,    // Pas de Chatting IA
+      prospectionRuns: 0,     // Pas de recrutement IA
+      contentWatches: -1,
     },
     features: [
-      { name: 'Veille de contenu', included: true },
-      { name: 'Éditeur vidéo + Spoof', included: true },
+      { name: 'Veille de contenu (5 gén/jour)', included: true },
+      { name: 'Éditeur & Spoof illimité', included: true },
       { name: 'Scheduling (1 000 posts/mois)', included: true },
       { name: 'Dashboard financier', included: true },
       { name: 'Parrainage 10%', included: true },
@@ -42,18 +45,21 @@ export const PLANS: Plan[] = [
       postSchedules: 10000,
       teamMembers: 5,
       telegramBots: 5,
-      aiGenerations: 500,
+      aiGenerations: 30,      // 30 vidéos/mois Kling (coût ~7.50$) — RENTABLE sur 99€
+      trendRuns: 20,          // 20 générations trends/jour
+      chattingMessages: 0,    // Chatting IA non inclus en Pro
+      prospectionRuns: 0,
       contentWatches: -1,
     },
     features: [
-      { name: 'Veille de contenu', included: true },
-      { name: 'Éditeur vidéo + Spoof', included: true },
+      { name: 'Veille de contenu (20 gén/jour)', included: true },
+      { name: 'Éditeur & Spoof illimité', included: true },
       { name: 'Scheduling (10 000 posts/mois)', included: true },
       { name: 'Dashboard financier', included: true },
       { name: 'Parrainage 10%', included: true },
-      { name: 'Génération IA Kling (500/mois)', included: true },
+      { name: 'Génération IA Kling (30/mois)', included: true },
+      { name: 'Rapports chatting', included: true },
       { name: 'Chatting IA', included: false },
-      { name: 'Rapports chatting', included: false },
       { name: 'Prospection modèles IA', included: false },
       { name: 'Support prioritaire', included: true },
     ],
@@ -69,19 +75,22 @@ export const PLANS: Plan[] = [
       postSchedules: -1,
       teamMembers: -1,
       telegramBots: -1,
-      aiGenerations: -1,
+      aiGenerations: 150,     // 150 vidéos/mois Kling (coût ~37$) — rentable sur 199€
+      trendRuns: 50,          // 50 générations trends/jour
+      chattingMessages: 50000, // ~50k messages IA/mois (coût ~10€ en Haiku)
+      prospectionRuns: 20,    // 20 runs de scraping recrutement/mois
       contentWatches: -1,
     },
     features: [
-      { name: 'Veille de contenu', included: true },
-      { name: 'Éditeur vidéo + Spoof', included: true },
+      { name: 'Veille de contenu (50 gén/jour)', included: true },
+      { name: 'Éditeur & Spoof illimité', included: true },
       { name: 'Scheduling illimité', included: true },
       { name: 'Dashboard financier avancé', included: true },
       { name: 'Parrainage 10%', included: true },
-      { name: 'Génération IA Kling illimitée', included: true },
-      { name: 'Chatting IA', included: true },
+      { name: 'Génération IA Kling (150/mois)', included: true },
+      { name: 'Chatting IA (50 000 msg/mois)', included: true },
       { name: 'Rapports chatting', included: true },
-      { name: 'Prospection modèles IA', included: true },
+      { name: 'Prospection modèles IA (20 runs/mois)', included: true },
       { name: 'Support dédié 24/7', included: true },
     ],
   },
