@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Check, Download, Trash2, Film, Copy } from 'lucide-react'
+import { Check, Download, Trash2, Film, Copy, Image as ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { VideoEditor } from '@/components/dashboard/editor/VideoEditor'
 
@@ -84,12 +84,12 @@ export default function EditorPage() {
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Film className="text-purple-400" size={28} />
-          Éditeur & Spoof
+        <h1 className="text-2xl font-bold flex items-center gap-2 mb-0.5">
+          <Film className="text-purple-400" size={22} />
+          Édition & Spoof
         </h1>
-        <p className="text-gray-400 mt-1">
-          Importez une vidéo ou image, choisissez le format et le nombre de copies — l'IA spoofe les métadonnées pour éviter la détection.
+        <p className="text-gray-500 text-sm">
+          Importez une vidéo ou image, choisissez le format et le niveau de spoof pour éviter la détection des plateformes.
         </p>
       </div>
 
@@ -120,7 +120,7 @@ export default function EditorPage() {
               >
                 {/* Icon */}
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm">{item.type === 'video' ? '🎬' : '🖼️'}</span>
+                  {item.type === 'video' ? <Film size={15} className="text-purple-400" /> : <ImageIcon size={15} className="text-cyan-400" />}
                 </div>
 
                 {/* Info */}
