@@ -248,16 +248,27 @@ export default function TeamPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'invitation')
+      if (!res.ok) throw new Error(data.error || "Erreur lors de l'invitation")
+
+      // Ajout optimiste dans la liste des invitations
+      const newInvitation: TeamInvitation = {
+        id: data.invitation?.id || `pending-${Date.now()}`,
+        email: form.email,
+        role: form.role,
+        created_at: new Date().toISOString(),
+      }
+      setInvitations(prev => [newInvitation, ...prev])
+
       if (data.inviteUrl && data.message?.includes('lien')) {
-        toast.success('Invitation créée. Lien copié dans le presse-papier !')
+        toast.success('Invitation créée — lien copié dans le presse-papier')
         try { await navigator.clipboard.writeText(data.inviteUrl) } catch {}
       } else {
         toast.success(`Invitation envoyée à ${form.email}`)
       }
       setShowInviteModal(false)
       setForm({ email: '', role: 'chatting_manager' })
-      await loadTeam()
+      // Reload en arrière-plan pour sync DB
+      loadTeam()
     } catch (e: any) {
       toast.error(e.message || 'Erreur lors de l\'invitation')
     } finally {
@@ -334,13 +345,18 @@ export default function TeamPage() {
         })}
       </div>
 
-      {/* ── MEMBRES ACTIFS ── */}
+      {/* ── MEMBRES & INVITATIONS (liste unifiée) ── */}
       <div className="glass rounded-2xl border border-white/5 mb-4">
         <div className="px-5 py-3.5 border-b border-white/5 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white flex items-center gap-2">
             <Users size={14} className="text-purple-400" />
-            Membres ({members.length + (owner ? 1 : 0)})
+            Équipe ({(owner ? 1 : 0) + members.length + invitations.length})
           </h2>
+          {invitations.length > 0 && (
+            <span className="text-xs px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full">
+              {invitations.length} en attente
+            </span>
+          )}
         </div>
 
         {loading ? (
@@ -405,48 +421,7 @@ export default function TeamPage() {
         )}
       </div>
 
-      {/* ── INVITATIONS EN ATTENTE ── */}
-      {invitations.length > 0 && (
-        <div className="glass rounded-2xl border border-white/5">
-          <div className="px-5 py-3.5 border-b border-white/5">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Clock size={14} className="text-yellow-400" />
-              Invitations en attente ({invitations.length})
-            </h2>
-          </div>
-          <div className="divide-y divide-white/5">
-            {invitations.map(inv => {
-              const role = getRoleInfo(inv.role)
-              const RoleIcon = role.icon
-              return (
-                <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-white/3 transition-colors">
-                  <div className="w-9 h-9 rounded-full bg-white/5 border border-dashed border-white/15 flex items-center justify-center flex-shrink-0">
-                    <Mail size={14} className="text-gray-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-300 truncate">{inv.email}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={cn('inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border', role.bg)}>
-                        <RoleIcon size={9} className={role.color} />{role.label}
-                      </span>
-                      <span className="text-xs text-yellow-500/80 flex items-center gap-1">
-                        <Clock size={9} />En attente
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-600 flex-shrink-0 hidden sm:block tabular-nums">
-                    Envoyé {fmtDate(inv.created_at)}
-                  </span>
-                  <button onClick={() => handleDelete(inv.id, 'invitation')}
-                    className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100">
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+
 
       {/* ── MODAL INVITATION ── */}
       {showInviteModal && (
