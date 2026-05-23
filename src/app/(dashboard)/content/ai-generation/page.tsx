@@ -32,7 +32,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; lab
 }
 
 export default function AIGenerationPage() {
-  const { planId } = useUsage()
+  const { planId, loading: planLoading } = useUsage()
   const searchParams = useSearchParams()
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(false)
@@ -122,7 +122,7 @@ export default function AIGenerationPage() {
   }
 
   return (
-    <FeatureGate feature="ai_generation" planId={planId}>
+    <FeatureGate feature="ai_generation" planId={planId} loading={planLoading}>
       <div className="p-8">
       {/* Header */}
       <div className="mb-8">

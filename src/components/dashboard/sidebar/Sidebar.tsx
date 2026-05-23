@@ -9,6 +9,7 @@ import {
   Image as ImageIcon, Search, Lock, TrendingUp, Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import toast from 'react-hot-toast'
 
 // ── Structure de navigation ──────────────────────────────────
 const NAV_TOP = [
@@ -105,12 +106,25 @@ export function Sidebar() {
   }
 
   const NavLink = ({ item }: { item: any }) => {
-    const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+    // Exact match OU sous-chemin (ex: /accounts/prospection active pour /accounts)
+    // Mais /chatting ne doit PAS matcher /chatting/ai — on exige que le chemin soit exactement item.href ou commence par item.href+'/'
+    const active = pathname === item.href || (
+      item.href.length > 1 &&
+      item.href !== '/chatting' && // exception : /chatting ne matche pas /chatting/ai
+      pathname.startsWith(item.href + '/')
+    )
     const locked = item.requiredPlan && !hasAccess(item.requiredPlan)
     return (
       <Link
         href={locked ? '#' : item.href}
-        onClick={() => setIsMobileOpen(false)}
+        onClick={e => {
+          if (locked) {
+            e.preventDefault()
+            toast.error(`Plan ${item.requiredPlan === 'agency' ? 'Agency' : 'Pro'} requis pour accéder à ${item.label}`)
+            return
+          }
+          setIsMobileOpen(false)
+        }}
         title={!isExpanded ? item.label : undefined}
         data-tutorial={item.tutorial}
         className={cn(
@@ -118,7 +132,7 @@ export function Sidebar() {
           active
             ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
             : locked
-              ? 'text-gray-600 cursor-not-allowed'
+              ? 'text-gray-500 opacity-60'
               : 'text-gray-400 hover:text-white hover:bg-white/5'
         )}
       >

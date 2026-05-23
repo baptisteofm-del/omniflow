@@ -95,7 +95,7 @@ const PERSONALITY_TYPES = [
 ]
 
 export default function ChattingAIPage() {
-  const { planId } = useUsage()
+  const { planId, loading: planLoading } = useUsage()
   const [models, setModels] = useState<Model[]>([])
   const [personalities, setPersonalities] = useState<Record<string, Personality>>({})
   const [scripts, setScripts] = useState<Script[]>([])
@@ -468,7 +468,7 @@ export default function ChattingAIPage() {
   const AI_GENERATED_FEEDBACK_ENABLED = true // Feature flag
 
   return (
-    <FeatureGate feature="chatting_ai" planId={planId}>
+    <FeatureGate feature="chatting_ai" planId={planId} loading={planLoading}>
       <div className="p-6 lg:p-8 space-y-8">
 
       {/* ── Header ── */}

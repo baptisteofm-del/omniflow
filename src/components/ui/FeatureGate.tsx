@@ -10,10 +10,26 @@ interface FeatureGateProps {
   requiredPlan?: string        // 'pro' | 'agency'
   children: React.ReactNode
   mode?: 'blur' | 'overlay'   // blur = dim + blur, overlay = full overlay
+  loading?: boolean            // si true, affiche skeleton neutre (pas de lock)
 }
 
-export function FeatureGate({ feature, planId, requiredPlan, children, mode = 'blur' }: FeatureGateProps) {
+export function FeatureGate({ feature, planId, requiredPlan, children, mode = 'blur', loading = false }: FeatureGateProps) {
   const [showModal, setShowModal] = useState(false)
+
+  // Pendant le chargement du plan, ne rien afficher de parasite
+  if (loading) {
+    return (
+      <div className="p-8 space-y-6 animate-pulse">
+        <div className="h-8 bg-white/5 rounded-xl w-64" />
+        <div className="h-4 bg-white/5 rounded-xl w-96" />
+        <div className="grid grid-cols-1 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-white/5 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const hasAccess = PLAN_FEATURES[planId]?.includes(feature) ?? false
 
