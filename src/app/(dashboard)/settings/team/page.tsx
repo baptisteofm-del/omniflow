@@ -361,7 +361,7 @@ export default function TeamPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-12"><Loader2 size={22} className="animate-spin text-purple-400" /></div>
-        ) : members.length === 0 ? (
+        ) : members.length === 0 && invitations.length === 0 ? (
           <div className="py-12 text-center">
             <Users size={28} className="mx-auto mb-3 text-gray-600" />
             <p className="text-sm text-gray-500 mb-4">Aucun membre — invitez votre équipe</p>
@@ -410,6 +410,48 @@ export default function TeamPage() {
                       <Edit2 size={11} />Permissions
                     </button>
                     <button onClick={() => handleDelete(member.id, 'member')}
+                      className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Invitations en attente */}
+            {invitations.map(inv => {
+              const role = getRoleInfo(inv.role)
+              const RoleIcon = role.icon
+              return (
+                <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/3 group transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-dashed border-amber-500/25 flex items-center justify-center flex-shrink-0">
+                    <Mail size={14} className="text-amber-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-300 truncate">{inv.email}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className={cn('inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border', role.bg)}>
+                        <RoleIcon size={9} className={role.color} />{role.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-400">
+                        <Clock size={9} />En attente
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-600 flex-shrink-0 hidden sm:block tabular-nums">
+                    Envoyé {fmtDate(inv.created_at)}
+                  </span>
+                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                    <button
+                      onClick={async () => {
+                        const url = `${window.location.origin}/join?email=${encodeURIComponent(inv.email)}&agency=${typeof window !== 'undefined' ? '' : ''}`
+                        await navigator.clipboard.writeText(url).catch(() => {})
+                        toast.success('Lien copié')
+                      }}
+                      className="flex items-center gap-1 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+                      <Mail size={10} />Renvoyer
+                    </button>
+                    <button onClick={() => handleDelete(inv.id, 'invitation')}
                       className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
                       <Trash2 size={13} />
                     </button>
