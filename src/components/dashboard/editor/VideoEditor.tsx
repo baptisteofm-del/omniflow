@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Upload, X, Sparkles, Loader2, ChevronDown, ChevronUp,
   Smartphone, Monitor, Square, Image as ImageIcon, Film,
-  Database, Edit2, Copy, Type, Check
+  Database, Edit2, Copy, Check
 } from 'lucide-react'
+import { CanvasEditor } from './CanvasEditor'
 import toast from 'react-hot-toast'
 import { processVideo } from '@/lib/ffmpeg/processor'
 import { cn } from '@/lib/utils/cn'
@@ -132,6 +133,14 @@ export function VideoEditor({ onProcessingComplete }: VideoEditorProps) {
 
   const selectedSpoofMode = SPOOF_MODES.find(m => m.id === spoofMode)!
 
+  const handleEditExport = (blob: Blob, cap: string) => {
+    const ext = file?.name.split('.').pop() || 'jpg'
+    const baseName = file?.name.replace(/\.[^.]+$/, '') || 'edited'
+    const timestamp = new Date().toISOString().split('T')[0]
+    onProcessingComplete?.([{ blob, filename: `${baseName}_edit_${timestamp}.${ext}`, duplicate: 1 }], 'original')
+    handleClear()
+  }
+
   const handleProcess = async () => {
     if (!file) { toast.error('Importez un fichier'); return }
     if (!mode)  { toast.error('Choisissez un mode'); return }
@@ -183,6 +192,11 @@ export function VideoEditor({ onProcessingComplete }: VideoEditorProps) {
   // ════════════════════════════════════════════
   // RENDER
   // ════════════════════════════════════════════
+
+  // Mode edit → Canvas editor complet
+  if (file && mode === 'edit') {
+    return <CanvasEditor file={file} onExport={handleEditExport} onCancel={handleClear} />
+  }
 
   if (!file) return (
     <div className="space-y-3">
