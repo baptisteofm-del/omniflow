@@ -12,6 +12,13 @@ import toast from 'react-hot-toast'
 const BOT_USERNAME = '@omniflowapp_bot'
 const MAX_POSTS_PER_DAY = 10
 
+const AI_STYLES = [
+  { id: 'soft',            label: 'Doux & Engageant',     desc: 'Chaleureux, proche, intime' },
+  { id: 'provocant',       label: 'Provocant & Mystérieux', desc: 'Accrocheur, suggestif, tease' },
+  { id: 'direct',          label: 'Direct & Commercial',  desc: 'Orienté conversion, CTA clair' },
+  { id: 'conversationnel', label: 'Naturel & Authentique', desc: 'Comme parler à un ami' },
+]
+
 const CONTENT_TYPES = [
   { id: 'text',       label: 'Texte',         short: 'T',   icon: Type },
   { id: 'text_image', label: 'Texte + Image', short: 'T+I', icon: ImageIcon },
@@ -150,8 +157,38 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
     posts_per_day:    channel?.posts_per_day || 3,
     post_schedule:    channel?.post_schedule?.length ? channel.post_schedule : defaultSchedule,
     automation_level: channel?.automation_level || 'semi',
-    ai_tone:          channel?.ai_tone || '',
+    ai_tone:          (channel as any)?.ai_tone || '',
+    ai_examples:      (channel as any)?.ai_examples || '',
+    ai_style:         (channel as any)?.ai_style || 'soft',
+    ai_auto:          (channel as any)?.ai_auto || false,
   })
+  const [generatedPreviews, setGeneratedPreviews] = useState<string[]>([])
+  const [generating, setGenerating] = useState(false)
+
+  const handlePreviewGenerate = async () => {
+    const examples = form.ai_examples.split('\n').filter(e => e.trim())
+    if (examples.length < 3 && !form.ai_auto) {
+      toast.error('Ajoutez au moins 3 exemples pour prévisualiser')
+      return
+    }
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/telegram/generate-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examples,
+          style: form.ai_style,
+          count: 3,
+          channel_name: form.channel_name || form.channel_username,
+        }),
+      })
+      const data = await res.json()
+      if (data.posts) setGeneratedPreviews(data.posts)
+      else toast.error(data.error || 'Erreur de génération')
+    } catch { toast.error('Erreur réseau') }
+    finally { setGenerating(false) }
+  }
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -162,7 +199,7 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
     setSaving(false)
   }
 
-  const steps = isEdit ? ['Canal', 'Planning'] : ['Canal', 'Planning', 'IA']
+  const steps = ['Canal', 'Planning', 'Textes IA']
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -277,36 +314,83 @@ function ChannelModal({ models, media, channel, onClose, onSave }: {
             </div>
           )}
 
-          {/* Step 3 — IA (seulement pour Add) */}
-          {step === 3 && !isEdit && (
+          {/* Step 3 — Textes IA */}
+          {step === 3 && (
             <div className="space-y-4">
-              <div className="p-3 bg-purple-500/8 border border-purple-500/20 rounded-xl">
-                <p className="text-xs text-purple-300 font-semibold mb-1 flex items-center gap-1.5">
-                  <Sparkles size={11} />Génération IA
-                </p>
-                <p className="text-xs text-gray-500">Fournissez des exemples pour que l'IA génère des variations automatiques.</p>
+
+              {/* Toggle IA Auto */}
+              <div className="flex items-center justify-between p-3.5 bg-purple-500/8 border border-purple-500/20 rounded-xl">
+                <div>
+                  <p className="text-xs font-semibold text-white">Génération automatique IA</p>
+                  <p className="text-xs text-gray-500 mt-0.5">L'IA génère tous les posts sans texte supplémentaire</p>
+                </div>
+                <button onClick={() => set('ai_auto', !form.ai_auto)}
+                  className="flex-shrink-0 transition-all">
+                  {form.ai_auto
+                    ? <ToggleRight size={28} className="text-purple-400" />
+                    : <ToggleLeft size={28} className="text-gray-600" />
+                  }
+                </button>
               </div>
 
+              {/* Style IA */}
               <div>
-                <label className="text-xs text-gray-500 block mb-1.5">Ton / Style (optionnel)</label>
-                <input value={form.ai_tone} onChange={e => set('ai_tone', e.target.value)}
-                  placeholder="ex: Mystérieux, coquin, exclusif, premium..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-purple-500/40 focus:outline-none" />
+                <label className="text-xs text-gray-500 block mb-2">Style de génération</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {AI_STYLES.map(s => (
+                    <button key={s.id} onClick={() => set('ai_style', s.id)}
+                      className={cn('p-2.5 rounded-xl border text-left transition-all',
+                        form.ai_style === s.id ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/8 hover:border-white/15')}>
+                      <p className="text-xs font-semibold text-white">{s.label}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{s.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Résumé final */}
-              <div className="p-3.5 bg-white/3 border border-white/8 rounded-xl space-y-1.5">
-                <p className="text-xs font-semibold text-gray-400 mb-2">Récapitulatif</p>
-                {[
-                  { label: 'Canal',        value: form.channel_username || '—' },
-                  { label: 'Posts/jour',   value: `${form.post_schedule.length}x (max ${MAX_POSTS_PER_DAY})` },
-                  { label: 'Automation',   value: AUTOMATION_LEVELS.find(l => l.id === form.automation_level)?.label || '—' },
-                ].map(r => (
-                  <div key={r.label} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">{r.label}</span>
-                    <span className="text-white font-medium">{r.value}</span>
+              {/* Exemples */}
+              {!form.ai_auto && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-500">
+                      Exemples de posts
+                      <span className="text-gray-700 ml-1">(1 ligne = 1 exemple, min. 20 recommandés)</span>
+                    </label>
+                    <span className="text-xs text-gray-600">
+                      {form.ai_examples.split('\n').filter(e => e.trim()).length} exemples
+                    </span>
                   </div>
-                ))}
+                  <textarea
+                    value={form.ai_examples}
+                    onChange={e => set('ai_examples', e.target.value)}
+                    rows={12}
+                    placeholder={"Exemple 1 de post...\nExemple 2 de post...\nExemple 3 de post...\n\nAjoutez au moins 20 exemples pour de meilleurs résultats.\nChaque ligne = 1 exemple de post."}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-xs placeholder-gray-700 focus:border-purple-500/40 focus:outline-none resize-none font-mono leading-relaxed"
+                  />
+                  <p className="text-xs text-gray-700 mt-1">
+                    L'IA analyse le style, le ton et les patterns pour générer des variations uniques.
+                  </p>
+                </div>
+              )}
+
+              {/* Prévisualisation */}
+              <div>
+                <button onClick={handlePreviewGenerate} disabled={generating}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-xs text-purple-300 hover:bg-purple-500/10 transition-all disabled:opacity-50">
+                  {generating ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+                  {generating ? 'Génération en cours...' : 'Prévisualiser 3 posts générés'}
+                </button>
+
+                {generatedPreviews.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-gray-500">Aperçu des posts générés :</p>
+                    {generatedPreviews.map((p, i) => (
+                      <div key={i} className="p-3 bg-white/3 border border-white/8 rounded-xl">
+                        <p className="text-xs text-gray-300 leading-relaxed">{p}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
