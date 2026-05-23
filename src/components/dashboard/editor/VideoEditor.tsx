@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Upload, X, Sparkles, Loader2, ChevronDown, ChevronUp,
   Smartphone, Monitor, Square, Image as ImageIcon, Film,
-  Database, Edit2, Copy, Check
+  Database, Edit2, Copy, Check, Type
 } from 'lucide-react'
 import { CanvasEditor } from './CanvasEditor'
 import toast from 'react-hot-toast'
