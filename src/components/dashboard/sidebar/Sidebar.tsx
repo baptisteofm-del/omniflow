@@ -38,7 +38,7 @@ const NAV_COLLAPSIBLE = [
       { label: 'Veille Trends',   href: '/content/veille',        icon: Eye },
       { label: 'Édition & Spoof', href: '/content/editor',        icon: Film },
       { label: 'Génération IA',   href: '/content/ai-generation', icon: Zap,       requiredPlan: 'pro' },
-      { label: 'Posting Auto',    href: '/posting',               icon: Calendar,  tutorial: 'posting' },
+      { label: 'Auto Posting',    href: '/posting',               icon: Calendar,  tutorial: 'posting' },
       { label: 'Banque médias',   href: '/media',                 icon: ImageIcon },
       { label: 'Bot Telegram',    href: '/telegram',              icon: Bot },
     ],
