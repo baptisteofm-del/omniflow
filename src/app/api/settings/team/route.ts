@@ -213,3 +213,28 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data: agency } = await supabase.from('agencies').select('id').eq('owner_id', user.id).single()
+    if (!agency) return NextResponse.json({ error: 'No agency' }, { status: 404 })
+
+    const { id, role, permissions } = await req.json()
+    if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
+
+    const { error } = await supabase
+      .from('team_members')
+      .update({ role, permissions })
+      .eq('id', id)
+      .eq('agency_id', agency.id)
+
+    if (error) throw error
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update member' }, { status: 500 })
+  }
+}
