@@ -671,7 +671,6 @@ export default function ChattingReportsPage() {
             <div className="p-2.5 bg-white/3 border border-white/5 rounded-lg">
               <p className="text-xs text-gray-600">Distinct du <Link href="/telegram" className="text-blue-400 hover:text-blue-300 underline">Bot Telegram modèles</Link> — celui-ci est réservé à vos notifications personnelles d'agence.</p>
             </div>
-            </div>
           </div>
         </div>
       )}
