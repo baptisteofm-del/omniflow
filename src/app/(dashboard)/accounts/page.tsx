@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Loader2, Trash2, Settings, Users, Upload, X, Link as LinkIcon } from 'lucide-react'
+import { Plus, Loader2, Trash2, Settings, Users, Upload, X, Link as LinkIcon, Edit2, TrendingUp, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Model {
@@ -20,38 +20,46 @@ const TOOLS = [
   {
     id: 'onlyfans',
     label: 'OnlyFans',
-    color: '#00AFF0',
+    bg: 'bg-[#00aff0]',
     logo: (
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="white">
+      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
         <path d="M24 4.003h-4.015c-3.45 0-5.3.197-6.748 1.957a7.996 7.996 0 1 0 2.103 9.211c3.182-.231 5.39-2.134 6.085-5.173 0 0-2.399.585-4.43 0 4.018-.777 6.333-3.037 7.005-5.995zM5.61 11.999A2.391 2.391 0 0 1 9.28 9.97a2.966 2.966 0 0 1 2.998-2.528h.008c-.92 1.778-1.407 3.352-1.998 5.263A2.392 2.392 0 0 1 5.61 12Zm2.386-7.996a7.996 7.996 0 1 0 7.996 7.996 7.996 7.996 0 0 0-7.996-7.996Zm0 10.394A2.399 2.399 0 1 1 10.395 12a2.396 2.396 0 0 1-2.399 2.398Z"/>
       </svg>
     ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=onlyfans`,
-    category: 'chatting',
   },
   {
     id: 'mym',
     label: 'MYM',
-    color: '#000000',
-    logo: <span className="text-white font-bold" style={{fontSize:'9px', letterSpacing:'-0.5px'}}>MYM</span>,
+    bg: 'bg-[#1a1a1a]',
+    logo: (
+      <svg viewBox="0 0 40 20" className="w-7 h-4" fill="white">
+        <text x="0" y="15" fontSize="14" fontWeight="700" fontFamily="Arial, sans-serif" letterSpacing="-0.5">MYM</text>
+      </svg>
+    ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=mym`,
-    category: 'chatting',
   },
   {
     id: 'adspower',
     label: 'AdsPower',
-    color: '#2563eb',
-    logo: <img src="/logo-adspower.png" alt="AdsPower" className="w-full h-full object-contain" />,
+    bg: 'bg-[#2563eb]',
+    logo: (
+      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+    ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=adspower`,
-    category: 'posting',
   },
   {
     id: 'geelark',
     label: 'GeeLark',
-    color: '#059669',
-    logo: <img src="/logo-geelark.png" alt="GeeLark" className="w-full h-full object-contain" />,
+    bg: 'bg-[#059669]',
+    logo: (
+      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
+        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-3a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+      </svg>
+    ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=geelark`,
-    category: 'posting',
   },
 ]
 
@@ -135,10 +143,10 @@ export default function AccountsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3 mb-1">
-            <Users size={28} className="text-purple-400" />
-            Comptes Modèles
+            <Users size={22} className="text-purple-400" />
+            Modèles
           </h1>
-          <p className="text-gray-400 text-sm">Gérez vos modèles et leurs connexions</p>
+          <p className="text-gray-500 text-sm">Gérez vos profils et leurs connexions aux outils</p>
         </div>
         <button
           onClick={() => { setEditingModel(null); setForm({ name: '', bio: '' }); setShowForm(true) }}
@@ -202,31 +210,37 @@ export default function AccountsPage() {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-2 mb-5">
-                <Link href="/finance" className="p-3 bg-white/5 rounded-xl border border-white/10 text-center hover:border-green-500/30 transition-all block">
-                  <p className="text-xl font-bold text-green-400">{modelStats[model.id]?.revenue_month ?? 0}€</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Revenus mois</p>
+                <Link href="/finance" className="p-3 bg-white/3 rounded-xl border border-white/5 hover:border-green-500/25 transition-all group/stat">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <TrendingUp size={11} className="text-green-400" />
+                    <p className="text-xs text-gray-600">Revenus</p>
+                  </div>
+                  <p className="text-lg font-bold text-green-400 tabular-nums">{modelStats[model.id]?.revenue_month ?? 0}€</p>
                 </Link>
-                <Link href="/posting" className="p-3 bg-white/5 rounded-xl border border-white/10 text-center hover:border-cyan-500/30 transition-all block">
-                  <p className="text-xl font-bold text-cyan-400">{modelStats[model.id]?.posts_count ?? 0}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Posts publiés</p>
+                <Link href="/posting" className="p-3 bg-white/3 rounded-xl border border-white/5 hover:border-cyan-500/25 transition-all group/stat">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Calendar size={11} className="text-cyan-400" />
+                    <p className="text-xs text-gray-600">Posts</p>
+                  </div>
+                  <p className="text-lg font-bold text-cyan-400 tabular-nums">{modelStats[model.id]?.posts_count ?? 0}</p>
                 </Link>
               </div>
 
               {/* 4 boutons de connexion */}
-              <div className="space-y-2">
-                <p className="text-xs text-gray-600 uppercase tracking-wider font-semibold mb-3">Connexions</p>
-                <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-gray-600 uppercase tracking-widest font-medium mb-2.5">Connexions</p>
+                <div className="grid grid-cols-2 gap-1.5">
                   {TOOLS.map(tool => (
                     <Link
                       key={tool.id}
                       href={tool.href(model.id)}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/10 hover:border-white/25 bg-white/5 hover:bg-white/10 transition-all group/btn"
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-xl border border-white/8 hover:border-purple-500/30 bg-white/3 hover:bg-white/8 transition-all group/btn"
                     >
-                      <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: tool.color }}>
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${tool.bg}`}>
                         {tool.logo}
                       </div>
-                      <span className="text-xs font-medium text-gray-300 group-hover/btn:text-white transition-colors">{tool.label}</span>
-                      <LinkIcon size={11} className="ml-auto text-gray-600 group-hover/btn:text-gray-400 transition-colors" />
+                      <span className="text-xs font-medium text-gray-400 group-hover/btn:text-white transition-colors truncate">{tool.label}</span>
+                      <LinkIcon size={10} className="ml-auto text-gray-700 group-hover/btn:text-purple-400 transition-colors flex-shrink-0" />
                     </Link>
                   ))}
                 </div>
@@ -267,8 +281,8 @@ export default function AccountsPage() {
                   className="w-full px-4 py-3 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
                 />
               </div>
-              <p className="text-xs text-gray-600 bg-white/5 rounded-xl px-4 py-3 border border-white/5">
-                💡 Après la création, connectez les outils (OnlyFans, MYM, AdsPower, GeeLark) depuis la card du modèle.
+              <p className="text-xs text-gray-600 bg-white/5 rounded-xl px-4 py-3 border border-white/5 leading-relaxed">
+                Après la création, connectez les outils (OnlyFans, MYM, AdsPower, GeeLark) depuis la carte du modèle.
               </p>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setShowForm(false); setEditingModel(null) }}
