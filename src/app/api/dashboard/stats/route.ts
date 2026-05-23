@@ -61,13 +61,12 @@ export async function GET(request: NextRequest) {
     const agencyId = agencyData.id
 
 
-    // 1. Active models count (tous les modèles, is_active peut être null)
+    // 1. Models count — tous les modèles de l'agence (is_active peut être null/true/false)
     const models = await safeSelect(
       supabase
         .from('models')
         .select('id')
         .eq('agency_id', agencyId)
-        .neq('is_active', false)
     )
     const activeModelsCount = models.length
 

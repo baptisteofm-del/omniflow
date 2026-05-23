@@ -86,8 +86,17 @@ export default function DashboardPage() {
   const editGain = Math.round(editTotal * 8)
   const totalGain = chattingGain + postingGain + editGain
 
-  const activeAutomations = (aiMsgs > 0 ? 1 : 0) + (postsCount > 0 ? 1 : 0) + (editTotal > 0 ? 1 : 0)
-  const toolUsageRate = Math.round((activeAutomations / 3) * 100)
+  const totalTools = 7 // nombre total de features dans le SaaS
+  const unlockedTools = [
+    true, // posting (starter)
+    true, // finance (starter)
+    true, // media (starter)
+    true, // veille (starter)
+    hasFeature('pro'), // chatting IA
+    hasFeature('pro'), // generation IA
+    hasFeature('agency'), // recrutement
+  ].filter(Boolean).length
+  const toolUsageRate = Math.round((unlockedTools / totalTools) * 100)
   const contentsGenerated = editTotal + postsCount
 
   const revenueFormatted = monthlyRevenue > 0
@@ -141,15 +150,15 @@ export default function DashboardPage() {
       href: '/chatting',
     },
     {
-      label: 'Outils actifs',
-      value: `${activeAutomations}/3`,
-      sub: `${toolUsageRate}% d'utilisation`,
+      label: 'Features débloquées',
+      value: `${unlockedTools}/${totalTools}`,
+      sub: `plan ${planLabel[planId] || planId}`,
       icon: Zap,
       color: 'text-orange-400',
       border: 'hover:border-orange-500/40',
       glow: 'hover:shadow-orange-500/10',
       gradient: 'from-orange-500/10 to-transparent',
-      href: '/posting',
+      href: '/settings/billing',
     },
     {
       label: 'Contenus traités',
