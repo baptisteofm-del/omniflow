@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
 
     // Check doublon dans members
     const { data: existingMember } = await supabase.from('team_members').select('id').eq('agency_id', agency.id).eq('email', email.toLowerCase()).maybeSingle()
-    if (existingMember) return NextResponse.json({ error: 'Ce membre fait déjà partie de l'équipe' }, { status: 400 })
+    if (existingMember) return NextResponse.json({ error: "Ce membre fait déjà partie de l'équipe" }, { status: 400 })
 
     // Générer un token d'invitation unique
     const token = crypto.randomUUID()
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('POST /api/settings/team:', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur serveur lors de l\'invitation' }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur lors de l'invitation" }, { status: 500 })
   }
 }
 
