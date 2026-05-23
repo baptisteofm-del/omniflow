@@ -204,6 +204,7 @@ function PermissionsModal({ member, onClose, onSave }: {
 // ════════════════════════════════════════════════════════════
 export default function TeamPage() {
   const [loading, setLoading]           = useState(true)
+  const [owner, setOwner]               = useState<{id: string; email: string; name?: string | null} | null>(null)
   const [members, setMembers]           = useState<TeamMember[]>([])
   const [invitations, setInvitations]   = useState<TeamInvitation[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -219,6 +220,7 @@ export default function TeamPage() {
       const res = await fetch('/api/settings/team')
       if (!res.ok) throw new Error()
       const data = await res.json()
+      if (data.owner) setOwner(data.owner)
       setMembers((data.members || []).map((m: any) => ({
         ...m,
         permissions: m.permissions || ROLES.find(r => r.id === m.role)?.permissions || [],
@@ -331,7 +333,7 @@ export default function TeamPage() {
         <div className="px-5 py-3.5 border-b border-white/5 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white flex items-center gap-2">
             <Users size={14} className="text-purple-400" />
-            Membres ({members.length})
+            Membres ({members.length + (owner ? 1 : 0)})
           </h2>
         </div>
 

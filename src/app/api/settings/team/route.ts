@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get agency
+    // Get agency (avec owner_id pour identifier le propriétaire)
     const { data: agency, error: agencyError } = await supabase
       .from('agencies')
-      .select('id')
+      .select('id, owner_id, name')
       .eq('owner_id', user.id)
       .single()
 
@@ -44,9 +44,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch invitations' }, { status: 500 })
     }
 
+    // Récupérer le profil du propriétaire
+    const { data: ownerProfile } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', agency.owner_id)
+      .single()
+
+    // Fallback si pas de table profiles
+    const ownerEmail = ownerProfile?.email || user.email || 'Propriétaire'
+
     return NextResponse.json({
+      owner: {
+        id: agency.owner_id,
+        email: ownerEmail,
+        name: ownerProfile?.full_name || null,
+        role: 'owner',
+        status: 'active',
+        joined_at: null, // créateur de l'agence
+      },
       members: members || [],
       invitations: invitations || [],
+      isOwner: user.id === agency.owner_id,
     })
   } catch (error) {
     console.error('GET /api/settings/team:', error)
