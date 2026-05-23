@@ -26,12 +26,12 @@ const PLATFORM_CONFIG: Record<string, { label: string; gradient: string; badge: 
   reddit:    { label: 'Reddit',    gradient: 'from-orange-900/30 to-red-900/20',           badge: 'bg-orange-600 text-white',                         border: 'border-orange-500/20' },
 }
 
-const CONTENT_TYPE_CONFIG: Record<string, { icon: any; label: string; color: string }> = {
-  video:    { icon: Film,      label: 'Vidéo',    color: 'bg-blue-500/80' },
-  reel:     { icon: Film,      label: 'Reel',     color: 'bg-purple-500/80' },
-  photo:    { icon: ImageIcon, label: 'Photo',    color: 'bg-cyan-500/80' },
-  carousel: { icon: Layers,    label: 'Carousel', color: 'bg-indigo-500/80' },
-  text:     { icon: FileText,  label: 'Texte',    color: 'bg-gray-500/80' },
+const CONTENT_TYPE_CONFIG: Record<string, { icon: any; label: string; color: string; isVideo: boolean }> = {
+  video:    { icon: Film,      label: 'Vidéo',  color: 'bg-blue-500/80',    isVideo: true  },
+  reel:     { icon: Film,      label: 'Vidéo',  color: 'bg-purple-500/80',  isVideo: true  },
+  photo:    { icon: ImageIcon, label: 'Image',  color: 'bg-cyan-500/80',    isVideo: false },
+  carousel: { icon: Layers,    label: 'Image',  color: 'bg-indigo-500/80',  isVideo: false },
+  text:     { icon: FileText,  label: 'Texte',  color: 'bg-gray-500/80',    isVideo: false },
 }
 
 function fmtNum(n: number): string {
@@ -68,6 +68,7 @@ export function TrendCard({
   const ctConfig = CONTENT_TYPE_CONFIG[contentType] ?? CONTENT_TYPE_CONFIG.photo
   const CtIcon   = ctConfig.icon
   const isMedia  = contentType !== 'text'
+  const isVideoContent = ctConfig.isVideo
   const generateLink = `/content/ai-generation?trend=${encodeURIComponent(title ?? '')}&platform=${platform}&category=${category}`
 
   return (
@@ -81,24 +82,43 @@ export function TrendCard({
       {/* Thumbnail */}
       <div className={cn('aspect-video relative overflow-hidden bg-gradient-to-br', config.gradient)}>
         {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt={title}
-            loading="lazy"
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <>
+            <img
+              src={thumbnailUrl}
+              alt={title}
+              loading="lazy"
+              onError={e => { (e.target as HTMLImageElement).parentElement?.classList.add('img-failed') }}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            {/* Fallback si image cassée */}
+            <div className="hidden [.img-failed_&]:flex w-full h-full items-center justify-center flex-col gap-2 text-gray-700 absolute inset-0">
+              {isVideoContent ? <Film size={28} className="text-gray-600" /> : <ImageIcon size={28} className="text-gray-600" />}
+              <span className="text-xs text-gray-600 uppercase tracking-widest">{config.label}</span>
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-700">
-            <CtIcon size={28} />
-            <span className="text-xs font-medium uppercase tracking-widest opacity-60">{config.label}</span>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            {isVideoContent
+              ? <Film size={32} className="text-gray-600" />
+              : <ImageIcon size={32} className="text-gray-600" />
+            }
+            <span className="text-xs text-gray-700 uppercase tracking-widest font-medium">{config.label}</span>
           </div>
         )}
 
-        {/* Play overlay */}
+        {/* Indicateur vidéo toujours visible */}
+        {isVideoContent && thumbnailUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center opacity-60 group-hover:opacity-0 transition-opacity">
+              <Play size={16} className="text-white fill-white ml-0.5" />
+            </div>
+          </div>
+        )}
+
+        {/* Play overlay hover */}
         {isMedia && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-white/25 backdrop-blur-sm flex items-center justify-center">
               <Play size={20} className="text-white fill-white ml-1" />
             </div>
           </div>

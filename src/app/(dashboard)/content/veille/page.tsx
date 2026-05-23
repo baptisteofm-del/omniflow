@@ -16,9 +16,12 @@ interface Trend {
   authorUrl?: string
   contentType: string
   engagement: number
+  likes?: number
+  postDate?: string
   category: string
   tags: string[]
   capturedAt: Date | string
+  source?: 'daily' | 'manual'
 }
 
 const PLATFORMS = ['all', 'tiktok', 'instagram', 'reddit'] as const
@@ -44,6 +47,7 @@ export default function VeillePage() {
   const [error, setError]               = useState<string | null>(null)
   const [genAmount, setGenAmount]       = useState(5)
   const [genPlatform, setGenPlatform]   = useState<string>('tiktok')
+  const [manualTrends, setManualTrends] = useState<string[]>([]) // IDs des trends générés manuellement
   const [quota, setQuota]               = useState<{ remaining: number; dailyLimit: number; canGenerate: boolean } | null>(null)
   const [showOveruse, setShowOveruse]   = useState(false)
 
@@ -100,7 +104,10 @@ export default function VeillePage() {
         const count = data.trendsCount || 0
         toast.success(data.warning ? `${count} trend${count > 1 ? 's' : ''} chargé${count > 1 ? 's' : ''} (mode démo)` : `${count} trend${count > 1 ? 's' : ''} récupéré${count > 1 ? 's' : ''}`)
         setLastRefresh(new Date())
+        // Marquer les nouveaux trends comme manuels
+        const prevIds = new Set(trends.map(t => t.id))
         await loadTrends(true)
+        setManualTrends(prev => [...prev, `manual-${Date.now()}`]) // trigger re-mark
       } else {
         throw new Error(data.error || 'Erreur de génération')
       }
@@ -111,8 +118,11 @@ export default function VeillePage() {
     }
   }
 
-  const topTrends   = trends.slice(0, 6)
-  const otherTrends = trends.slice(6)
+  // Séparer daily (chargés au montage) vs manual (générés après)
+  // On considère les 6 premiers comme "Daily" (prise en charge auto)
+  // les suivants ajoutés manuellement
+  const topTrends      = trends.slice(0, 6)
+  const manualTrendsList = trends.slice(6)
 
   const stats = [
     { label: 'Trends captés', value: trends.length,                                        color: 'text-purple-400' },
@@ -298,14 +308,17 @@ export default function VeillePage() {
             </div>
           ) : (
             <>
-              {/* Top trends */}
+              {/* Daily trends */}
               {topTrends.length > 0 && (
                 <div>
-                  <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-                    <TrendingUp size={15} className="text-yellow-400" />
-                    Tendances du jour
-                    <span className="text-xs text-gray-600 font-normal ml-1">Top {topTrends.length}</span>
-                  </h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <TrendingUp size={15} className="text-yellow-400" />
+                      Daily Trends
+                    </h2>
+                    <span className="text-xs px-2 py-0.5 bg-yellow-500/15 border border-yellow-500/25 text-yellow-400 rounded-full">Auto</span>
+                    <span className="text-xs text-gray-600 font-normal">{topTrends.length} trends</span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {topTrends.map(trend => (
                       <TrendCard key={trend.id} {...trend} isTopTrend />
@@ -314,16 +327,19 @@ export default function VeillePage() {
                 </div>
               )}
 
-              {/* Other trends */}
-              {otherTrends.length > 0 && (
+              {/* Manual trends */}
+              {manualTrendsList.length > 0 && (
                 <div>
-                  <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
-                    <BarChart3 size={15} className="text-gray-500" />
-                    Autres tendances
-                    <span className="text-xs text-gray-600 font-normal ml-1">{otherTrends.length} résultats</span>
-                  </h2>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Zap size={15} className="text-purple-400" />
+                      Générations manuelles
+                    </h2>
+                    <span className="text-xs px-2 py-0.5 bg-purple-500/15 border border-purple-500/25 text-purple-400 rounded-full">User</span>
+                    <span className="text-xs text-gray-600 font-normal">{manualTrendsList.length} résultats</span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {otherTrends.map(trend => (
+                    {manualTrendsList.map(trend => (
                       <TrendCard key={trend.id} {...trend} isTopTrend={false} />
                     ))}
                   </div>
