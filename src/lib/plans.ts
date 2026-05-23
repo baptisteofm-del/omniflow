@@ -68,14 +68,14 @@ export const PLANS: Plan[] = [
     id: 'agency',
     name: 'Agency',
     description: 'Pour les grandes agences',
-    price: { monthly: 199, yearly: 159 },
+    price: { monthly: 249, yearly: 199 },
     limits: {
       accounts: -1,
       models: -1,
       postSchedules: -1,
       teamMembers: -1,
       telegramBots: -1,
-      aiGenerations: 150,     // 150 vidéos/mois Kling (coût ~37$) — rentable sur 199€
+      aiGenerations: 150,     // 150 vidéos/mois Kling (coût ~37$) — rentable sur 249€
       trendRuns: 50,          // 50 générations trends/jour
       chattingMessages: 50000, // ~50k messages IA/mois (coût ~10€ en Haiku)
       prospectionRuns: 20,    // 20 runs de scraping recrutement/mois

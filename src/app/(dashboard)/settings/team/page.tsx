@@ -293,7 +293,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-4xl">
+    <div className="p-6 lg:p-8 max-w-screen-xl mx-auto">
 
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between mb-6">

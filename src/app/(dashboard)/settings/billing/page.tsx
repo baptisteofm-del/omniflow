@@ -149,10 +149,18 @@ function BillingContent() {
   }
 
   const cryptoPaymentMethods = [
-    { name: 'Bitcoin', symbol: '₿', color: 'from-orange-600 to-yellow-600' },
-    { name: 'Ethereum', symbol: 'Ξ', color: 'from-blue-600 to-purple-600' },
-    { name: 'USDT', symbol: '$', color: 'from-green-600 to-emerald-600' },
-    { name: 'Solana', symbol: '◎', color: 'from-purple-600 to-pink-600' },
+    {
+      name: 'Bitcoin', symbol: 'BTC', color: 'from-orange-500 to-yellow-500', bg: '#F7931A',
+      logo: <svg viewBox="0 0 32 32" width="20" height="20" fill="white"><path d="M15.9 3C9.1 3 3.6 8.5 3.6 15.3s5.5 12.3 12.3 12.3 12.3-5.5 12.3-12.3S22.7 3 15.9 3zm4.3 14.3c-.2 2.1-1.8 3.1-4 3.4v1.7h-1.5v-1.7h-1.2v1.7H12v-1.7H9.8v-1.9h1.1c.5 0 .7-.1.7-.6v-7.1c0-.5-.2-.6-.7-.6H9.8V8.8H12v-1.7h1.5v1.7h1.2V7.1h1.5v1.7c1.8.2 3.2.9 3.5 2.6.2.9 0 1.8-.9 2.5 1.2.3 1.7 1.2 1.4 3.4zm-3.5-3.1c.4-.1.7-.5.7-1.1 0-.7-.4-1.1-1.2-1.2H14v2.5h1.9c.3 0 .6-.1.8-.2zm.8 2.6c0-.8-.5-1.3-1.6-1.3H14v2.8h1.9c1.1 0 1.6-.5 1.6-1.5z"/></svg>
+    },
+    {
+      name: 'Ethereum', symbol: 'ETH', color: 'from-blue-500 to-purple-500', bg: '#627EEA',
+      logo: <svg viewBox="0 0 32 32" width="20" height="20" fill="white"><path opacity=".6" d="M16 4L8 16.5l8 4.7 8-4.7z"/><path d="M16 4l8 12.5-8 4.7V4z"/><path opacity=".6" d="M16 26.8L8 18.8l8 4.5 8-4.5z"/><path d="M16 23.3l8-4.5-8 8z"/></svg>
+    },
+    {
+      name: 'USD Coin', symbol: 'USDC', color: 'from-blue-400 to-cyan-400', bg: '#2775CA',
+      logo: <svg viewBox="0 0 32 32" width="20" height="20" fill="white"><circle cx="16" cy="16" r="10" fill="none" stroke="white" strokeWidth="2"/><text x="16" y="20" textAnchor="middle" fontSize="9" fontWeight="bold" fill="white">$</text></svg>
+    },
   ]
 
   return (
@@ -270,12 +278,12 @@ function BillingContent() {
           <div className="p-6">
             <div className="space-y-6">
               {[
-                { key: 'models', label: 'Modèles gérées', icon: '👤' },
-                { key: 'postsScheduled', label: 'Posts schedulés', icon: '📅' },
-                { key: 'aiGenerations', label: 'Générations IA', icon: '✨' },
-                { key: 'teamMembers', label: 'Membres équipe', icon: '👥' },
-                { key: 'contentWatches', label: 'Veilles contenu', icon: '👀' },
-                { key: 'telegramBots', label: 'Bots Telegram', icon: '🤖' },
+                { key: 'models', label: 'Modèles gérées', icon: null },
+                { key: 'postsScheduled', label: 'Posts schedulés', icon: null },
+                { key: 'aiGenerations', label: 'Générations IA', icon: null },
+                { key: 'teamMembers', label: 'Membres équipe', icon: null },
+                { key: 'contentWatches', label: 'Veilles contenu', icon: null },
+                { key: 'telegramBots', label: 'Bots Telegram', icon: null },
               ].map(item => {
                 const usageKey = item.key as keyof typeof usage
                 const limitKey = (item.key === 'postsScheduled' ? 'postSchedules' :
@@ -297,10 +305,7 @@ function BillingContent() {
                 return (
                   <div key={item.key}>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                        <span>{item.icon}</span>
-                        {item.label}
-                      </label>
+                      <label className="text-sm font-medium text-gray-300">{item.label}</label>
                       <span className={`text-sm font-semibold ${
                         isMax ? 'text-red-400' : isWarning ? 'text-yellow-400' : 'text-gray-300'
                       }`}>
@@ -347,7 +352,7 @@ function BillingContent() {
                 <div className="text-2xl font-bold">
                   {plan.price.monthly}€<span className="text-sm text-gray-400">/mois</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{plan.price.yearly}€/an (facturation annuelle)</p>
+                <p className="text-xs text-gray-500 mt-1">ou <strong className="text-gray-300">{plan.price.yearly}€/mois</strong> facturé annuellement</p>
               </div>
 
               {/* Features */}
@@ -422,7 +427,7 @@ function BillingContent() {
               </div>
               <div className="text-left flex-1">
                 <p className="font-semibold text-white">Payer en crypto</p>
-                <p className="text-xs text-gray-400">BTC, ETH, USDT, SOL</p>
+                <p className="text-xs text-gray-400">Bitcoin · Ethereum · USDC</p>
               </div>
               <ArrowUpRight size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
             </button>
