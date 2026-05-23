@@ -106,18 +106,23 @@ const POPULAR_CREATORS = {
  * enriched with actual engagement metrics from Apify
  */
 function getSeedTrendsAsLegacyFormat(): Omit<Trend, 'id' | 'capturedAt'>[] {
-  return SEED_TRENDS.map(trend => ({
-    platform: trend.platform === 'instagram' ? 'instagram' : 'tiktok',
-    title: trend.title,
-    url: trend.url,
-    thumbnailUrl: trend.thumbnailUrl,
-    authorUsername: trend.authorUsername.replace('@', ''),
-    authorUrl: trend.authorUrl,
-    contentType: trend.contentType,
-    engagement: trend.engagement,
-    category: trend.category,
-    tags: trend.tags,
-  }))
+  return SEED_TRENDS.map(trend => {
+    const platform = trend.platform as 'instagram' | 'tiktok'
+    return {
+      platform,
+      title: trend.title,
+      url: trend.url,
+      thumbnailUrl: trend.thumbnailUrl,
+      authorUsername: trend.authorUsername.replace('@', ''),
+      authorUrl: trend.authorUrl,
+      contentType: detectContentType(trend.id, trend.url, platform),
+      engagement: trend.engagement,
+      likes: estimateLikes(trend.engagement, platform),
+      postDate: trend.capturedAt,
+      category: trend.category,
+      tags: trend.tags,
+    }
+  })
 }
 
 // Legacy fallback (kept for compatibility, now uses seed data)
