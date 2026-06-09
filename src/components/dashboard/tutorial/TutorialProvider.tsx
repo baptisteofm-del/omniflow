@@ -9,6 +9,8 @@ export interface TutorialStep {
   content: string
   position: 'top' | 'bottom' | 'left' | 'right'
   action?: 'click' | 'none'
+  /** URL Loom optionnelle — s'affiche comme bouton "Voir la démo" dans le tooltip */
+  videoUrl?: string
 }
 
 export interface Tutorial {
@@ -45,14 +47,15 @@ const writeLS = (ids: string[]) => {
 
 export const tutorials: Tutorial[] = [
   // ── Onboarding principal
+  // 📹 URLs Loom : remplace les videoUrl par tes vrais liens Loom après enregistrement
   {
     id: 'getting-started',
     name: 'Premiers pas',
     steps: [
       { id: 'gs-1', target: '[data-tutorial="sidebar"]', title: 'Bienvenue sur OmniFlow', content: 'Ce menu latéral vous donne accès à toutes les fonctionnalités. Survolez-le pour le dérouler.', position: 'right', action: 'none' },
-      { id: 'gs-2', target: '[data-tutorial="accounts"]', title: 'Créez vos modèles', content: 'Commencez par ajouter vos profils de modèles avec leurs intégrations OnlyFans ou MYM.', position: 'right', action: 'none' },
+      { id: 'gs-2', target: '[data-tutorial="accounts"]', title: 'Créez vos modèles', content: 'Commencez par ajouter vos profils de modèles avec leurs intégrations OnlyFans ou MYM.', position: 'right', action: 'none', videoUrl: 'https://www.loom.com/share/REMPLACER_PAR_URL_MODELES' },
       { id: 'gs-3', target: '[data-tutorial="dashboard"]', title: 'Votre centre de contrôle', content: 'Le dashboard centralise vos revenus, économies réalisées et outils actifs en temps réel.', position: 'right', action: 'none' },
-      { id: 'gs-4', target: '[data-tutorial="posting"]', title: 'Automatisez vos posts', content: 'Auto Posting planifie et publie automatiquement votre contenu sur tous vos comptes.', position: 'right', action: 'none' },
+      { id: 'gs-4', target: '[data-tutorial="posting"]', title: 'Automatisez vos posts', content: 'Auto Posting planifie et publie automatiquement votre contenu sur tous vos comptes.', position: 'right', action: 'none', videoUrl: 'https://www.loom.com/share/REMPLACER_PAR_URL_POSTING' },
     ],
   },
 

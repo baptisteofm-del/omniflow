@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Play } from 'lucide-react'
 import { useTutorial } from './TutorialProvider'
 
 // Z-index supérieur à tout le layout (sidebar z-40, header, modals z-50)
@@ -172,9 +172,31 @@ export function TutorialTooltip() {
           </h3>
 
           {/* Content */}
-          <p style={{ fontSize: 12.5, color: '#d1d5db', margin: '0 0 14px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 12.5, color: '#d1d5db', margin: '0 0 10px', lineHeight: 1.6 }}>
             {step.content}
           </p>
+
+          {/* Bouton vidéo Loom (optionnel) */}
+          {step.videoUrl && (
+            <a
+              href={step.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                marginBottom: 12, padding: '6px 10px',
+                borderRadius: 8, textDecoration: 'none',
+                background: 'rgba(168,85,247,0.12)',
+                border: '1px solid rgba(168,85,247,0.3)',
+                color: '#c084fc', fontSize: 12, fontWeight: 500,
+                transition: 'background 0.15s',
+              }}
+            >
+              <Play size={11} style={{ fill: '#c084fc', flexShrink: 0 }} />
+              Voir la démo vidéo
+            </a>
+          )}
 
           {/* Progress */}
           <div style={{ display: 'flex', gap: 3, marginBottom: 12 }}>
