@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
-import { CreditsWidget } from '@/components/ui/CreditsWidget'
 
 // ── Structure de navigation ──────────────────────────────────
 const NAV_TOP = [
@@ -252,13 +251,6 @@ export function Sidebar() {
       <div className="px-2 py-1 border-t border-white/5">
         <SectionToggle sec={NAV_SETTINGS} />
       </div>
-
-      {/* Credits Widget */}
-      {isExpanded && (
-        <div className="px-2 pb-1">
-          <CreditsWidget />
-        </div>
-      )}
 
       {/* Footer agence */}
       <div className={cn('border-t border-white/5 transition-all duration-300', isExpanded ? 'p-3' : 'p-2')}>
