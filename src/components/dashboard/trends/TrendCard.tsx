@@ -3,7 +3,7 @@
 import {
   ExternalLink, Sparkles, Play, Film, Heart, Eye,
   ThumbsUp, ThumbsDown, Bookmark, BookmarkCheck,
-  TrendingUp, Zap, AlertCircle
+  TrendingUp, Zap, AlertCircle, Copy, Check
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useCallback, useRef } from 'react'
@@ -88,6 +88,7 @@ export function TrendCard({
   const [submitting, setSubmitting]   = useState(false)
   const [videoError, setVideoError]   = useState(false)
   const [videoPlaying, setVideoPlaying] = useState(false)
+  const [copied, setCopied]           = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const isVideo   = isVideoContent(contentType)
@@ -118,6 +119,16 @@ export function TrendCard({
       setSubmitting(false)
     }
   }, [id, feedback, submitting, onFeedback])
+
+  // ── Copy to clipboard ──────────────────────────────────────────────────────
+  const handleCopy = useCallback(() => {
+    const text = `${title || 'Reel Instagram'}\n${url || ''}`
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      toast.success('Copié dans le presse-papier ✓')
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => toast.error('Impossible de copier'))
+  }, [title, url])
 
   // ── Video play toggle ─────────────────────────────────────────────────────
   const togglePlay = useCallback(() => {
@@ -226,7 +237,7 @@ export function TrendCard({
             isVideo ? 'bg-pink-500/90 text-white' : 'bg-white/20 backdrop-blur-sm text-white'
           )}>
             <Film size={9} />
-            {contentType?.toUpperCase() === 'REEL' ? 'REEL' : contentType?.toUpperCase() || 'REEL'}
+            {isVideo ? 'REEL' : (contentType?.toUpperCase() || 'POST')}
           </span>
           {/* Viral score badge */}
           {score >= 75 && (
@@ -283,7 +294,7 @@ export function TrendCard({
               <span className="text-xs text-gray-500 flex items-center gap-1">
                 <TrendingUp size={10} /> Score viral
               </span>
-              <span className="text-xs font-bold text-white">{score}%</span>
+              <span className="text-xs font-bold text-white">{score}/100</span>
             </div>
             <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
               <div
@@ -372,13 +383,19 @@ export function TrendCard({
             <ExternalLink size={13} />
           </a>
 
-          {/* Generate */}
-          <Link href={genLink}
-            className="p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 transition-colors text-purple-400"
+          {/* Utiliser comme inspiration — copy to clipboard */}
+          <button
+            onClick={handleCopy}
             title="Utiliser comme inspiration"
+            className={cn(
+              'p-2 rounded-xl transition-all',
+              copied
+                ? 'bg-green-500/25 text-green-400'
+                : 'bg-purple-500/20 hover:bg-purple-500/35 text-purple-400'
+            )}
           >
-            <Sparkles size={13} />
-          </Link>
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+          </button>
         </div>
       </div>
     </div>

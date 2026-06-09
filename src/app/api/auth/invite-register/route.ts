@@ -36,6 +36,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    // Valider le nom (pas de caractères de contrôle, longueur raisonnable)
+    const cleanName = (name || '').trim().replace(/[\x00-\x1F\x7F]/g, '').slice(0, 100)
+    if (!cleanName) {
+      // Fallback: utiliser la partie locale de l'email comme nom
+      const fallbackName = email.split('@')[0].replace(/[._+-]/g, ' ').trim()
+      Object.assign(body, { name: fallbackName })
+    } else {
+      Object.assign(body, { name: cleanName })
+    }
 
     const admin = await createAdminClient()
 
@@ -140,20 +149,57 @@ export async function POST(request: NextRequest) {
       isNewUser = true
     }
 
-    // ── 3. Créer ou mettre à jour le profil ───────────────────────
+    // ── 3. Corriger le profil et supprimer l'agence fantôme ──────
+    // IMPORTANT: Le trigger handle_new_user crée automatiquement une
+    // agence + profil pour chaque nouvel utilisateur. Pour les invités,
+    // on doit corriger le profil et supprimer l'agence fantôme.
     if (isNewUser) {
       try {
-        // Pour les nouveaux utilisateurs, créer le profil
-        await admin.from('profiles').insert({
-          id: userId,
-          full_name: name || '',
-          role: 'member', // Rôle par défaut
-          agency_id: targetAgencyId, // Lier à l'agence
-        })
-      } catch (profileError) {
-        console.warn('Profile creation warning:', profileError)
-        // Ne pas bloquer si le profil existe ou si la création échoue
-        // Car il peut y avoir une trigger qui crée le profil automatiquement
+        // Récupérer les agences fantômes créées par le trigger
+        const { data: phantomAgencies } = await admin
+          .from('agencies')
+          .select('id')
+          .eq('owner_id', userId)
+
+        // Mettre à jour le profil pour pointer vers la bonne agence
+        const { error: profileUpsertError } = await admin
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: body.name || email.split('@')[0],
+            role: invitation.role || 'member',
+            agency_id: targetAgencyId,
+          }, { onConflict: 'id' })
+
+        if (profileUpsertError) {
+          console.warn('Profile upsert warning:', profileUpsertError)
+        }
+
+        // Supprimer les agences fantômes (différentes de targetAgencyId)
+        for (const phantom of (phantomAgencies || [])) {
+          if (phantom.id !== targetAgencyId) {
+            try {
+              // Mettre à jour le profil d'abord pour éviter les FK violations
+              // (déjà fait ci-dessus), puis supprimer l'agence fantôme
+              await admin.from('agencies').delete().eq('id', phantom.id)
+            } catch (delErr) {
+              console.warn('Could not delete phantom agency:', phantom.id, delErr)
+            }
+          }
+        }
+      } catch (cleanupError) {
+        console.warn('Post-creation cleanup warning:', cleanupError)
+        // Ne pas bloquer — l'utilisateur peut quand même se connecter
+      }
+    } else {
+      // Utilisateur existant: s'assurer que le profil est correct
+      try {
+        await admin
+          .from('profiles')
+          .update({ agency_id: targetAgencyId, role: invitation.role || 'member' })
+          .eq('id', userId)
+      } catch (profileUpdateError) {
+        console.warn('Profile update warning:', profileUpdateError)
       }
     }
 
