@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/admin/kling-balance-check",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/posting/execute",
