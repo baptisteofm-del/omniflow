@@ -87,7 +87,7 @@ export function DemoVeilleTrends() {
             </div>
             <div className="flex-1 text-center">
               <span className="text-xs text-gray-400 bg-slate-800/80 px-4 py-1 rounded-full border border-gray-700/50">
-                OmniFlow — Veille Trends
+                OmniFlow — Veille Instagram
               </span>
             </div>
             <div className="flex items-center gap-1.5">

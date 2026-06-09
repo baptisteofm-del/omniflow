@@ -29,8 +29,6 @@ const PLAN_META: Record<string, {
     checkBg: 'bg-purple-500/10',
     checkColor: 'text-purple-400',
     cardClass: 'bg-gradient-to-b from-purple-900/30 to-purple-900/10 border border-purple-500/25',
-    badge: 'Recommandé',
-    scale: true,
   },
   agency: {
     accent: 'text-cyan-300',
@@ -38,6 +36,8 @@ const PLAN_META: Record<string, {
     checkBg: 'bg-cyan-500/10',
     checkColor: 'text-cyan-400',
     cardClass: 'bg-gradient-to-b from-[#0d2030] to-[#100d20] border border-cyan-500/35',
+    badge: 'Recommandé',
+    scale: true,
   },
 }
 
