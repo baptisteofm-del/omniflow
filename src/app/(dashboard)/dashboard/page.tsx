@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   TrendingUp, Users, Calendar, BarChart3,
   ArrowUpRight, Zap, AlertCircle, MessageSquare,
   Sparkles, Clock, DollarSign, Activity,
   Lock, CheckCircle, Star, ChevronRight,
   Film, Wallet, Search, Image, Bot,
-  Database, Eye, TrendingUpIcon
+  Database, Eye, TrendingUpIcon, LayoutDashboard
 } from 'lucide-react'
 
 function getRelativeTime(dateString: string): string {
@@ -210,33 +211,26 @@ export default function DashboardPage() {
       {/* ════════════════════════════════════
           HEADER
       ════════════════════════════════════ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
-              <span className="text-white">Bonjour, </span>
-              {agencyName
-                ? <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">{agencyName}</span>
-                : <span className="inline-block h-8 w-40 bg-white/10 rounded-xl animate-pulse align-middle" />
-              }
-            </h1>
-            <span className="px-2.5 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs font-bold text-purple-300 tracking-wide">
-              ✨ {planLabel[planId] || planId}
-            </span>
+      <PageHeader
+        icon={LayoutDashboard}
+        title={agencyName ? `Bonjour, ${agencyName}` : 'Tableau de bord'}
+        subtitle={dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
+        badge={`✨ ${planLabel[planId] || planId}`}
+        iconColor="text-purple-400"
+        iconBg="bg-purple-500/10"
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-xs text-green-400 font-medium">Système actif</span>
+            </div>
+            <Link href="/accounts" className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full hover:bg-purple-500/20 transition-all">
+              <Users size={12} className="text-purple-400" />
+              <span className="text-xs text-purple-400 font-medium">{modelsCount} modèle{modelsCount > 1 ? 's' : ''}</span>
+            </Link>
           </div>
-          <p className="text-gray-500 text-sm">{dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs text-green-400 font-medium">Système actif</span>
-          </div>
-          <Link href="/accounts" className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full hover:bg-purple-500/20 transition-all">
-            <Users size={12} className="text-purple-400" />
-            <span className="text-xs text-purple-400 font-medium">{modelsCount} modèle{modelsCount > 1 ? 's' : ''}</span>
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* ════════════════════════════════════
           KPI GRID

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Search, Star, Trash2, MessageSquare, ExternalLink, Upload,
   Bot, Send, RefreshCw, ChevronRight, X, Check, Loader2,
   Users, TrendingUp, Zap, Filter, CheckSquare, Square,
-  BarChart2, Bell, BookOpen, Download, ArrowRight, AlertTriangle,
+  BarChart2, Bell, BookOpen, Download, ArrowRight, AlertTriangle
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useUsage } from '@/lib/hooks/useUsage'
@@ -412,6 +413,14 @@ export default function ProspectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1625] to-[#0a0a0f] p-6 lg:p-8">
+
+      <PageHeader
+        icon={Search}
+        title="Trouvez et recrutez vos créatrices"
+        subtitle="Prospection et recrutement"
+        iconColor="text-green-400"
+        iconBg="bg-green-500/10"
+      />
         <div className="max-w-7xl mx-auto space-y-8">
 
         {/* ── Header ── */}

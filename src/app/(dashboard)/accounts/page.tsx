@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Plus, Loader2, Trash2, Settings, Users, Upload, X, Link as LinkIcon, Edit2, TrendingUp, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -161,21 +162,21 @@ export default function AccountsPage() {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3 mb-1">
-            <Users size={22} className="text-purple-400" />
-            Modèles
-          </h1>
-          <p className="text-gray-500 text-sm">Gérez vos profils et leurs connexions aux outils</p>
-        </div>
-        <button
-          onClick={() => { setEditingModel(null); setForm({ name: '', bio: '' }); setShowForm(true) }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90 transition-all"
-        >
-          <Plus size={18} /> Ajouter un modèle
-        </button>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Vos modèles"
+        subtitle="Gérez vos profils et leurs connexions aux outils"
+        iconColor="text-purple-400"
+        iconBg="bg-purple-500/10"
+        actions={
+          <button
+            onClick={() => { setEditingModel(null); setForm({ name: '', bio: '' }); setShowForm(true) }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90 transition-all"
+          >
+            <Plus size={18} /> Ajouter un modèle
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

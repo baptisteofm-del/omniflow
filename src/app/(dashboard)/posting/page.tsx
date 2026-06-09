@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Calendar, Plus, Clock, CheckCircle2, XCircle, Loader2,
   Zap, BarChart3, Image as ImageIcon, Film, Layers,
@@ -85,6 +86,14 @@ function CampaignModal({ models, media, integrations, onClose, onSave }: {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+
+      <PageHeader
+        icon={Calendar}
+        title="Auto Posting"
+        subtitle="Planifiez votre contenu"
+        iconColor="text-cyan-400"
+        iconBg="bg-cyan-500/10"
+      />
       <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
         {/* Header */}

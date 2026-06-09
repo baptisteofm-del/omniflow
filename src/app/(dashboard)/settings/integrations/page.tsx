@@ -2,7 +2,8 @@
 
 import { useState, useEffect, ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Check, X, Loader2, Settings, Plus } from 'lucide-react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Check, X, Loader2, Settings, Settings2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Integration {
@@ -288,6 +289,14 @@ export default function IntegrationsPage() {
 
   return (
     <div className="p-8">
+
+      <PageHeader
+        icon={Settings2}
+        title="Intégrations"
+        subtitle="Connectez vos outils"
+        iconColor="text-gray-400"
+        iconBg="bg-gray-500/10"
+      />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">

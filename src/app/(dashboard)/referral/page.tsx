@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Copy, Check, Share2, Users, TrendingUp, DollarSign,
-  QrCode, MessageCircle
+  QrCode, MessageCircle, Gift
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -91,6 +92,14 @@ export default function ReferralPage() {
   if (loading) {
     return (
       <div className="p-8 space-y-8">
+
+      <PageHeader
+        icon={Gift}
+        title="Programme de parrainage — 10% de commission"
+        subtitle="Gagne jusqu'à 10% de commission à vie"
+        iconColor="text-pink-400"
+        iconBg="bg-pink-500/10"
+      />
         <div className="h-32 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (

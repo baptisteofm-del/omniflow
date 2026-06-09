@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   TrendingUp, TrendingDown, MessageSquare, DollarSign, Target,
   AlertTriangle, Zap, ArrowUpRight, Clock, Users, BarChart3,
@@ -15,6 +16,14 @@ function MiniBar({ data, color = '#8b5cf6' }: { data: number[]; color?: string }
   const max = Math.max(...data, 1)
   return (
     <div className="flex items-end gap-0.5 h-8">
+
+      <PageHeader
+        icon={BarChart3}
+        title="Rapports chatting"
+        subtitle="Analytics et statistiques"
+        iconColor="text-orange-400"
+        iconBg="bg-orange-500/10"
+      />
       {data.map((v, i) => (
         <div key={i} className="flex-1 rounded-sm transition-all duration-500" style={{ height: `${(v / max) * 100}%`, background: color, opacity: 0.7 + (i / data.length) * 0.3 }} />
       ))}

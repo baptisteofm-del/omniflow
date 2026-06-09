@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { TrendingUp, Loader2, AlertCircle, Zap, Eye, Calendar, RefreshCw, ShoppingCart } from 'lucide-react'
 import { OveruseModal } from '@/components/ui/OveruseModal'
 import toast from 'react-hot-toast'
@@ -149,16 +150,13 @@ export default function VeillePage() {
     <div className="p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto">
 
       {/* ── HEADER ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <TrendingUp size={22} className="text-pink-400" />
-            Veille Instagram
-          </h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Tendances Instagram du jour — mis à jour automatiquement chaque matin
-          </p>
-        </div>
+      <PageHeader
+        icon={Eye}
+        title="Veille & tendances"
+        subtitle="Tendances Instagram du jour — mis à jour automatiquement chaque matin"
+        iconColor="text-blue-400"
+        iconBg="bg-blue-500/10"
+        actions={
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Indicateur démo */}
@@ -203,7 +201,8 @@ export default function VeillePage() {
                 : <><RefreshCw size={15} />Générer {RUN_UNITS} trends</>}
           </button>
         </div>
-      </div>
+        }
+      />
 
       {/* ── STATS STRIP ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

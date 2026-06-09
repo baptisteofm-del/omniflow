@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { CreditCard, Check, ArrowUpRight, X, Calendar, AlertCircle, BarChart3, Clock, Zap, Download } from 'lucide-react'
 import { SkeletonBillingPage } from '@/components/ui/Skeleton'
 import { getPlanById, PLANS } from '@/lib/plans'
@@ -114,6 +115,14 @@ function BillingContent() {
   if (error) {
     return (
       <div className="p-8">
+
+      <PageHeader
+        icon={CreditCard}
+        title="Abonnement & facturation"
+        subtitle="Gestion des paiements"
+        iconColor="text-green-400"
+        iconBg="bg-green-500/10"
+      />
         <div className="glass rounded-2xl p-6 flex gap-4 items-start border border-red-500/30">
           <AlertCircle className="text-red-400 flex-shrink-0 mt-1" size={20} />
           <div>

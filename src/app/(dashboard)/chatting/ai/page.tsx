@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Settings, Plus, Trash2, CheckCircle2, XCircle, MessageSquare,
   Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock, Shield,
   Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders, Brain,
-  RefreshCw, Loader2,
+  RefreshCw, Loader2, Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useUsage } from '@/lib/hooks/useUsage'
@@ -472,15 +473,13 @@ export default function ChattingAIPage() {
       <div className="p-6 lg:p-8 space-y-8">
 
       {/* ── Header ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Bot className="text-violet-400" size={28} /> Chatting IA
-          </h1>
-          <p className="text-gray-400 mt-1">
-            Claude répond à vos fans OF/MYM en automatique — 24h/24, 7j/7
-          </p>
-        </div>
+      <PageHeader
+        icon={Sparkles}
+        title="Chatting IA — 100% automatisé"
+        subtitle="Claude répond à vos fans OF/MYM en automatique — 24h/24, 7j/7"
+        iconColor="text-blue-400"
+        iconBg="bg-blue-500/10"
+        actions={
         <button
           onClick={() => setShowHowItWorks(!showHowItWorks)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:border-violet-500/40 hover:text-violet-300 transition-all text-sm"
@@ -489,7 +488,8 @@ export default function ChattingAIPage() {
           Comment ça fonctionne ?
           <ChevronDown size={14} className={`transition-transform ${showHowItWorks ? 'rotate-180' : ''}`} />
         </button>
-      </div>
+        }
+      />
 
 
 

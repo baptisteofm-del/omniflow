@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Check, Download, Trash2, Film, Copy, Image as ImageIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { VideoEditor } from '@/components/dashboard/editor/VideoEditor'
@@ -82,6 +83,14 @@ export default function EditorPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
+
+      <PageHeader
+        icon={Film}
+        title="Édition & Spoof"
+        subtitle="Montez vos vidéos"
+        iconColor="text-pink-400"
+        iconBg="bg-pink-500/10"
+      />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2 mb-0.5">

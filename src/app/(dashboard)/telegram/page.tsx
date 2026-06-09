@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Send, Plus, Trash2, CheckCircle2, Loader2, Bot,
   Users, Clock, Zap, Image as ImageIcon, Film,
@@ -89,6 +90,14 @@ function PostScheduleEditor({
           const ct = CONTENT_TYPES.find(c => c.id === slot.content_type) || CONTENT_TYPES[1]
           return (
             <div key={i} className="flex items-center gap-2 p-2.5 bg-white/3 border border-white/8 rounded-xl group">
+
+      <PageHeader
+        icon={Bot}
+        title="Bot Telegram"
+        subtitle="Automatisez vos messages"
+        iconColor="text-blue-400"
+        iconBg="bg-blue-500/10"
+      />
               <span className="text-xs text-gray-600 w-6 flex-shrink-0 tabular-nums">#{i + 1}</span>
 
               {/* Heure libre */}

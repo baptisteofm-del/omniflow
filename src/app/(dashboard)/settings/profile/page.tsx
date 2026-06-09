@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { User, Mail, Lock, Globe, Save, Loader2, Upload, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
@@ -181,6 +182,14 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="p-8">
+
+      <PageHeader
+        icon={User}
+        title="Mon profil"
+        subtitle="Gérez vos informations"
+        iconColor="text-gray-400"
+        iconBg="bg-gray-500/10"
+      />
         <div className="flex items-center justify-center py-12">
           <Loader2 className="animate-spin text-purple-400" size={32} />
         </div>

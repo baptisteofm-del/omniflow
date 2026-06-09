@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
   Plus, Download, X, AlertTriangle, Info, ChevronDown,
@@ -416,11 +417,13 @@ export default function FinancePage() {
     <div className="p-6 lg:p-8 max-w-screen-2xl mx-auto">
 
       {/* ── HEADER ─────────────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Finance</h1>
-          <p className="text-xs text-gray-600 mt-0.5 tabular-nums">{from} — {to} · {s.transactionCount || 0} transactions</p>
-        </div>
+      <PageHeader
+        icon={Wallet}
+        title="Revenus & transactions"
+        subtitle={`${from} — ${to} · ${s.transactionCount || 0} transactions`}
+        iconColor="text-green-400"
+        iconBg="bg-green-500/10"
+        actions={
         <div className="flex items-center gap-2 flex-wrap">
           {/* Platform filter */}
           <div className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl">
@@ -456,7 +459,8 @@ export default function FinancePage() {
             <Download size={12} />
           </button>
         </div>
-      </div>
+        }
+      />
 
       {/* ── RECOMMENDATIONS ────────────────────────────────── */}
       {!loading && (s.recommendations || []).length > 0 && (

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Sparkles, Play, Download, Clock, CheckCircle2, XCircle, Loader2, Zap, Film } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
@@ -125,18 +126,18 @@ export default function AIGenerationPage() {
     <FeatureGate feature="ai_generation" planId={planId} loading={planLoading}>
       <div className="p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles size={24} className="text-purple-400" />
-          Génération IA
-        </h1>
-        <p className="text-gray-400 mt-1">Crée des vidéos avec Kling AI — le meilleur modèle vidéo du marché</p>
-        {trendSource && (
-          <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-sm text-cyan-300">
-            Inspiré du trend <strong>\"{trendSource.title}\"</strong> sur {trendSource.platform} ({trendSource.category})
-          </div>
-        )}
-      </div>
+      <PageHeader
+        icon={Zap}
+        title="Génération IA de contenu"
+        subtitle="Crée des vidéos avec Kling AI — le meilleur modèle vidéo du marché"
+        iconColor="text-yellow-400"
+        iconBg="bg-yellow-500/10"
+      />
+      {trendSource && (
+        <div className="mb-6 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-sm text-cyan-300">
+          Inspiré du trend <strong>\"{trendSource.title}\"</strong> sur {trendSource.platform} ({trendSource.category})
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulaire */}

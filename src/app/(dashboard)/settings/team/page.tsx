@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Users, Plus, Mail, Trash2, Loader2, Check, Clock,
   X, ChevronDown, Shield, Settings, Film, MessageSquare,
@@ -118,6 +119,14 @@ function PermissionsModal({ member, onClose, onSave }: {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+
+      <PageHeader
+        icon={Users}
+        title="Équipe"
+        subtitle="Gérez votre équipe"
+        iconColor="text-purple-400"
+        iconBg="bg-purple-500/10"
+      />
       <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">

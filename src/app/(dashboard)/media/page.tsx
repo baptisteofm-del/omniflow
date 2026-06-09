@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Upload, Download, Trash2, Search, Grid3x3, List, X, Plus,
   Folder, FolderOpen, Film, Image as ImageIcon, ChevronRight,
@@ -272,7 +273,15 @@ export default function MediaPage() {
   const activeFolderInfo = allFolders.find(f => f.id === activeFolder)
 
   return (
-    <div className="flex h-full">
+    <>
+      <PageHeader
+        icon={ImageIcon}
+        title="Banque de médias"
+        subtitle="Organisez et gérez vos fichiers"
+        iconColor="text-purple-400"
+        iconBg="bg-purple-500/10"
+      />
+      <div className="flex h-full">
 
       {/* ── SIDEBAR DOSSIERS ── */}
       <div className="w-56 flex-shrink-0 h-full border-r border-white/5 p-3 flex flex-col gap-1 overflow-y-auto">
@@ -594,6 +603,7 @@ export default function MediaPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
