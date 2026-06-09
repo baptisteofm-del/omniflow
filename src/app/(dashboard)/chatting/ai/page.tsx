@@ -20,6 +20,7 @@ import { getTodaySchedule } from '@/lib/chatting/schedule'
 interface Model {
   id: string
   name: string
+  avatar_url?: string
 }
 
 interface Personality {

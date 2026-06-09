@@ -1,13 +1,13 @@
 'use client'
 
 import { LucideIcon } from 'lucide-react'
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 
 interface PageHeaderProps {
   icon: LucideIcon
   iconColor?: string        // ex: 'text-purple-400'
   iconBg?: string           // ex: 'bg-purple-500/10'
-  title: string
+  title: React.ReactNode
   subtitle?: string
   badge?: string            // badge texte (ex: 'Pro', 'Beta')
   badgeColor?: string       // couleur badge

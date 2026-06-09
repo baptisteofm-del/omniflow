@@ -46,22 +46,18 @@ const TOOLS = [
   {
     id: 'adspower',
     label: 'AdsPower',
-    bg: 'bg-[#2563eb]',
+    bg: 'bg-[#1677FF]',
     logo: (
-      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
+      <span className="text-xs font-bold text-white">A</span>
     ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=adspower`,
   },
   {
     id: 'geelark',
     label: 'GeeLark',
-    bg: 'bg-[#059669]',
+    bg: 'bg-[#00C896]',
     logo: (
-      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
-        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-3a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-      </svg>
+      <span className="text-xs font-bold text-white">G</span>
     ),
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=geelark`,
   },

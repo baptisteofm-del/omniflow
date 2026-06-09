@@ -81,25 +81,7 @@ const SIZES = [
 ]
 
 export default function ProspectionPage() {
-  const { planId } = useUsage()
-
-  if (planId !== 'agency') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#12111a] to-[#0a0a0f] p-6 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertTriangle size={48} className="mx-auto mb-4 text-amber-500" />
-          <h1 className="text-2xl font-bold text-white mb-2">Fonctionnalité réservée</h1>
-          <p className="text-gray-400 mb-6">La prospection Apify est disponible uniquement avec le plan <strong>Agency</strong>.</p>
-          <a
-            href="/settings/billing"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold hover:shadow-lg hover:shadow-violet-500/30 transition-all"
-          >
-            Passer au plan Agency
-          </a>
-        </div>
-      </div>
-    )
-  }
+  const { planId, loading: planLoading } = useUsage()
 
   const supabase = createClient()
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -510,6 +492,33 @@ export default function ProspectionPage() {
   }
 
   const kanbanCols: ProspectStatus[] = ['discovered', 'contacted', 'discussing', 'signed']
+
+  // Plan gate — rendered inside JSX so all hooks are called unconditionally above
+  if (!planLoading && planId !== 'agency') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#12111a] to-[#0a0a0f] p-6 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle size={48} className="mx-auto mb-4 text-amber-500" />
+          <h1 className="text-2xl font-bold text-white mb-2">Fonctionnalité réservée</h1>
+          <p className="text-gray-400 mb-6">La prospection Apify est disponible uniquement avec le plan <strong>Agency</strong>.</p>
+          <a
+            href="/settings/billing"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold hover:shadow-lg hover:shadow-violet-500/30 transition-all"
+          >
+            Passer au plan Agency
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (planLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#12111a] to-[#0a0a0f] p-6 flex items-center justify-center">
+        <Loader2 size={32} className="text-violet-400 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1625] to-[#0a0a0f] p-6 lg:p-8">

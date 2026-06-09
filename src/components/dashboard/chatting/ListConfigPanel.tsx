@@ -1,35 +1,53 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Settings, Save, Loader } from 'lucide-react'
+import { Save, Loader } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-interface ListConfig {
+interface ModelAIConfig {
   id?: string
   platform: 'onlyfans' | 'mym'
-  personalityType: string
-  ppvFrequency: 'never' | 'low' | 'moderate' | 'high' | 'always'
-  ppvPriceMin: number
-  ppvPriceMax: number
-  relationalMode: boolean
-  toneNotes: string
-  responseDelaySeconds: number
+  // Personnalité
+  personality: string
+  personalityCustom?: string
+  // Instructions personnalisées
+  customInstructions: string
+  // Intensité commerciale
+  salesIntensity: 'low' | 'moderate' | 'high'
+  // Mode relationnel
+  relationshipMode: string
 }
 
-const PPV_FREQUENCY_OPTIONS = [
-  { value: 'never', label: 'Jamais', desc: 'Pas de push PPV automatique' },
-  { value: 'low', label: 'Faible (1/10 msgs)', desc: '1 PPV pour 10 messages' },
-  { value: 'moderate', label: 'Modérée (1/5 msgs)', desc: '1 PPV pour 5 messages' },
-  { value: 'high', label: 'Élevée (1/3 msgs)', desc: '1 PPV pour 3 messages' },
-  { value: 'always', label: 'Maximum', desc: 'Pousser le PPV dès que possible' },
+const PERSONALITIES = [
+  'GFE',
+  'MILF',
+  'Influenceuse',
+  'Girl Next Door',
+  'Dominante',
+  'Douce',
+  'Coquine',
+  'Autre',
 ]
 
-const PERSONALITY_TYPES = [
-  'gfe', 'milf', 'fitness', 'baddie', 'shy', 'influencer', 'gothic'
-]
+const SALES_INTENSITY = [
+  { id: 'low',      label: 'Faible',   desc: 'Vente rare, relationnel prioritaire' },
+  { id: 'moderate', label: 'Modérée',  desc: 'Équilibre entre relation et vente' },
+  { id: 'high',     label: 'Élevée',   desc: 'Monétisation fréquente et active' },
+] as const
+
+const RELATIONSHIP_MODES = ['Distant', 'Amical', 'Intime', 'Exclusif']
+
+const DEFAULT_CONFIG = (platform: 'onlyfans' | 'mym'): ModelAIConfig => ({
+  platform,
+  personality: 'GFE',
+  personalityCustom: '',
+  customInstructions: '',
+  salesIntensity: 'moderate',
+  relationshipMode: 'Amical',
+})
 
 export function ListConfigPanel() {
-  const [configs, setConfigs] = useState<Record<'onlyfans' | 'mym', ListConfig | null>>({
+  const [configs, setConfigs] = useState<Record<'onlyfans' | 'mym', ModelAIConfig | null>>({
     onlyfans: null,
     mym: null,
   })
@@ -37,17 +55,7 @@ export function ListConfigPanel() {
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
-  // Form state
-  const [form, setForm] = useState<ListConfig>({
-    platform: 'onlyfans',
-    personalityType: 'gfe',
-    ppvFrequency: 'moderate',
-    ppvPriceMin: 5,
-    ppvPriceMax: 30,
-    relationalMode: true,
-    toneNotes: '',
-    responseDelaySeconds: 60,
-  })
+  const [form, setForm] = useState<ModelAIConfig>(DEFAULT_CONFIG('onlyfans'))
 
   useEffect(() => {
     loadConfigs()
@@ -56,6 +64,8 @@ export function ListConfigPanel() {
   useEffect(() => {
     if (configs[activeTab]) {
       setForm(configs[activeTab]!)
+    } else {
+      setForm(DEFAULT_CONFIG(activeTab))
     }
   }, [activeTab, configs])
 
@@ -65,8 +75,8 @@ export function ListConfigPanel() {
       if (res.ok) {
         const data = await res.json()
         setConfigs({
-          onlyfans: data.onlyfans,
-          mym: data.mym,
+          onlyfans: data.onlyfans ?? null,
+          mym: data.mym ?? null,
         })
         if (data.onlyfans) {
           setForm(data.onlyfans)
@@ -83,18 +93,16 @@ export function ListConfigPanel() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const payload = { ...form, platform: activeTab }
       const res = await fetch('/api/chatting/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
 
       if (res.ok) {
         const saved = await res.json()
-        setConfigs(prev => ({
-          ...prev,
-          [activeTab]: saved,
-        }))
+        setConfigs(prev => ({ ...prev, [activeTab]: saved }))
         toast.success('Configuration enregistrée ✓')
       } else {
         toast.error('Erreur lors de la sauvegarde')
@@ -117,24 +125,12 @@ export function ListConfigPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Platform Tabs */}
+      {/* Platform / Model Tabs */}
       <div className="flex gap-2 border-b border-white/10 pb-0">
         {(['onlyfans', 'mym'] as const).map(platform => (
           <button
             key={platform}
-            onClick={() => {
-              setActiveTab(platform)
-              setForm(configs[platform] || {
-                platform,
-                personalityType: 'gfe',
-                ppvFrequency: 'moderate',
-                ppvPriceMin: 5,
-                ppvPriceMax: 30,
-                relationalMode: true,
-                toneNotes: '',
-                responseDelaySeconds: 60,
-              })
-            }}
+            onClick={() => setActiveTab(platform)}
             className={`px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all ${
               activeTab === platform
                 ? 'border-violet-500 text-violet-300 bg-violet-500/10'
@@ -147,128 +143,110 @@ export function ListConfigPanel() {
       </div>
 
       {/* Form */}
-      <div className="space-y-5">
-        {/* Personality Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Profil de Personnalité
-          </label>
-          <select
-            value={form.personalityType}
-            onChange={(e) => setForm({ ...form, personalityType: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white focus:border-violet-500 focus:outline-none"
-          >
-            {PERSONALITY_TYPES.map(type => (
-              <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-            ))}
-          </select>
-        </div>
+      <div className="space-y-6">
 
-        {/* PPV Frequency */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-3">
-            Fréquence de Push PPV
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {PPV_FREQUENCY_OPTIONS.map(option => (
+        {/* ── Section 1 : Personnalité ── */}
+        <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+            Personnalité
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {PERSONALITIES.map(p => (
               <button
-                key={option.value}
-                onClick={() => setForm({ ...form, ppvFrequency: option.value as typeof form.ppvFrequency })}
-                className={`p-3 rounded-lg border transition-all text-left text-sm ${
-                  form.ppvFrequency === option.value
-                    ? 'border-violet-500 bg-violet-500/10 text-white'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                key={p}
+                onClick={() => setForm({ ...form, personality: p })}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                  form.personality === p
+                    ? 'border-violet-500 bg-gradient-to-r from-violet-500/20 to-cyan-500/10 text-white shadow-sm shadow-violet-500/20'
+                    : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-gray-300'
                 }`}
               >
-                <div className="font-medium text-white">{option.label}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{option.desc}</div>
+                {p}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* PPV Price Range */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Prix PPV Min (€)
-            </label>
+          {form.personality === 'Autre' && (
             <input
-              type="number"
-              value={form.ppvPriceMin}
-              onChange={(e) => setForm({ ...form, ppvPriceMin: parseInt(e.target.value) })}
-              min="1"
-              max="100"
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white focus:border-violet-500 focus:outline-none"
+              type="text"
+              value={form.personalityCustom ?? ''}
+              onChange={(e) => setForm({ ...form, personalityCustom: e.target.value })}
+              placeholder="Décrivez la personnalité..."
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm mt-2"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Prix PPV Max (€)
-            </label>
-            <input
-              type="number"
-              value={form.ppvPriceMax}
-              onChange={(e) => setForm({ ...form, ppvPriceMax: parseInt(e.target.value) })}
-              min="1"
-              max="100"
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white focus:border-violet-500 focus:outline-none"
-            />
-          </div>
+          )}
         </div>
 
-        {/* Response Delay */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Délai de Réponse (secondes)
-          </label>
-          <input
-            type="number"
-            value={form.responseDelaySeconds}
-            onChange={(e) => setForm({ ...form, responseDelaySeconds: parseInt(e.target.value) })}
-            min="0"
-            max="300"
-            step="10"
-            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white focus:border-violet-500 focus:outline-none"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Délai avant d'envoyer la réponse IA (crée une impression plus naturelle)
-          </p>
-        </div>
-
-        {/* Relational Mode */}
-        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.relationalMode}
-              onChange={(e) => setForm({ ...form, relationalMode: e.target.checked })}
-              className="mt-1 w-4 h-4"
-            />
-            <div>
-              <div className="font-medium text-white">Mode Relationnel</div>
-              <p className="text-xs text-gray-500 mt-1">
-                Si activé, l'IA détecte les moments émotionnels (fan parle de sa vie perso, tristesse, solitude) 
-                et prioritise la création de lien plutôt que de pousser du contenu payant. Le PPV viendra plus tard.
-              </p>
-            </div>
-          </label>
-        </div>
-
-        {/* Tone Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Instructions Libres pour l'IA
-          </label>
+        {/* ── Section 2 : Instructions personnalisées ── */}
+        <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+            Instructions personnalisées
+          </h3>
           <textarea
-            value={form.toneNotes}
-            onChange={(e) => setForm({ ...form, toneNotes: e.target.value })}
-            placeholder="Ex: 'Toujours finir par une question', 'Ne jamais utiliser d'emojis', 'Utiliser des abréviations SMS', etc."
+            value={form.customInstructions}
+            onChange={(e) => setForm({ ...form, customInstructions: e.target.value })}
+            placeholder="Instructions spécifiques pour ce modèle... Ex: 'Toujours finir par une question', 'Ne jamais utiliser d'emojis', 'Utiliser des abréviations SMS'..."
             rows={4}
-            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white focus:border-violet-500 focus:outline-none placeholder-gray-600"
+            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm resize-none"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Ajouter des instructions spécifiques que l'IA doit suivre pour cette liste
+        </div>
+
+        {/* ── Section 3 : Intensité commerciale ── */}
+        <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+            Intensité commerciale
+          </h3>
+          <div className="grid grid-cols-1 gap-2">
+            {SALES_INTENSITY.map(option => (
+              <label
+                key={option.id}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  form.salesIntensity === option.id
+                    ? 'border-cyan-500 bg-gradient-to-r from-cyan-500/10 to-violet-500/5 text-white'
+                    : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="salesIntensity"
+                  value={option.id}
+                  checked={form.salesIntensity === option.id}
+                  onChange={() => setForm({ ...form, salesIntensity: option.id })}
+                  className="mt-0.5 accent-cyan-500"
+                />
+                <div>
+                  <div className={`text-sm font-medium ${form.salesIntensity === option.id ? 'text-white' : 'text-gray-300'}`}>
+                    {option.label}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{option.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Section 4 : Mode relationnel ── */}
+        <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wide">
+            Mode relationnel
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {RELATIONSHIP_MODES.map(mode => (
+              <button
+                key={mode}
+                onClick={() => setForm({ ...form, relationshipMode: mode })}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                  form.relationshipMode === mode
+                    ? 'border-violet-500 bg-gradient-to-r from-violet-500/20 to-cyan-500/10 text-white shadow-sm shadow-violet-500/20'
+                    : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-gray-300'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500">
+            Définit la distance émotionnelle et le niveau d'intimité dans les échanges avec les fans.
           </p>
         </div>
       </div>
@@ -277,7 +255,7 @@ export function ListConfigPanel() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full px-4 py-3 rounded-lg bg-violet-500 text-white font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+        className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
       >
         {saving ? (
           <>

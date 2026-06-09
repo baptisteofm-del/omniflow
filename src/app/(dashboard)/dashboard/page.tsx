@@ -213,7 +213,14 @@ export default function DashboardPage() {
       ════════════════════════════════════ */}
       <PageHeader
         icon={LayoutDashboard}
-        title={agencyName ? `Bonjour, ${agencyName}` : 'Tableau de bord'}
+        title={agencyName ? (
+          <>
+            {'Bonjour, '}
+            <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent font-bold">
+              {agencyName}
+            </span>
+          </>
+        ) : 'Tableau de bord'}
         subtitle={dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         badge={`✨ ${planLabel[planId] || planId}`}
         iconColor="text-purple-400"
