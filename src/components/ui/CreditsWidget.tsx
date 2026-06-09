@@ -37,9 +37,7 @@ export function CreditsWidget() {
   }, [])
 
   if (loading || !credits) {
-    return (
-      <div className="bg-gradient-to-br from-purple-900/20 to-cyan-900/20 border border-purple-500/30 rounded-xl p-4 h-[200px] animate-pulse" />
-    )
+    return null
   }
 
   const progressPercentage = Math.min((credits.balance / 100) * 100, 100)
