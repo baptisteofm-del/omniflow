@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,18 +52,19 @@ export async function POST(request: NextRequest) {
     const ext = file.type.split('/')[1] || 'jpg'
     const fileName = `${agency.id}/${modelId}.${ext}`
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Upload to Supabase Storage (admin client bypasses RLS)
+    const adminSupabase = await createAdminClient()
+    const { error: uploadError } = await adminSupabase.storage
       .from('avatars')
       .upload(fileName, buffer, {
         contentType: file.type,
-        upsert: true, // Overwrite if exists
+        upsert: true,
       })
 
     if (uploadError) throw uploadError
 
     // Get public URL
-    const { data } = supabase.storage
+    const { data } = adminSupabase.storage
       .from('avatars')
       .getPublicUrl(fileName)
 
