@@ -7,6 +7,10 @@
     {
       "path": "/api/chatting/cron",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/email/scheduled",
+      "schedule": "0 10 * * *"
     }
   ]
 }

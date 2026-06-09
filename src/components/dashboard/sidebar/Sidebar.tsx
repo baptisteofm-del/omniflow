@@ -17,8 +17,10 @@ const NAV_TOP = [
   { label: 'Modèles',     href: '/accounts',   icon: Users,           tutorial: 'accounts' },
   { label: 'Finance',     href: '/finance',    icon: Wallet },
   { label: 'Parrainage',  href: '/referral',   icon: Gift, badge: '10%' },
+  { label: 'Prospection', href: '/accounts/prospection', icon: Search, isNew: true },
 ]
 
+// Items marqués isNew affichent un badge vert "NEW" (retirer après ~4 semaines)
 const NAV_COLLAPSIBLE = [
   {
     id: 'chatting',
@@ -38,7 +40,7 @@ const NAV_COLLAPSIBLE = [
     items: [
       { label: 'Veille Trends',   href: '/content/veille',        icon: Eye },
       { label: 'Édition & Spoof', href: '/content/editor',        icon: Film },
-      { label: 'Génération IA',   href: '/content/ai-generation', icon: Zap,       requiredPlan: 'pro' },
+      { label: 'Génération IA',   href: '/content/ai-generation', icon: Zap,       requiredPlan: 'pro', isNew: true },
       { label: 'Auto Posting',    href: '/posting',               icon: Calendar,  tutorial: 'posting' },
       { label: 'Banque médias',   href: '/media',                 icon: ImageIcon },
       { label: 'Bot Telegram',    href: '/telegram',              icon: Bot },
@@ -147,6 +149,11 @@ export function Sidebar() {
         {isExpanded && item.badge && !locked && (
           <span className="ml-auto text-xs font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
             {item.badge}
+          </span>
+        )}
+        {isExpanded && (item as any).isNew && !locked && (
+          <span className="ml-auto text-xs font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full flex-shrink-0 animate-pulse">
+            NEW
           </span>
         )}
         {/* Tooltip en mode collapsed */}

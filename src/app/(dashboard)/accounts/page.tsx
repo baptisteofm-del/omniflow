@@ -14,7 +14,15 @@ interface Model {
   status: string
   revenue_month?: number
   posts_count?: number
+  social_networks?: string[]
 }
+
+const SOCIAL_NETWORKS = [
+  { id: 'instagram', label: 'Instagram', color: 'bg-pink-500/20 border-pink-500/40 text-pink-300',     emoji: '📸' },
+  { id: 'tiktok',   label: 'TikTok',    color: 'bg-white/10  border-white/20  text-gray-200',           emoji: '🎵' },
+  { id: 'twitter',  label: 'X',         color: 'bg-gray-500/20 border-gray-500/40 text-gray-300',       emoji: '🐦' },
+  { id: 'reddit',   label: 'Reddit',    color: 'bg-orange-500/20 border-orange-500/40 text-orange-300', emoji: '🤖' },
+]
 
 const TOOLS = [
   {
@@ -129,6 +137,24 @@ export default function AccountsPage() {
     } catch { toast.error('Erreur lors de la sauvegarde') }
   }
 
+  const toggleSocialNetwork = async (modelId: string, networkId: string) => {
+    const model = models.find(m => m.id === modelId)
+    if (!model) return
+    const current = model.social_networks || []
+    const updated = current.includes(networkId)
+      ? current.filter(n => n !== networkId)
+      : [...current, networkId]
+    try {
+      const res = await fetch(`/api/models/${modelId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ social_networks: updated }),
+      })
+      if (!res.ok) throw new Error()
+      setModels(m => m.map(x => x.id === modelId ? { ...x, social_networks: updated } : x))
+    } catch { toast.error('Erreur mise à jour réseau') }
+  }
+
   const handleDelete = async (modelId: string) => {
     if (!confirm('Supprimer ce modèle ?')) return
     try {
@@ -224,6 +250,32 @@ export default function AccountsPage() {
                   </div>
                   <p className="text-lg font-bold text-cyan-400 tabular-nums">{modelStats[model.id]?.posts_count ?? 0}</p>
                 </Link>
+              </div>
+
+              {/* Réseaux sociaux */}
+              <div className="mb-4">
+                <p className="text-xs text-gray-600 uppercase tracking-widest font-medium mb-2.5">Réseaux sociaux</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SOCIAL_NETWORKS.map(net => {
+                    const active = (model.social_networks || []).includes(net.id)
+                    return (
+                      <button
+                        key={net.id}
+                        onClick={() => toggleSocialNetwork(model.id, net.id)}
+                        title={active ? `Retirer ${net.label}` : `Ajouter ${net.label}`}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          active
+                            ? net.color + ' shadow-sm'
+                            : 'border-white/8 text-gray-600 hover:border-white/20 hover:text-gray-400'
+                        }`}
+                      >
+                        <span>{net.emoji}</span>
+                        <span>{net.label}</span>
+                        {active && <span className="ml-0.5 text-[10px] opacity-70">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* 4 boutons de connexion */}

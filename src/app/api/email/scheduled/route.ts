@@ -7,15 +7,27 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// This endpoint should be called by a cron service (e.g., n8n, Vercel Cron)
-// It will automatically send scheduled drip emails
+// This endpoint is called by Vercel Cron (GET) or externally via POST with Bearer token
+export async function GET(request: NextRequest) {
+  // Vercel Cron calls via GET — verify via CRON_SECRET header injected by Vercel
+  const authHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runDrip()
+}
+
 export async function POST(request: NextRequest) {
-  // Verify the request is from a trusted source
+  // Legacy: external call with EMAIL_SCHEDULER_SECRET
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.EMAIL_SCHEDULER_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  return runDrip()
+}
 
+async function runDrip() {
   try {
     // Get all agencies that were created exactly 1, 3, or 7 days ago
     const daysToSend = [1, 3, 7]
