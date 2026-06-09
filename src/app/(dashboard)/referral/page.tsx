@@ -91,19 +91,18 @@ export default function ReferralPage() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8">
-
-      <PageHeader
-        icon={Gift}
-        title="Programme de parrainage — 10% de commission"
-        subtitle="Gagne jusqu'à 10% de commission à vie"
-        iconColor="text-pink-400"
-        iconBg="bg-pink-500/10"
-      />
-        <div className="h-32 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl animate-pulse" />
+      <div className="min-h-screen bg-[#0d0d14] p-8 space-y-8">
+        <PageHeader
+          icon={Gift}
+          title="Programme de parrainage"
+          subtitle="Gagne jusqu'à 10% de commission à vie"
+          iconColor="text-pink-400"
+          iconBg="bg-pink-500/10"
+        />
+        <div className="h-32 bg-white/5 rounded-2xl animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl animate-pulse" />
+            <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -111,16 +110,25 @@ export default function ReferralPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 space-y-8">
+    <div className="min-h-screen bg-[#0d0d14] p-4 sm:p-8 space-y-8">
 
       {/* Header */}
+      <PageHeader
+        icon={Gift}
+        title="Programme de Parrainage"
+        subtitle="Gagne jusqu'à 10% de commission à vie sur chaque agence référée"
+        iconColor="text-pink-400"
+        iconBg="bg-pink-500/10"
+      />
       <div>
-        <h1 className="text-3xl font-bold">Programme de Parrainage</h1>
-        <p className="text-gray-400 mt-1">Gagne jusqu'à 10% de commission à vie sur chaque agence référée</p>
+        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-1">
+          Programme de Parrainage
+        </h1>
+        <p className="text-gray-400">Gagne jusqu'à 10% de commission à vie sur chaque agence référée</p>
       </div>
 
       {/* Mon lien de parrainage */}
-      <div className="glass rounded-2xl p-6 sm:p-8 border border-purple-500/20">
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8">
         <h2 className="text-2xl font-bold mb-6">Mon lien de parrainage</h2>
 
         {stats && (
@@ -137,7 +145,7 @@ export default function ReferralPage() {
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                     copied
                       ? 'bg-green-600 text-white'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:shadow-lg hover:shadow-purple-500/30 text-white'
                   }`}
                 >
                   {copied ? <><Check size={18} />Copié !</> : <><Copy size={18} />Copier</>}
@@ -168,8 +176,8 @@ export default function ReferralPage() {
                 onClick={() => setShowQR(!showQR)}
                 className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-medium transition-all hover:scale-[1.02] border ${
                   showQR
-                    ? 'bg-purple-600/30 border-purple-500/50 text-purple-300'
-                    : 'bg-purple-600/20 hover:bg-purple-600/30 border-purple-500/30 text-purple-300'
+                    ? 'bg-purple-500/30 border-purple-500/50 text-purple-300'
+                    : 'bg-white/5 hover:bg-white/8 border-white/10 text-gray-300 hover:text-white'
                 }`}
               >
                 <QrCode size={16} />
@@ -193,7 +201,7 @@ export default function ReferralPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats && (
           <>
-            <div className="glass rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all hover:scale-[1.01]">
+            <div className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-purple-500/40 transition-all hover:scale-[1.01]">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-gray-400 text-sm">Agences référées</p>
@@ -204,7 +212,7 @@ export default function ReferralPage() {
               <p className="text-xs text-gray-500">Total depuis le début</p>
             </div>
 
-            <div className="glass rounded-2xl p-6 border border-purple-500/20 hover:border-green-500/40 transition-all hover:scale-[1.01]">
+            <div className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-green-500/40 transition-all hover:scale-[1.01]">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-gray-400 text-sm">Agences actives</p>
@@ -215,7 +223,7 @@ export default function ReferralPage() {
               <p className="text-xs text-gray-500">Abonnées actuellement</p>
             </div>
 
-            <div className="glass rounded-2xl p-6 border border-purple-500/20 hover:border-cyan-500/40 transition-all hover:scale-[1.01]">
+            <div className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-cyan-500/40 transition-all hover:scale-[1.01]">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-gray-400 text-sm">Commission ce mois</p>
@@ -226,7 +234,7 @@ export default function ReferralPage() {
               <p className="text-xs text-gray-500">Mois courant</p>
             </div>
 
-            <div className="glass rounded-2xl p-6 border border-purple-500/20 hover:border-yellow-500/40 transition-all hover:scale-[1.01]">
+            <div className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-yellow-500/40 transition-all hover:scale-[1.01]">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-gray-400 text-sm">Commission totale</p>
@@ -241,7 +249,7 @@ export default function ReferralPage() {
       </div>
 
       {/* Tableau filleuls */}
-      <div className="glass rounded-2xl p-6 sm:p-8 border border-purple-500/20">
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8">
         <h2 className="text-2xl font-bold mb-6">Vos agences référées</h2>
 
         {referrals.length > 0 ? (
@@ -288,7 +296,7 @@ export default function ReferralPage() {
       </div>
 
       {/* Comment ça marche */}
-      <div className="glass rounded-2xl p-6 sm:p-8 border border-purple-500/20">
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8">
         <h2 className="text-2xl font-bold mb-8">Comment ça marche ?</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -298,7 +306,7 @@ export default function ReferralPage() {
             { num: '3', title: 'Commission', desc: "Vous gagnez 10% de commission à vie tant qu'elle reste abonnée" },
           ].map((step) => (
             <div key={step.num} className="flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center text-2xl font-bold mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-2xl font-bold mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/20">
                 {step.num}
               </div>
               <h3 className="font-bold text-lg mb-2">{step.title}</h3>
@@ -307,7 +315,7 @@ export default function ReferralPage() {
           ))}
         </div>
 
-        <div className="mt-8 p-4 bg-purple-600/10 border border-purple-500/30 rounded-xl">
+        <div className="mt-8 p-4 bg-purple-500/8 border border-purple-500/20 rounded-xl">
           <p className="text-sm text-purple-200">
             <span className="font-bold">Conseil :</span> Plus l'agence reste longtemps abonnée, plus vous gagnez de commissions. Aidez-les à réussir !
           </p>
