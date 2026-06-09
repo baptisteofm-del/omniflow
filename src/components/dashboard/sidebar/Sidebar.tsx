@@ -6,8 +6,7 @@ import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
   Zap, ChevronDown, CreditCard, User, Gift, Menu, X,
-  Image as ImageIcon, Search, Lock, TrendingUp, Wallet,
-  TicketIcon
+  Image as ImageIcon, Search, Lock, TrendingUp, Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
@@ -19,7 +18,6 @@ const NAV_TOP = [
   { label: 'Finance',     href: '/finance',    icon: Wallet },
   { label: 'Parrainage',  href: '/referral',   icon: Gift, badge: '10%' },
   { label: 'Prospection', href: '/accounts/prospection', icon: Search, requiredPlan: 'agency' },
-  { label: 'Support',     href: '/support',     icon: TicketIcon },
 
 ]
 
@@ -41,7 +39,7 @@ const NAV_COLLAPSIBLE = [
     icon: TrendingUp,
     color: 'text-cyan-400',
     items: [
-      { label: 'Veille Trends',   href: '/content/veille',        icon: Eye,       requiredPlan: 'pro' },
+      { label: 'Veille Instagram', href: '/content/veille',        icon: Eye,       requiredPlan: 'pro' },
       { label: 'Édition & Spoof', href: '/content/editor',        icon: Film },
       { label: 'Génération IA',   href: '/content/ai-generation', icon: Zap,       requiredPlan: 'pro' },
       { label: 'Auto Posting',    href: '/posting',               icon: Calendar,  tutorial: 'posting' },
@@ -51,25 +49,13 @@ const NAV_COLLAPSIBLE = [
   },
 ]
 
-const NAV_SETTINGS = {
-  id: 'settings',
-  label: 'Paramètres',
-  icon: Settings,
-  color: 'text-gray-400',
-  items: [
-    { label: 'Profil',        href: '/settings/profile',       icon: User },
-    { label: 'Abonnement',    href: '/settings/billing',       icon: CreditCard },
-    { label: 'Équipe',        href: '/settings/team',          icon: Users },
-    { label: 'Intégrations',  href: '/settings/integrations',  icon: Settings },
-  ],
-}
 
 // ── Composant principal ──────────────────────────────────────
 export function Sidebar() {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isHovered, setIsHovered]       = useState(false)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ chatting: true, marketing: true, settings: false })
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ chatting: true, marketing: true })
   const [planId, setPlanId]             = useState('starter')
   const [agencyName, setAgencyName]     = useState('')
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -81,9 +67,7 @@ export function Sidebar() {
         setOpenSections(prev => ({ ...prev, [sec.id]: true }))
       }
     })
-    if (NAV_SETTINGS.items.some(item => pathname.startsWith(item.href))) {
-      setOpenSections(prev => ({ ...prev, settings: true }))
-    }
+
   }, [pathname])
 
   useEffect(() => {
@@ -250,14 +234,9 @@ export function Sidebar() {
 
       </nav>
 
-      {/* Paramètres — épinglé au-dessus du footer, toujours visible */}
-      <div className="px-2 py-1 border-t border-white/5">
-        <SectionToggle sec={NAV_SETTINGS} />
-      </div>
-
       {/* Footer agence */}
       <div className={cn('border-t border-white/5 transition-all duration-300', isExpanded ? 'p-3' : 'p-2')}>
-        <Link href="/settings/billing" onClick={() => setIsMobileOpen(false)}
+        <Link href="/settings/profile" onClick={() => setIsMobileOpen(false)}
           className={cn(
             'flex items-center gap-3 rounded-xl hover:bg-white/5 transition-all group',
             isExpanded ? 'p-2.5' : 'p-2 justify-center'

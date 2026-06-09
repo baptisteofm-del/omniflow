@@ -29,6 +29,8 @@ const PLAN_META: Record<string, {
     checkBg: 'bg-purple-500/10',
     checkColor: 'text-purple-400',
     cardClass: 'bg-gradient-to-b from-purple-900/30 to-purple-900/10 border border-purple-500/25',
+    badge: 'Recommandé',
+    scale: true,
   },
   agency: {
     accent: 'text-cyan-300',
@@ -36,8 +38,6 @@ const PLAN_META: Record<string, {
     checkBg: 'bg-cyan-500/10',
     checkColor: 'text-cyan-400',
     cardClass: 'bg-gradient-to-b from-[#0d2030] to-[#100d20] border border-cyan-500/35',
-    badge: 'Recommandé',
-    scale: true,
   },
 }
 
@@ -111,7 +111,7 @@ export function PricingSection() {
             const price = interval === 'monthly' ? plan.price.monthly : plan.price.yearly
             const includedFeatures = plan.features.filter(f => f.included)
             const excludedFeatures = plan.features.filter(f => !f.included)
-            const isAgency = plan.id === 'agency'
+            const isScaled = !!meta.scale
 
             return (
               <div
@@ -119,7 +119,7 @@ export function PricingSection() {
                 className={cn(
                   'relative rounded-2xl flex flex-col transition-all duration-300',
                   meta.cardClass,
-                  isAgency
+                  isScaled
                     ? 'p-8 md:scale-105 md:z-10 shadow-2xl shadow-black/40'
                     : 'p-7'
                 )}>
@@ -135,13 +135,13 @@ export function PricingSection() {
                 )}
 
                 {/* ── En-tête du plan ── */}
-                <div className={cn('mb-6', isAgency && 'mt-2')}>
+                <div className={cn('mb-6', isScaled && 'mt-2')}>
                   <h3 className={cn('text-xl font-bold mb-1', meta.accent)}>{plan.name}</h3>
                   <p className="text-gray-500 text-sm mb-5 leading-relaxed">{plan.description}</p>
 
                   {/* Prix */}
                   <div className="flex items-end gap-1.5">
-                    <span className={cn('font-extrabold tracking-tight', isAgency ? 'text-5xl text-white' : 'text-4xl text-white')}>
+                    <span className={cn('font-extrabold tracking-tight', isScaled ? 'text-5xl text-white' : 'text-4xl text-white')}>
                       {price}€
                     </span>
                     <span className="text-gray-500 mb-1.5 text-sm">/mois</span>
