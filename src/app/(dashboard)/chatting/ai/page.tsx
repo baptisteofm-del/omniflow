@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
-  Settings, Plus, Trash2, CheckCircle2, XCircle, MessageSquare,
-  Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock,
+  Settings, Plus, CheckCircle2, XCircle, MessageSquare,
+  Edit2, Bot, Zap, Users, TrendingUp, Clock,
   Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders,
   RefreshCw, Loader2, Sparkles,
 } from 'lucide-react'
@@ -12,7 +12,9 @@ import toast from 'react-hot-toast'
 import { useUsage } from '@/lib/hooks/useUsage'
 import { FeatureGate } from '@/components/ui/FeatureGate'
 import { ListConfigPanel } from '@/components/dashboard/chatting/ListConfigPanel'
+import { ScriptsManager } from '@/components/dashboard/chatting/ScriptsManager'
 import { FanNotesPanel } from '@/components/dashboard/chatting/FanNotesPanel'
+import { FanProfilesPanel } from '@/components/dashboard/chatting/FanProfilesPanel'
 import { SchedulePanel } from '@/components/dashboard/chatting/SchedulePanel'
 import type { Schedule } from '@/lib/chatting/schedule'
 import { getTodaySchedule } from '@/lib/chatting/schedule'
@@ -40,15 +42,7 @@ interface Personality {
   schedule?: Schedule | null
 }
 
-interface Script {
-  id: string
-  name: string
-  category: string
-  content: string
-  variables?: string[]
-  ai_score?: number
-  is_active: boolean
-}
+// Script types are now managed inside ScriptsManager (localStorage-based)
 
 interface AIMessage {
   id: string
@@ -100,7 +94,7 @@ export default function ChattingAIPage() {
   const { planId, loading: planLoading } = useUsage()
   const [models, setModels] = useState<Model[]>([])
   const [personalities, setPersonalities] = useState<Record<string, Personality>>({})
-  const [scripts, setScripts] = useState<Script[]>([])
+  // scripts state removed — now handled by ScriptsManager component
   const [recentMessages, setRecentMessages] = useState<AIMessage[]>([])
   const [recentFans, setRecentFans] = useState<FanProfile[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -113,7 +107,7 @@ export default function ChattingAIPage() {
   // UI state
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
   const [showPersonalityModal, setShowPersonalityModal] = useState(false)
-  const [showScriptModal, setShowScriptModal] = useState(false)
+  // showScriptModal removed — handled by ScriptsManager
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [feedbackModal, setFeedbackModal] = useState<FeedbackModal>({
     isOpen: false,
@@ -141,9 +135,7 @@ export default function ChattingAIPage() {
     schedule: null as Schedule | null,
   })
 
-  const [scriptForm, setScriptForm] = useState({
-    name: '', category: 'ppv', content: '', variables: [] as string[],
-  })
+  // scriptForm removed — handled by ScriptsManager
 
   const [syncing, setSyncing] = useState<Record<string, boolean>>({})
 
@@ -179,15 +171,14 @@ export default function ChattingAIPage() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const [modelsRes, scriptsRes, statsRes, configRes] = await Promise.all([
+      const [modelsRes, statsRes, configRes] = await Promise.all([
         fetch('/api/chatting/models'),
-        fetch('/api/chatting/ai/scripts'),
         fetch('/api/chatting/stats'),
         fetch('/api/chatting/config'),
       ])
 
       if (modelsRes.ok) setModels((await modelsRes.json()).models || [])
-      if (scriptsRes.ok) setScripts((await scriptsRes.json()).scripts || [])
+      // scripts now loaded from localStorage via ScriptsManager
       if (statsRes.ok) {
         const data = await statsRes.json()
         setStats(data.stats)
@@ -342,39 +333,6 @@ export default function ChattingAIPage() {
     } catch {
       toast.error('Erreur lors de la sauvegarde')
     }
-  }
-
-  const handleSaveScript = async () => {
-    if (!scriptForm.name || !scriptForm.content) { toast.error('Remplissez tous les champs'); return }
-    try {
-      const res = await fetch('/api/chatting/ai/scripts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scriptForm),
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setScripts((prev) => [data.script, ...prev])
-      setScriptForm({ name: '', category: 'ppv', content: '', variables: [] })
-      setShowScriptModal(false)
-      toast.success('Script sauvegardé')
-    } catch { toast.error('Erreur') }
-  }
-
-  const handleAnalyzeScript = async (scriptId: string) => {
-    const script = scripts.find((s) => s.id === scriptId)
-    if (!script) return
-    try {
-      const res = await fetch('/api/chatting/ai/scripts/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptContent: script.content, category: script.category }),
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setScripts((prev) => prev.map((s) => s.id === scriptId ? { ...s, ai_score: data.score } : s))
-      toast.success(`Score IA : ${data.score}/100`)
-    } catch { toast.error('Analyse impossible') }
   }
 
   const handleFeedback = async (messageId: string, action: 'validate' | 'correct' | 'reject', correction?: string, reason?: string) => {
@@ -554,7 +512,7 @@ export default function ChattingAIPage() {
       <div className="flex flex-wrap gap-2 border-b border-white/10 pb-0">
         {[
           { id: 'models', label: 'Modèles', badge: models.length },
-          { id: 'scripts', label: 'Scripts', badge: scripts.length },
+          { id: 'scripts', label: 'Scripts', badge: null },
           { id: 'config', label: 'Configuration IA du modèle', badge: null, icon: <Sliders size={14} /> },
           { id: 'fans', label: 'Profils fans', badge: recentFans.length },
           { id: 'activity', label: 'Activité récente', badge: null },
@@ -717,119 +675,25 @@ export default function ChattingAIPage() {
       )}
 
       {/* ── Tab: Scripts ── */}
-      {activeTab === 'scripts' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-400">{scripts.length} script(s) importé(s)</p>
-            <button
-              onClick={() => setShowScriptModal(true)}
-              className="px-4 py-2 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-500/30 transition-all flex items-center gap-2"
-            >
-              <Plus size={16} /> Nouveau script
-            </button>
-          </div>
-
-          {scripts.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
-              <MessageSquare size={40} className="mx-auto mb-3 opacity-20" />
-              <p>Aucun script</p>
-              <p className="text-sm mt-1">Les scripts guident Claude dans ses réponses (PPV, tips, réactivation...)</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {scripts.map((script) => (
-                <div key={script.id} className="p-4 rounded-xl border border-white/10 bg-white/3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-white text-sm">{script.name}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          script.category === 'ppv' ? 'bg-pink-500/20 text-pink-400' :
-                          script.category === 'tips' ? 'bg-amber-500/20 text-amber-400' :
-                          script.category === 'reactivation' ? 'bg-blue-500/20 text-blue-400' :
-                          'bg-white/10 text-gray-400'
-                        }`}>
-                          {script.category}
-                        </span>
-                        {script.ai_score != null && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 font-medium">
-                            ⭐ {script.ai_score}/100
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">{script.content}</p>
-                    </div>
-                    <div className="flex items-center gap-1 ml-3 flex-shrink-0">
-                      <button onClick={() => handleAnalyzeScript(script.id)} className="p-2 text-gray-500 hover:text-violet-400" title="Analyser par IA">
-                        <Eye size={15} />
-                      </button>
-                      <button onClick={async () => {
-                        await fetch('/api/chatting/ai/scripts', {
-                          method: 'DELETE',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ scriptId: script.id }),
-                        })
-                        setScripts((prev) => prev.filter((s) => s.id !== script.id))
-                        toast.success('Script supprimé')
-                      }} className="p-2 text-gray-500 hover:text-red-400">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {activeTab === 'scripts' && <ScriptsManager />}
 
       {/* ── Tab: Fans ── */}
       {activeTab === 'fans' && (
-        <div className="space-y-3">
-          {recentFans.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
-              <Users size={40} className="mx-auto mb-3 opacity-20" />
-              <p>Aucun profil fan</p>
-              <p className="text-sm mt-1">Les profils se remplissent au fil des conversations via le chatting IA</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {recentFans.map((fan) => (
-                <div key={fan.id} className="p-4 rounded-xl border border-white/10 bg-white/3 hover:bg-white/5 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-white text-sm">{fan.fan_name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      fan.total_spent > 500 ? 'bg-yellow-500/20 text-yellow-400' :
-                      fan.total_spent > 100 ? 'bg-violet-500/20 text-violet-400' :
-                      'bg-white/10 text-gray-400'
-                    }`}>
-                      {fan.total_spent > 500 ? '👑 VIP' : fan.total_spent > 100 ? '⭐ Régulier' : '🆕 Nouveau'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div>
-                      <p className="text-white text-sm font-bold">{fan.total_spent?.toFixed(0) || 0}€</p>
-                      <p className="text-gray-600 text-[10px]">Total dépensé</p>
-                    </div>
-                    <div>
-                      <p className="text-white text-sm font-bold">{fan.interaction_count || 0}</p>
-                      <p className="text-gray-600 text-[10px]">Interactions</p>
-                    </div>
-                    <div>
-                      <p className={`text-sm font-bold ${
-                        (fan.sentiment_score || 0) > 0.6 ? 'text-green-400' :
-                        (fan.sentiment_score || 0) > 0.3 ? 'text-amber-400' : 'text-red-400'
-                      }`}>
-                        {((fan.sentiment_score || 0) * 100).toFixed(0)}%
-                      </p>
-                      <p className="text-gray-600 text-[10px]">Sentiment</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <FanProfilesPanel
+          models={models}
+          fanProfiles={recentFans.length > 0 ? recentFans.map((fan) => ({
+            fanId: fan.id,
+            fanUsername: fan.fan_name,
+            totalSpent: fan.total_spent ?? 0,
+            messageCount: fan.interaction_count ?? 0,
+            lastActive: fan.last_interaction ?? new Date().toISOString(),
+            tags: [],
+            notes: '',
+            tier: (fan.total_spent ?? 0) >= 2000 ? 'vip' :
+                  (fan.total_spent ?? 0) >= 1000 ? 'gold' :
+                  (fan.total_spent ?? 0) >= 500 ? 'silver' : 'bronze',
+          })) : []}
+        />
       )}
 
       {/* ── Tab: Config ── */}
@@ -1184,51 +1048,7 @@ export default function ChattingAIPage() {
         </div>
       )}
 
-      {/* ════ SCRIPT MODAL ════ */}
-      {showScriptModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#12111a] border border-white/10 rounded-2xl p-6 max-w-xl w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Nouveau script</h3>
-              <button onClick={() => setShowScriptModal(false)} className="text-gray-500 hover:text-white">✕</button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Nom</label>
-                  <input type="text" value={scriptForm.name} onChange={(e) => setScriptForm({ ...scriptForm, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none"
-                    placeholder="ex: PPV spécial"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Catégorie</label>
-                  <select value={scriptForm.category} onChange={(e) => setScriptForm({ ...scriptForm, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-violet-500 focus:outline-none"
-                  >
-                    {['ppv', 'tips', 'reactivation', 'greeting', 'upsell', 'custom'].map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Contenu du script</label>
-                <textarea value={scriptForm.content} onChange={(e) => setScriptForm({ ...scriptForm, content: e.target.value })}
-                  rows={6}
-                  className="w-full px-3 py-2.5 bg-black/30 border border-white/10 rounded-lg text-white placeholder-gray-600 text-sm focus:border-violet-500 focus:outline-none resize-none"
-                  placeholder="Écrivez le script... Utilisez {{fan_name}}, {{model_name}} comme variables."
-                />
-              </div>
-              <p className="text-xs text-gray-600">Variables : <code className="text-gray-400">{'{{fan_name}}'}</code> <code className="text-gray-400">{'{{model_name}}'}</code> <code className="text-gray-400">{'{{ppv_price}}'}</code></p>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowScriptModal(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm">Annuler</button>
-              <button onClick={handleSaveScript} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm">Sauvegarder</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Script modal is now handled inside ScriptsManager */}
 
       {/* ── Modal: Fan Notes ── */}
       {selectedFanForNotes && (
