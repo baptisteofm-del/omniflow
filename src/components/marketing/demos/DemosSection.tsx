@@ -7,7 +7,6 @@ import { DemoGenerationIA } from './DemoGenerationIA'
 import { DemoEditionSpoof } from './DemoEditionSpoof'
 import { DemoProspection } from './DemoProspection'
 import { DemoVeilleTrends } from './DemoVeilleTrends'
-import { DemoEcosystem } from './DemoEcosystem'
 
 const tabs = [
   { id: 'posting', label: 'Auto-Posting', icon: '📤' },
@@ -15,8 +14,7 @@ const tabs = [
   { id: 'generation', label: 'Génération IA', icon: '✨' },
   { id: 'spoof', label: 'Édition & Spoof', icon: '🎬' },
   { id: 'prospection', label: 'Prospection', icon: '🎯' },
-  { id: 'veille', label: 'Veille Trends', icon: '📈' },
-  { id: 'ecosystem', label: 'Écosystème', icon: '⚙️' },
+  { id: 'veille', label: 'Veille Instagram', icon: '📈' },
 ]
 
 const demoComponents = {
@@ -26,7 +24,6 @@ const demoComponents = {
   spoof: DemoEditionSpoof,
   prospection: DemoProspection,
   veille: DemoVeilleTrends,
-  ecosystem: DemoEcosystem,
 }
 
 const tabFeatures = {
@@ -69,12 +66,6 @@ const tabFeatures = {
     'Détection en temps réel',
     'Suggestions de formats',
     'Contenus qui explosent',
-  ],
-  ecosystem: [
-    '6 outils connectés',
-    'Flux de données automatisés',
-    '98% uptime',
-    'IA au centre du système',
   ],
 }
 

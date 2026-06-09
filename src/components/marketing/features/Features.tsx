@@ -6,7 +6,7 @@ import {
 const features = [
   {
     icon: Eye,
-    title: 'Veille Trends',
+    title: 'Veille Instagram',
     description: 'Analysez les contenus performants sur Instagram. Notre système apprend de vos likes/dislikes pour vous suggérer les tendances les plus adaptées à votre audience.',
     color: 'from-purple-500 to-purple-700',
   },

@@ -117,7 +117,7 @@ const ROLES = [
 const ALL_PAGES = [
   { id: 'editor',          label: 'Édition & Spoof',     section: 'Marketing' },
   { id: 'posting',         label: 'Auto Posting',         section: 'Marketing' },
-  { id: 'veille',          label: 'Veille Trends',        section: 'Marketing' },
+  { id: 'veille',          label: 'Veille Instagram',        section: 'Marketing' },
   { id: 'ai_generation',   label: 'Génération IA',        section: 'Marketing' },
   { id: 'telegram',        label: 'Bot Telegram',         section: 'Marketing' },
   { id: 'media',           label: 'Banque de médias',     section: 'Marketing' },

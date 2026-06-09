@@ -148,8 +148,8 @@ export default function DocsPage() {
                 </ul>
               </div>
               <div className="glass p-6 rounded-xl border border-purple-500/20">
-                <h3 className="text-lg font-bold text-white mb-3">Veille Trends</h3>
-                <p className="text-sm">Utilisez la section "Veille Trends" pour découvrir les tendances Instagram les plus performantes. Notre système apprend de vos likes/dislikes pour affiner les recommandations.</p>
+                <h3 className="text-lg font-bold text-white mb-3">Veille Instagram</h3>
+                <p className="text-sm">Utilisez la section "Veille Instagram" pour découvrir les tendances Instagram les plus performantes. Notre système apprend de vos likes/dislikes pour affiner les recommandations.</p>
               </div>
             </div>
           </div>

@@ -494,7 +494,9 @@ export default function ProspectionPage() {
   const kanbanCols: ProspectStatus[] = ['discovered', 'contacted', 'discussing', 'signed']
 
   // Plan gate — rendered inside JSX so all hooks are called unconditionally above
-  if (!planLoading && planId !== 'agency') {
+  // Only block if planLoading is done AND planId is explicitly NOT 'agency'
+  // Do NOT block if planId is undefined/null during load, or if it's 'agency'
+  if (!planLoading && planId && planId !== 'agency') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#12111a] to-[#0a0a0f] p-6 flex items-center justify-center">
         <div className="text-center max-w-md">

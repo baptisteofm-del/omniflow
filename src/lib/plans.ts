@@ -44,7 +44,7 @@ export const PLANS: Plan[] = [
       teamMembers: 2,         // 2 membres
       telegramBots: 2,        // 2 bots Telegram
       aiGenerations: 0,       // Pas de génération IA
-      trendRuns: 0,           // Veille Trends non inclus (plan Pro minimum)
+      trendRuns: 0,           // Veille Instagram non inclus (plan Pro minimum)
       dailyTrendsCount: 0,    // Pas de veille quotidienne
       chattingMessages: 0,    // Pas de Chatting IA
       prospectionRuns: 0,
@@ -57,7 +57,7 @@ export const PLANS: Plan[] = [
       { name: 'Auto-Posting', included: true },
       { name: 'Banque de Médias', included: true },
       { name: 'Bot Telegram', included: true },
-      { name: 'Veille Trends', included: false },
+      { name: 'Veille Instagram', included: false },
       { name: 'Génération IA', included: false },
       { name: 'Prospection de Modèles', included: false },
       { name: 'Chatting IA', included: false },
@@ -85,7 +85,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Dashboard Financier', included: true },
       { name: 'Rapport Chatting', included: true },
-      { name: 'Veille Trends', included: true },
+      { name: 'Veille Instagram', included: true },
       { name: 'Édition & Spoof', included: true },
       { name: 'Génération IA', included: true },
       { name: 'Auto-Posting', included: true },
@@ -118,7 +118,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Dashboard Financier', included: true },
       { name: 'Rapport Chatting', included: true },
-      { name: 'Veille Trends', included: true },
+      { name: 'Veille Instagram', included: true },
       { name: 'Édition & Spoof', included: true },
       { name: 'Génération IA', included: true },
       { name: 'Auto-Posting', included: true },
@@ -131,9 +131,9 @@ export const PLANS: Plan[] = [
 ]
 
 export const PLAN_FEATURES: Record<string, string[]> = {
-  // Starter : fonctionnalités de base (sans Veille Trends, Génération IA, Prospection, Chatting IA)
+  // Starter : fonctionnalités de base (sans Veille Instagram, Génération IA, Prospection, Chatting IA)
   starter: ['editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_reports'],
-  // Pro : + Veille Trends + Génération IA
+  // Pro : + Veille Instagram + Génération IA
   pro:     ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_reports', 'ai_generation'],
   // Agency : accès complet
   agency:  ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_ai', 'chatting_reports', 'prospection'],
