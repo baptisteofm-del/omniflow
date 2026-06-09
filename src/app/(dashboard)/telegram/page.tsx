@@ -15,10 +15,10 @@ const MAX_POSTS_PER_DAY = 10
 
 // ── Styles IA ──────────────────────────────────────────────
 const AI_STYLES = [
-  { id: 'soft',            label: 'Doux & Engageant',      desc: 'Chaleureux, proche, intime', emoji: '🌸' },
-  { id: 'provocant',       label: 'Provocant & Mystérieux', desc: 'Teasing, suggestif, suspense', emoji: '🔥' },
-  { id: 'conversationnel', label: 'Naturel & Authentique',  desc: 'Coulisses, spontané, vrai', emoji: '✨' },
-  { id: 'direct',          label: 'Direct & Commercial',    desc: 'CTA clair, promo, conversion', emoji: '💫' },
+  { id: 'soft',            label: 'Doux & Engageant',      desc: 'Chaleureux, proche, intime' },
+  { id: 'provocant',       label: 'Provocant & Mystérieux', desc: 'Teasing, suggestif, suspense' },
+  { id: 'conversationnel', label: 'Naturel & Authentique',  desc: 'Coulisses, spontané, vrai' },
+  { id: 'direct',          label: 'Direct & Commercial',    desc: 'CTA clair, promo, conversion' },
 ]
 
 // ── Types de contenu ───────────────────────────────────────
@@ -28,32 +28,28 @@ const CONTENT_TYPES = [
   { id: 'text_video', label: 'Texte + Vidéo', short: 'T+V', icon: Film },
 ]
 
-// ── Niveaux d'automatisation (Manuel supprimé) ─────────────
+// ── Niveaux d'automatisation ──────────────────────────────
 const AUTOMATION_LEVELS = [
-  { id: 'semi', label: 'Semi-automatique', desc: "L'IA propose, vous validez avant envoi", icon: '👁️' },
-  { id: 'auto', label: 'Automatique',      desc: 'Publication autonome, 100% automatisée', icon: '⚡' },
+  { id: 'auto', label: 'Automatique', desc: 'Publication autonome, 100% automatisée', icon: '⚡' },
 ]
 
 // ── Sources de médias ──────────────────────────────────────
 const MEDIA_SOURCES = [
   {
-    id: 'model',
-    label: 'Médias du modèle',
-    desc: 'Photos & vidéos du modèle associé à ce canal',
-    icon: '👤',
-  },
-  {
-    id: 'global',
-    label: 'Banque globale',
-    desc: 'Tous les médias disponibles dans votre agence',
+    id: 'omniflow',
+    label: 'Banque de médias OmniFlow',
+    desc: 'Tous les médias disponibles dans votre banque OmniFlow',
     icon: '🗂️',
   },
-  {
-    id: 'combined',
-    label: 'Combiné',
-    desc: 'Médias du modèle en priorité, puis banque globale',
-    icon: '⚡',
-  },
+]
+
+// ── Catégories de médias ───────────────────────────────────
+const MEDIA_CATEGORIES = [
+  { id: 'all',       label: 'Toutes les catégories' },
+  { id: 'sensual',   label: 'Photos sensuelles' },
+  { id: 'videos',    label: 'Vidéos' },
+  { id: 'stories',   label: 'Stories' },
+  { id: 'exclusive', label: 'Exclusifs' },
 ]
 
 // ── Types ──────────────────────────────────────────────────
@@ -110,7 +106,7 @@ function PostScheduleEditor({ schedule, onChange }: { schedule: PostSlot[]; onCh
           <div key={i} className="flex items-center gap-2 p-2.5 bg-white/3 border border-white/8 rounded-xl group">
             <span className="text-xs text-gray-600 w-6 flex-shrink-0 tabular-nums">#{i + 1}</span>
             <input type="time" value={slot.time} onChange={e => updateSlot(i, { time: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:border-blue-500/40 focus:outline-none tabular-nums w-20 flex-shrink-0" />
+              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:border-blue-500/40 focus:outline-none tabular-nums w-24 min-w-[90px] flex-shrink-0" />
             <div className="flex gap-1 flex-1">
               {CONTENT_TYPES.map(ct => {
                 const Icon = ct.icon
@@ -212,16 +208,18 @@ function ChannelModal({ models, channel, onClose, onSave }: {
   ]
 
   const [form, setForm] = useState({
-    channel_identifier: channel?.channel_username || channel?.channel_chat_id || '',
+    channel_identifier: channel?.channel_chat_id || channel?.channel_username || '',
     channel_name:       channel?.channel_name || '',
     channel_chat_id:    channel?.channel_chat_id || '',
     model_id:           channel?.model_id || '',
     post_schedule:      channel?.post_schedule?.length ? channel.post_schedule : defaultSchedule,
-    automation_level:   channel?.automation_level === 'manual' ? 'semi' : (channel?.automation_level || 'semi'),
-    media_source:       channel?.media_source || 'model',
+    automation_level:   'auto',
+    media_source:       'omniflow',
+    media_category:     (channel as any)?.media_category || 'all',
     ai_style:           channel?.ai_style || 'soft',
     ai_examples:        (channel as any)?.ai_examples || '',
     ai_auto:            (channel as any)?.ai_auto || false,
+    toneDistribution:   (channel as any)?.toneDistribution || { hot: 0, moderate: 0, soft: 0 },
   })
   const [generatedPreviews, setGeneratedPreviews] = useState<string[]>([])
   const [generatedModelName, setGeneratedModelName] = useState<string>('')
@@ -425,12 +423,12 @@ function ChannelModal({ models, channel, onClose, onSave }: {
 
               {/* Identifiant canal */}
               <div>
-                <label className="text-xs text-gray-500 block mb-1.5">@username ou ID numérique *</label>
+                <label className="text-xs text-gray-500 block mb-1.5">Chat ID numérique *</label>
                 <div className="flex gap-2">
                   <input
                     value={form.channel_identifier}
                     onChange={e => { set('channel_identifier', e.target.value); setVerifyResult(null) }}
-                    placeholder="@mon_canal_vip  ou  -100xxxxxxxxx"
+                    placeholder="-100xxxxxxxxx"
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-blue-500/40 focus:outline-none placeholder-gray-600"
                   />
                   <button onClick={handleVerify} disabled={verifying || !form.channel_identifier.trim()}
@@ -439,9 +437,12 @@ function ChannelModal({ models, channel, onClose, onSave }: {
                     Vérifier
                   </button>
                 </div>
-                <p className="text-xs text-gray-700 mt-1.5">
-                  L'ID numérique commence par -100 et fonctionne pour les canaux privés sans @username.
-                </p>
+                <div className="flex items-start gap-1.5 mt-2 p-2.5 bg-blue-500/5 border border-blue-500/15 rounded-xl">
+                  <Info size={11} className="mt-0.5 flex-shrink-0 text-blue-400" />
+                  <p className="text-xs text-gray-400">
+                    Trouvez votre Chat ID avec <strong className="text-white">@userinfobot</strong> sur Telegram. Envoyez <strong className="text-white">/start</strong> à ce bot pour obtenir votre ID.
+                  </p>
+                </div>
               </div>
 
               {/* Résultat de vérification */}
@@ -495,60 +496,42 @@ function ChannelModal({ models, channel, onClose, onSave }: {
                   Source des médias publiés
                   <span className="ml-1.5 text-gray-700">(photos & vidéos)</span>
                 </label>
-                <div className="space-y-1.5">
-                  {MEDIA_SOURCES.map(src => {
-                    const isDisabled = src.id === 'model' && !form.model_id
-                    return (
-                      <button key={src.id} onClick={() => !isDisabled && set('media_source', src.id)}
-                        disabled={isDisabled}
-                        className={cn('w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all',
-                          form.media_source === src.id && !isDisabled
-                            ? 'border-blue-500/40 bg-blue-500/8'
-                            : isDisabled
-                              ? 'border-white/5 opacity-40 cursor-not-allowed'
-                              : 'border-white/8 hover:border-white/20')}>
-                        <span className="text-lg flex-shrink-0">{src.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white">{src.label}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{src.desc}</p>
-                          {isDisabled && <p className="text-xs text-amber-500/70 mt-0.5">Associez un modèle pour activer cette option</p>}
-                        </div>
-                        {form.media_source === src.id && !isDisabled && (
-                          <Check size={13} className="text-blue-400 flex-shrink-0" />
-                        )}
-                      </button>
-                    )
-                  })}
+
+                {/* Source fixe */}
+                <div className="flex items-center gap-3 p-3 bg-white/3 border border-white/8 rounded-xl mb-3">
+                  <span className="text-lg flex-shrink-0">🗂️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white">Banque de médias OmniFlow</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Tous les médias disponibles dans votre banque OmniFlow</p>
+                  </div>
+                  <Check size={13} className="text-blue-400 flex-shrink-0" />
                 </div>
 
-                {/* Résumé source choisie */}
-                <div className="mt-2.5 p-2.5 bg-white/3 border border-white/8 rounded-xl text-xs text-gray-500 flex items-start gap-2">
-                  <Info size={11} className="mt-0.5 flex-shrink-0 text-gray-600" />
-                  {form.media_source === 'model' && (form.model_id
-                    ? `Le bot utilisera les médias de ${selectedModel?.name || 'ce modèle'} lors des posts avec image ou vidéo.`
-                    : 'Associez un modèle pour que le bot utilise ses médias.')}
-                  {form.media_source === 'global' && 'Le bot puisera dans tous les médias disponibles dans votre banque agence.'}
-                  {form.media_source === 'combined' && `Le bot cherche d'abord les médias ${selectedModel ? `de ${selectedModel.name}` : 'du modèle'}, puis complète avec la banque globale.`}
+                {/* Catégorie */}
+                <label className="text-xs text-gray-500 block mb-1.5">Catégorie</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MEDIA_CATEGORIES.map(cat => (
+                    <button key={cat.id} onClick={() => set('media_category', cat.id)}
+                      className={cn('px-2.5 py-1 rounded-lg text-xs font-medium border transition-all',
+                        (form as any).media_category === cat.id
+                          ? 'border-blue-500/40 bg-blue-500/15 text-blue-300'
+                          : 'border-white/8 text-gray-500 hover:border-white/20 hover:text-gray-300')}>
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Niveau d'automatisation */}
+              {/* Niveau d'automatisation — forcé à automatique */}
               <div>
                 <label className="text-xs text-gray-500 block mb-2">Niveau d'automatisation</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {AUTOMATION_LEVELS.map(l => (
-                    <button key={l.id} onClick={() => set('automation_level', l.id)}
-                      className={cn('flex flex-col items-start p-3 rounded-xl border text-left transition-all',
-                        form.automation_level === l.id
-                          ? 'border-blue-500/40 bg-blue-500/8'
-                          : 'border-white/8 hover:border-white/20')}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-base">{l.icon}</span>
-                        <p className="text-xs font-semibold text-white">{l.label}</p>
-                      </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">{l.desc}</p>
-                    </button>
-                  ))}
+                <div className="flex items-center gap-3 p-3 bg-white/3 border border-white/8 rounded-xl">
+                  <span className="text-base">⚡</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-white">Automatique</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Publication autonome, 100% automatisée</p>
+                  </div>
+                  <Check size={13} className="text-blue-400 flex-shrink-0" />
                 </div>
               </div>
             </div>
@@ -573,6 +556,52 @@ function ChannelModal({ models, channel, onClose, onSave }: {
                   </div>
                 </div>
               )}
+
+              {/* Répartition du ton */}
+              {form.post_schedule.length > 0 && (() => {
+                const td = (form as any).toneDistribution as { hot: number; moderate: number; soft: number }
+                const total = td.hot + td.moderate + td.soft
+                const tones = [
+                  { key: 'hot',      label: 'Très chaud' },
+                  { key: 'moderate', label: 'Modéré' },
+                  { key: 'soft',     label: 'Soft' },
+                ]
+                return (
+                  <div className="p-3 bg-white/3 border border-white/8 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs text-gray-400 font-medium">Répartition du ton</label>
+                      <span className={cn('text-xs tabular-nums', total === form.post_schedule.length ? 'text-green-400' : 'text-amber-400')}>
+                        {total}/{form.post_schedule.length} posts assignés
+                      </span>
+                    </div>
+                    {tones.map(({ key, label }) => {
+                      const val = td[key as keyof typeof td]
+                      const canIncrease = total < form.post_schedule.length
+                      return (
+                        <div key={key} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
+                          <span className="text-xs text-gray-400 w-24 flex-shrink-0">{label}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => val > 0 && set('toneDistribution', { ...td, [key]: val - 1 })}
+                              disabled={val === 0}
+                              className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 disabled:opacity-30 transition-all flex items-center justify-center text-sm font-bold">
+                              −
+                            </button>
+                            <span className="text-sm text-white w-5 text-center tabular-nums font-medium">{val}</span>
+                            <button
+                              onClick={() => canIncrease && set('toneDistribution', { ...td, [key]: val + 1 })}
+                              disabled={!canIncrease}
+                              className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 disabled:opacity-30 transition-all flex items-center justify-center text-sm font-bold">
+                              +
+                            </button>
+                          </div>
+                          <span className="text-xs text-gray-600">post{val > 1 ? 's' : ''}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
             </div>
           )}
 
@@ -622,10 +651,7 @@ function ChannelModal({ models, channel, onClose, onSave }: {
                         form.ai_style === s.id
                           ? 'border-purple-500/40 bg-purple-500/10'
                           : 'border-white/8 hover:border-white/15')}>
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-sm">{s.emoji}</span>
-                        <p className="text-xs font-semibold text-white">{s.label}</p>
-                      </div>
+                      <p className="text-xs font-semibold text-white mb-1">{s.label}</p>
                       <p className="text-xs text-gray-600">{s.desc}</p>
                     </button>
                   ))}
@@ -733,7 +759,7 @@ export default function TelegramPage() {
         const d = await chRes.json()
         const normalized = (d.channels || []).map((c: any) => ({
           ...c,
-          automation_level: c.automation_level === 'manual' ? 'semi' : (c.automation_level || 'semi'),
+          automation_level: 'auto',
           post_schedule: c.post_schedule || (c.post_times || ['09:00', '15:00', '21:00']).map((t: string) => ({
             time: t, content_type: c.content_type || 'text_image',
           })),

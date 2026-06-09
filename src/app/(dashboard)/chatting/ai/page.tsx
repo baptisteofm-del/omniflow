@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import {
   Settings, Plus, Trash2, CheckCircle2, XCircle, MessageSquare,
-  Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock, Shield,
-  Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders, Brain,
+  Eye, Edit2, Bot, Zap, Users, TrendingUp, Clock,
+  Radio, ChevronDown, ChevronRight, Info, ArrowRight, Sliders,
   RefreshCw, Loader2, Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -100,7 +100,6 @@ export default function ChattingAIPage() {
   const [models, setModels] = useState<Model[]>([])
   const [personalities, setPersonalities] = useState<Record<string, Personality>>({})
   const [scripts, setScripts] = useState<Script[]>([])
-  const [pendingMessages, setPendingMessages] = useState<AIMessage[]>([])
   const [recentMessages, setRecentMessages] = useState<AIMessage[]>([])
   const [recentFans, setRecentFans] = useState<FanProfile[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -122,17 +121,9 @@ export default function ChattingAIPage() {
     corrected: '',
     reason: '',
   })
-  const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'queue' | 'fans' | 'activity' | 'config' | 'analyze'>('models')
+  const [activeTab, setActiveTab] = useState<'models' | 'scripts' | 'fans' | 'activity' | 'config'>('models')
   const [showScheduleSection, setShowScheduleSection] = useState(false)
   const [selectedFanForNotes, setSelectedFanForNotes] = useState<FanProfile | null>(null)
-  const [showAnalyzeModal, setShowAnalyzeModal] = useState(false)
-  const [analyzeForm, setAnalyzeForm] = useState({
-    conversation: '',
-    selectedModelId: '',
-    platform: 'onlyfans' as 'onlyfans' | 'mym',
-  })
-  const [analyzeLoading, setAnalyzeLoading] = useState(false)
-  const [analyzeResult, setAnalyzeResult] = useState<any>(null)
 
   const [personalityForm, setPersonalityForm] = useState({
     displayName: '',
@@ -182,36 +173,6 @@ export default function ChattingAIPage() {
     }
   }
 
-  const handleAnalyzeConversation = async () => {
-    if (!analyzeForm.conversation.trim() || !analyzeForm.selectedModelId) {
-      toast.error('Remplissez tous les champs')
-      return
-    }
-
-    setAnalyzeLoading(true)
-    try {
-      const res = await fetch('/api/chatting/ai/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation: analyzeForm.conversation,
-          modelId: analyzeForm.selectedModelId,
-          platform: analyzeForm.platform,
-        }),
-      })
-
-      if (!res.ok) throw new Error('Erreur lors de l\'analyse')
-      const data = await res.json()
-      setAnalyzeResult(data.analysis)
-      toast.success(`Analyse complétée! ${data.feedbackExamplesSaved} exemples de feedback sauvegardés`)
-    } catch (e) {
-      console.error(e)
-      toast.error('Erreur lors de l\'analyse')
-    } finally {
-      setAnalyzeLoading(false)
-    }
-  }
-
   useEffect(() => { loadAll() }, [])
 
   const loadAll = async () => {
@@ -231,9 +192,6 @@ export default function ChattingAIPage() {
         setStats(data.stats)
         setRecentFans(data.recent_fans || [])
         setRecentMessages(data.recent_messages || [])
-        setPendingMessages(
-          (data.recent_messages || []).filter((m: AIMessage) => m.approved === null && m.direction === 'outbound')
-        )
       }
       if (configRes.ok) {
         const data = await configRes.json()
@@ -418,19 +376,6 @@ export default function ChattingAIPage() {
     } catch { toast.error('Analyse impossible') }
   }
 
-  const handleApproveMessage = async (messageId: string, action: 'approve' | 'reject') => {
-    try {
-      const res = await fetch('/api/chatting/ai/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId, action }),
-      })
-      if (!res.ok) throw new Error()
-      setPendingMessages((prev) => prev.filter((m) => m.id !== messageId))
-      toast.success(action === 'approve' ? '✅ Message approuvé' : '❌ Message rejeté')
-    } catch { toast.error('Erreur') }
-  }
-
   const handleFeedback = async (messageId: string, action: 'validate' | 'correct' | 'reject', correction?: string, reason?: string) => {
     try {
       const res = await fetch('/api/chatting/ai/feedback', {
@@ -565,7 +510,7 @@ export default function ChattingAIPage() {
       )}
 
       {/* ── Stats KPIs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: 'Messages aujourd\'hui',
@@ -573,22 +518,6 @@ export default function ChattingAIPage() {
             icon: <MessageSquare size={18} />,
             color: 'text-blue-400',
             bg: 'bg-blue-500/10 border-blue-500/20',
-          },
-          {
-            label: 'En attente validation',
-            value: stats?.pending_validation ?? '—',
-            icon: <Clock size={18} />,
-            color: stats && stats.pending_validation > 0 ? 'text-amber-400' : 'text-gray-400',
-            bg: stats && stats.pending_validation > 0
-              ? 'bg-amber-500/10 border-amber-500/30'
-              : 'bg-white/5 border-white/10',
-          },
-          {
-            label: 'Taux d\'approbation',
-            value: stats?.approval_rate != null ? stats.approval_rate + '%' : '—',
-            icon: <Shield size={18} />,
-            color: 'text-violet-400',
-            bg: 'bg-violet-500/10 border-violet-500/20',
           },
           {
             label: 'Revenus IA (mois)',
