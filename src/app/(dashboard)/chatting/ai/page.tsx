@@ -553,10 +553,8 @@ export default function ChattingAIPage() {
       <div className="flex flex-wrap gap-2 border-b border-white/10 pb-0">
         {[
           { id: 'models', label: 'Modèles', badge: models.length },
-          { id: 'queue', label: 'File de validation', badge: pendingMessages.length, alert: pendingMessages.length > 0 },
           { id: 'scripts', label: 'Scripts', badge: scripts.length },
-          { id: 'analyze', label: 'Analyser', badge: null, icon: <Brain size={14} /> },
-          { id: 'config', label: 'Config par liste', badge: null, icon: <Sliders size={14} /> },
+          { id: 'config', label: 'Configuration IA du modèle', badge: null, icon: <Sliders size={14} /> },
           { id: 'fans', label: 'Profils fans', badge: recentFans.length },
           { id: 'activity', label: 'Activité récente', badge: null },
         ].map((tab) => (
@@ -572,9 +570,7 @@ export default function ChattingAIPage() {
             {tab.icon && tab.icon}
             {tab.label}
             {tab.badge !== null && tab.badge !== undefined && tab.badge > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                tab.alert ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-gray-400'
-              }`}>
+              <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-white/10 text-gray-400">
                 {tab.badge}
               </span>
             )}
@@ -715,55 +711,6 @@ export default function ChattingAIPage() {
         </div>
       )}
 
-      {/* ── Tab: Queue ── */}
-      {activeTab === 'queue' && (
-        <div className="space-y-3">
-          {pendingMessages.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
-              <CheckCircle2 size={40} className="mx-auto mb-3 opacity-20" />
-              <p>Aucun message en attente</p>
-              <p className="text-xs mt-1 text-gray-600">Les messages en mode supervisé apparaissent ici</p>
-            </div>
-          ) : (
-            pendingMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 flex items-start gap-4"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold text-amber-400">
-                      👤 {msg.fan_profile?.fan_name || 'Fan inconnu'}
-                    </span>
-                    <span className="text-xs text-gray-600">
-                      {new Date(msg.sent_at).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {msg.ai_generated && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30">IA</span>
-                    )}
-                  </div>
-                  <p className="text-white text-sm leading-relaxed">{msg.content}</p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleApproveMessage(msg.id, 'approve')}
-                    className="p-2 rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-all"
-                  >
-                    <CheckCircle2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleApproveMessage(msg.id, 'reject')}
-                    className="p-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all"
-                  >
-                    <XCircle size={18} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
       {/* ── Tab: Scripts ── */}
       {activeTab === 'scripts' && (
         <div className="space-y-4">
@@ -884,7 +831,7 @@ export default function ChattingAIPage() {
       {activeTab === 'config' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-bold text-white mb-2">Configuration par Liste</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Configuration IA du modèle</h2>
             <p className="text-gray-400 text-sm">Configurez les paramètres PPV, mode relationnel et instructions pour chaque plateforme</p>
           </div>
           <ListConfigPanel />
@@ -968,191 +915,6 @@ export default function ChattingAIPage() {
                 )}
               </div>
             ))
-          )}
-        </div>
-      )}
-
-      {/* ── Tab: Analyze ── */}
-      {activeTab === 'analyze' && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold text-white mb-2">Analyser une Conversation</h2>
-            <p className="text-gray-400 text-sm">Collez une conversation et l'IA extraira les patterns pour améliorer vos modèles</p>
-          </div>
-
-          {/* Analysis Form */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-            {/* Model Selection */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Modèle concerné</label>
-              <select
-                value={analyzeForm.selectedModelId}
-                onChange={(e) => setAnalyzeForm({ ...analyzeForm, selectedModelId: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
-              >
-                <option value="">Sélectionner un modèle...</option>
-                {models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Platform Selection */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Plateforme</label>
-              <div className="flex gap-3">
-                {(['onlyfans', 'mym'] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setAnalyzeForm({ ...analyzeForm, platform: p })}
-                    className={`flex-1 px-4 py-2 rounded-lg border font-medium transition-all ${
-                      analyzeForm.platform === p
-                        ? 'bg-violet-500/20 border-violet-500 text-violet-300'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {p.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Conversation Textarea */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Colle ici une conversation</label>
-              <textarea
-                value={analyzeForm.conversation}
-                onChange={(e) => setAnalyzeForm({ ...analyzeForm, conversation: e.target.value })}
-                placeholder="Fan: salut bb ❤️\nChatter: coucou ma belle! Comment tu vas aujourd'hui? 😘\nFan: très bien! J'aimerais bien un petit truc\nChatter: Bien sur! C'est quoi? 💋"
-                className="w-full h-48 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 resize-none"
-              />
-            </div>
-
-            {/* Analyze Button */}
-            <button
-              onClick={handleAnalyzeConversation}
-              disabled={analyzeLoading}
-              className="w-full px-4 py-3 rounded-lg bg-violet-500 hover:bg-violet-600 disabled:bg-gray-700 text-white font-bold transition-all flex items-center justify-center gap-2"
-            >
-              {analyzeLoading ? (
-                <>
-                  <span className="inline-block animate-spin">⏳</span>
-                  Analyse en cours...
-                </>
-              ) : (
-                <>
-                  <Brain size={18} />
-                  Analyser la conversation
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Analysis Results */}
-          {analyzeResult && (
-            <div className="space-y-4">
-              {/* Style Profile */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-3">🎨 Style Détecté</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Ton:</span>
-                    <p className="text-white font-medium">{analyzeResult.styleProfile?.tone || '—'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Longueur des messages:</span>
-                    <p className="text-white font-medium">{analyzeResult.styleProfile?.messageLength || '—'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Emojis:</span>
-                    <p className="text-white font-medium">{analyzeResult.styleProfile?.emojiUsage || '—'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Niveau de langue:</span>
-                    <p className="text-white font-medium">{analyzeResult.styleProfile?.language || '—'}</p>
-                  </div>
-                </div>
-                {analyzeResult.styleProfile?.expressions && (
-                  <div className="mt-4">
-                    <span className="text-gray-400 block mb-2">Expressions naturelles:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {analyzeResult.styleProfile.expressions.map((expr: string, i: number) => (
-                        <span key={i} className="px-3 py-1 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs font-medium">
-                          {expr}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Success Patterns */}
-              {analyzeResult.successPatterns && analyzeResult.successPatterns.length > 0 && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-3">✅ Patterns Gagnants</h3>
-                  <div className="space-y-3">
-                    {analyzeResult.successPatterns.map((p: any, i: number) => (
-                      <div key={i} className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                        <div className="text-sm text-gray-400 mb-2">
-                          <span className="font-medium">Fan:</span> {p.fanMessage}
-                        </div>
-                        <div className="text-sm text-gray-300 mb-2">
-                          <span className="font-medium">Réponse:</span> {p.chatterResponse}
-                        </div>
-                        <div className="text-xs text-green-400">💡 {p.why}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Avoid Patterns */}
-              {analyzeResult.avoidPatterns && analyzeResult.avoidPatterns.length > 0 && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-3">❌ À Éviter</h3>
-                  <div className="space-y-3">
-                    {analyzeResult.avoidPatterns.map((p: any, i: number) => (
-                      <div key={i} className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
-                        <div className="text-sm text-red-400 mb-2 font-medium">{p.message}</div>
-                        <div className="text-xs text-gray-400 mb-2">{p.reason}</div>
-                        <div className="text-xs text-green-400">✓ Meilleure alternative: {p.betterAlternative}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Upsell Moments */}
-              {analyzeResult.upsellMoments && analyzeResult.upsellMoments.length > 0 && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-3">💰 Moments d'Upsell</h3>
-                  <div className="space-y-3">
-                    {analyzeResult.upsellMoments.map((u: any, i: number) => (
-                      <div key={i} className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                        <div className="text-sm text-white font-medium mb-1">{u.technique}</div>
-                        <div className="text-xs text-gray-400 mb-2">Contexte: {u.context}</div>
-                        <div className="text-xs text-amber-400">Résultat: {u.result}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Key Learnings */}
-              {analyzeResult.keyLearnings && analyzeResult.keyLearnings.length > 0 && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-3">🧠 Apprentissages Clés</h3>
-                  <ul className="space-y-2">
-                    {analyzeResult.keyLearnings.map((l: string, i: number) => (
-                      <li key={i} className="text-sm text-gray-300 flex gap-2">
-                        <span className="text-violet-400 font-bold">•</span>
-                        {l}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
           )}
         </div>
       )}
