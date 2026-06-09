@@ -94,13 +94,17 @@ export default function ProspectionPage() {
   // Search modal
   const [showSearch, setShowSearch] = useState(false)
   const [searchParams, setSearchParams] = useState({
-    mode: 'keyword' as 'followers' | 'similar' | 'keyword',
-    platforms: ['Instagram'],
-    niche: 'lifestyle',
-    sourceAccount: '',
-    keyword: '',
-    geo: { country: 'FR', cities: [] },
-    limit: 20,
+    platform: 'instagram' as 'instagram' | 'tiktok' | 'both',
+    hashtags: [] as string[],
+    country: 'FR',
+    language: 'fr',
+    followersMin: 1000,
+    followersMax: 30000,
+    engagementMin: 2,
+    keywords: [] as string[],
+    limit: 50,
+    hashtagInput: '',
+    keywordInput: '',
   })
   const [searchResult, setSearchResult] = useState<string | null>(null)
 
@@ -155,41 +159,97 @@ export default function ProspectionPage() {
     }
   }
 
-  // ── Search / Scrape ──
+  // ── Search / Scrape (Apify) ──
   const handleSearch = async () => {
     setLoading(true)
     setSearchResult(null)
     try {
-      const payload = {
-        mode: searchParams.mode,
-        platforms: searchParams.platforms,
-        niche: searchParams.niche,
-        limit: searchParams.limit,
-      }
-      // Add conditional fields
-      if (searchParams.mode !== 'keyword' && searchParams.sourceAccount) {
-        Object.assign(payload, { sourceAccount: searchParams.sourceAccount })
-      }
-      if (searchParams.mode === 'keyword' && searchParams.keyword) {
-        Object.assign(payload, { keyword: searchParams.keyword })
-      }
-      if (searchParams.geo.country) {
-        Object.assign(payload, { geo: searchParams.geo })
+      // Validate
+      if (searchParams.hashtags.length === 0) {
+        setSearchResult('❌ Veuillez ajouter au moins un hashtag')
+        setLoading(false)
+        return
       }
 
-      const res = await fetch('/api/prospection/scrape', {
+      const payload = {
+        platform: searchParams.platform,
+        hashtags: searchParams.hashtags,
+        country: searchParams.country,
+        language: searchParams.language,
+        followersMin: searchParams.followersMin,
+        followersMax: searchParams.followersMax,
+        engagementMin: searchParams.engagementMin,
+        keywords: searchParams.keywords,
+        limit: searchParams.limit,
+      }
+
+      const res = await fetch('/api/prospection/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
-      if (data.success) {
-        setProspects((prev) => [...(data.prospects || []), ...prev])
-        setSearchResult(data.message)
-        setTimeout(() => setShowSearch(false), 2000)
+
+      if (!res.ok) {
+        const error = await res.json()
+        setSearchResult(`❌ ${error.error || 'Erreur lors de la recherche'}`)
+        setLoading(false)
+        return
       }
-    } catch { /* ignore */ }
-    finally { setLoading(false) }
+
+      const data = await res.json()
+      
+      if (data.profiles && data.profiles.length > 0) {
+        // Convert API response to Prospect format
+        const newProspects: Prospect[] = data.profiles.map((p: any) => ({
+          id: p.id,
+          username: p.username,
+          display_name: p.displayName,
+          platform: (p.platform === 'instagram' ? 'Instagram' : 'TikTok') as 'Instagram' | 'TikTok' | 'Twitter',
+          profile_url: p.profileUrl,
+          avatar_url: p.avatar,
+          followers_estimate: p.followers,
+          engagement_rate: p.engagementRate,
+          niche: p.tags?.[0] || 'lifestyle',
+          bio: p.bio,
+          potential_score: Math.ceil(p.score / 20), // Convert 0-100 to 1-5 stars
+          status: 'discovered' as ProspectStatus,
+          outreach_count: 0,
+          geo_country: p.country,
+          scrape_mode: 'keyword' as const,
+        }))
+
+        // Store in Supabase
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: agency } = await supabase
+            .from('agencies')
+            .select('id')
+            .eq('owner_id', user.id)
+            .single()
+
+          if (agency) {
+            const records = newProspects.map((p) => ({
+              ...p,
+              agency_id: agency.id,
+            }))
+            const { data: inserted } = await supabase.from('prospects').insert(records).select('*')
+            if (inserted) {
+              setProspects((prev) => [...(inserted as Prospect[]), ...prev])
+            }
+          }
+        }
+
+        setSearchResult(`✅ ${data.profiles.length} profils trouvés et importés`)
+        setTimeout(() => setShowSearch(false), 2000)
+      } else {
+        setSearchResult('❌ Aucun profil trouvé avec ces critères')
+      }
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchResult(`❌ Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // ── CSV Import ──
@@ -843,11 +903,11 @@ export default function ProspectionPage() {
       {/* ════════════════════════════ SEARCH MODAL ════════════════════════════ */}
       {showSearch && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#12111a] border border-violet-500/20 rounded-2xl p-6 w-full max-w-lg shadow-2xl shadow-violet-900/40">
+          <div className="bg-[#12111a] border border-violet-500/20 rounded-2xl p-6 w-full max-w-xl shadow-2xl shadow-violet-900/40 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Zap size={20} className="text-violet-400" />
-                Scraper des profils
+                Prospection Apify
               </h2>
               <button onClick={() => setShowSearch(false)} className="text-gray-500 hover:text-white">
                 <X size={20} />
@@ -855,123 +915,219 @@ export default function ProspectionPage() {
             </div>
 
             <div className="space-y-4 mb-6">
-              {/* Mode */}
+              {/* Platform */}
               <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Mode de scraping</label>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Plateforme</label>
                 <div className="flex gap-2">
-                  {(['keyword', 'followers', 'similar'] as const).map((m) => (
+                  {(['instagram', 'tiktok', 'both'] as const).map((p) => (
                     <button
-                      key={m}
-                      onClick={() => setSearchParams((prev) => ({ ...prev, mode: m }))}
+                      key={p}
+                      onClick={() => setSearchParams((prev) => ({ ...prev, platform: p }))}
                       className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
-                        searchParams.mode === m
+                        searchParams.platform === p
                           ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
                           : 'border-white/10 text-gray-500 hover:border-white/20'
                       }`}
                     >
-                      {m === 'keyword' ? '🔍 Mot-clé' : m === 'followers' ? '👥 Followers' : '🤝 Similaires'}
+                      {p === 'instagram' ? '📷 Instagram' : p === 'tiktok' ? '🎵 TikTok' : '🔄 Les deux'}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Source Account (if not keyword) */}
-              {searchParams.mode !== 'keyword' && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Compte source Instagram
-                  </label>
+              {/* Hashtags */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hashtags</label>
+                <div className="flex gap-2 mb-2 flex-wrap">
+                  {searchParams.hashtags.map((tag) => (
+                    <div key={tag} className="px-2.5 py-1 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-medium flex items-center gap-1.5">
+                      #{tag}
+                      <button
+                        onClick={() => setSearchParams((p) => ({
+                          ...p,
+                          hashtags: p.hashtags.filter((t) => t !== tag),
+                        }))}
+                        className="text-violet-400 hover:text-white"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="ex: @compte_instagram"
-                    value={searchParams.sourceAccount}
-                    onChange={(e) => setSearchParams((p) => ({ ...p, sourceAccount: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                    placeholder="ex: lifestyle, fitness"
+                    value={searchParams.hashtagInput}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, hashtagInput: e.target.value }))}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && searchParams.hashtagInput.trim()) {
+                        setSearchParams((p) => ({
+                          ...p,
+                          hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
+                          hashtagInput: '',
+                        }))
+                        e.preventDefault()
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      if (searchParams.hashtagInput.trim()) {
+                        setSearchParams((p) => ({
+                          ...p,
+                          hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
+                          hashtagInput: '',
+                        }))
+                      }
+                    }}
+                    className="px-3 py-2 bg-violet-500/20 border border-violet-500/40 rounded-lg text-violet-300 text-xs hover:bg-violet-500/30"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              </div>
+
+              {/* Followers Range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Min Followers</label>
+                  <input
+                    type="number"
+                    value={searchParams.followersMin}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, followersMin: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
                   />
                 </div>
-              )}
-
-              {/* Keyword (if keyword mode) */}
-              {searchParams.mode === 'keyword' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Bio keyword
-                  </label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Max Followers</label>
+                  <input
+                    type="number"
+                    value={searchParams.followersMax}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, followersMax: parseInt(e.target.value) || 50000 }))}
+                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Engagement Min */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Engagement Min (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={searchParams.engagementMin}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, engagementMin: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                />
+              </div>
+
+              {/* Country & Language */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Pays</label>
+                  <select
+                    value={searchParams.country}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, country: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                  >
+                    {['FR', 'BE', 'CH', 'MA', 'TN', 'DZ', 'CA', 'BR', 'INTL'].map((c) => (
+                      <option key={c} value={c}>
+                        {c === 'FR' ? '🇫🇷 France' : c === 'BE' ? '🇧🇪 Belgique' : c === 'CH' ? '🇨🇭 Suisse' : c === 'MA' ? '🇲🇦 Maroc' : c === 'TN' ? '🇹🇳 Tunisie' : c === 'DZ' ? '🇩🇿 Algérie' : c === 'CA' ? '🇨🇦 Canada' : c === 'BR' ? '🇧🇷 Brésil' : '🌍 Tous'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Langue</label>
+                  <select
+                    value={searchParams.language}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, language: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                  >
+                    {['fr', 'en', 'es', 'ar', 'pt', 'multi'].map((l) => (
+                      <option key={l} value={l}>
+                        {l === 'fr' ? '🇫🇷 Français' : l === 'en' ? '🇬🇧 Anglais' : l === 'es' ? '🇪🇸 Espagnol' : l === 'ar' ? '🇸🇦 Arabe' : l === 'pt' ? '🇧🇷 Portugais' : '🌍 Multi'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Keywords in Bio */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Mots-clés Bio</label>
+                <div className="flex gap-2 mb-2 flex-wrap">
+                  {searchParams.keywords.map((kw) => (
+                    <div key={kw} className="px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-medium flex items-center gap-1.5">
+                      {kw}
+                      <button
+                        onClick={() => setSearchParams((p) => ({
+                          ...p,
+                          keywords: p.keywords.filter((k) => k !== kw),
+                        }))}
+                        className="text-cyan-400 hover:text-white"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="ex: model paris, fitness girl..."
-                    value={searchParams.keyword}
-                    onChange={(e) => setSearchParams((p) => ({ ...p, keyword: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                    placeholder="ex: model, brand ambassador"
+                    value={searchParams.keywordInput}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, keywordInput: e.target.value }))}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && searchParams.keywordInput.trim()) {
+                        setSearchParams((p) => ({
+                          ...p,
+                          keywords: [...p.keywords, p.keywordInput.trim()],
+                          keywordInput: '',
+                        }))
+                        e.preventDefault()
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
                   />
-                </div>
-              )}
-
-              {/* Platforms */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Plateformes</label>
-                <div className="flex gap-3">
-                  {['Instagram', 'TikTok', 'Twitter'].map((pl) => (
-                    <button
-                      key={pl}
-                      onClick={() => setSearchParams((prev) => ({
-                        ...prev,
-                        platforms: prev.platforms.includes(pl)
-                          ? prev.platforms.filter((p) => p !== pl)
-                          : [...prev.platforms, pl],
-                      }))}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
-                        searchParams.platforms.includes(pl)
-                          ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                          : 'border-white/10 text-gray-500 hover:border-white/20'
-                      }`}
-                    >
-                      {PLATFORM_ICON[pl]} {pl}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => {
+                      if (searchParams.keywordInput.trim()) {
+                        setSearchParams((p) => ({
+                          ...p,
+                          keywords: [...p.keywords, p.keywordInput.trim()],
+                          keywordInput: '',
+                        }))
+                      }
+                    }}
+                    className="px-3 py-2 bg-cyan-500/20 border border-cyan-500/40 rounded-lg text-cyan-300 text-xs hover:bg-cyan-500/30"
+                  >
+                    Ajouter
+                  </button>
                 </div>
               </div>
 
-              {/* Niche */}
+              {/* Limit */}
               <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Niche</label>
-                <div className="flex flex-wrap gap-2">
-                  {NICHES.map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setSearchParams((p) => ({ ...p, niche: n }))}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${
-                        searchParams.niche === n
-                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
-                          : 'border-white/10 text-gray-500 hover:border-white/20'
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Geo */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Zone géographique</label>
-                <select
-                  value={searchParams.geo.country}
-                  onChange={(e) => setSearchParams((p) => ({ ...p, geo: { ...p.geo, country: e.target.value } }))}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
-                >
-                  {['FR', 'BE', 'CH', 'MA', 'TN', 'SN', 'CA', 'INTL'].map((c) => (
-                    <option key={c} value={c}>
-                      {c === 'FR' ? '🇫🇷 France' : c === 'BE' ? '🇧🇪 Belgique' : c === 'CH' ? '🇨🇭 Suisse' : c === 'MA' ? '🇲🇦 Maroc' : c === 'TN' ? '🇹🇳 Tunisie' : c === 'SN' ? '🇸🇳 Sénégal' : c === 'CA' ? '🇨🇦 Canada' : '🌍 International'}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Max résultats</label>
+                <input
+                  type="number"
+                  value={searchParams.limit}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, limit: parseInt(e.target.value) || 50 }))}
+                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                />
               </div>
             </div>
 
             {searchResult && (
-              <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
-                ✅ {searchResult}
+              <div className={`mb-4 p-3 rounded-lg border text-sm ${
+                searchResult.includes('✅')
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : 'bg-red-500/10 border-red-500/30 text-red-400'
+              }`}>
+                {searchResult}
               </div>
             )}
 
@@ -984,11 +1140,11 @@ export default function ProspectionPage() {
               </button>
               <button
                 onClick={handleSearch}
-                disabled={loading || searchParams.platforms.length === 0 || (searchParams.mode !== 'keyword' && !searchParams.sourceAccount)}
+                disabled={loading || searchParams.hashtags.length === 0}
                 className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-violet-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                {loading ? 'Scan en cours...' : 'Lancer le scraping'}
+                {loading ? 'Scraping en cours...' : 'Lancer la prospection'}
               </button>
             </div>
           </div>
