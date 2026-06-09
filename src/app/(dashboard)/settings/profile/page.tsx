@@ -289,7 +289,7 @@ export default function ProfilePage() {
                 <select
                   value={formData.timezone}
                   onChange={e => setFormData({ ...formData, timezone: e.target.value })}
-                  className="flex-1 bg-transparent outline-none"
+                  className="flex-1 bg-transparent outline-none text-white"
                 >
                   <option value="UTC">UTC (UTC+0)</option>
                   <option value="Europe/Paris">Europe/Paris (UTC+1/+2)</option>

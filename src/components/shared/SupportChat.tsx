@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
-  MessageCircle, X, Send, ChevronLeft, Zap, Clock,
+  MessageCircle, X, Send, ChevronLeft, Zap,
   TicketIcon, ExternalLink, Sparkles, CheckCircle2,
-  AlertCircle, ChevronRight, PaperclipIcon, RefreshCw,
+  ChevronRight, RefreshCw,
   Headphones
 } from 'lucide-react'
 
@@ -44,6 +44,15 @@ const FAQ_ARTICLES = [
   { title: 'Chatting IA — guide complet', icon: '💬' },
   { title: 'Formules et tarifs', icon: '💳' },
 ]
+
+// ─── Sub-components (defined outside to avoid remount on re-render) ────────────
+
+const WindowShell = ({ children }: { children: React.ReactNode }) => (
+  <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-24px)] bg-[#13131f] rounded-3xl shadow-2xl shadow-black/60 border border-purple-500/20 flex flex-col overflow-hidden"
+    style={{ height: '600px', maxHeight: 'calc(100vh - 32px)' }}>
+    {children}
+  </div>
+)
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
@@ -188,14 +197,6 @@ export function SupportChat() {
     </button>
   )
 
-  // ─── Window shell ────────────────────────────────────────────────────────────
-  const WindowShell = ({ children }: { children: React.ReactNode }) => (
-    <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-24px)] bg-[#13131f] rounded-3xl shadow-2xl shadow-black/60 border border-purple-500/20 flex flex-col overflow-hidden"
-      style={{ height: '600px', maxHeight: 'calc(100vh - 32px)' }}>
-      {children}
-    </div>
-  )
-
   // ─── Home view ───────────────────────────────────────────────────────────────
   if (isOpen && view === 'home') return (
     <>
@@ -229,7 +230,7 @@ export function SupportChat() {
           {/* Status */}
           <div className="relative flex items-center gap-2 mt-4 px-3 py-1.5 bg-white/5 rounded-xl w-fit">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs text-gray-300">En ligne · Répond en moins d'1h</span>
+            <span className="text-xs text-gray-300">En ligne · Répond instantanément</span>
           </div>
         </div>
 
@@ -425,6 +426,7 @@ export function SupportChat() {
               onChange={e => setInput(e.target.value)}
               placeholder="Écrivez votre message..."
               disabled={isLoading}
+              autoComplete="off"
               className="flex-1 px-4 py-2.5 bg-white/6 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 text-sm disabled:opacity-50 transition-colors"
             />
             <button

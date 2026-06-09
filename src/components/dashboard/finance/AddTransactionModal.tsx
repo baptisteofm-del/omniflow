@@ -129,7 +129,7 @@ export function AddTransactionModal({ onClose, onSuccess }: AddTransactionModalP
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none text-white text-sm"
             />
           </div>
 
@@ -139,7 +139,7 @@ export function AddTransactionModal({ onClose, onSuccess }: AddTransactionModalP
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none text-white text-sm"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat} className="bg-[#1a1a2e]">
@@ -155,7 +155,7 @@ export function AddTransactionModal({ onClose, onSuccess }: AddTransactionModalP
             <select
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none text-white text-sm"
             >
               {models.map((model) => (
                 <option key={model.id} value={model.id} className="bg-[#1a1a2e]">
@@ -173,7 +173,7 @@ export function AddTransactionModal({ onClose, onSuccess }: AddTransactionModalP
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Détails de la transaction..."
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none text-white text-sm"
             />
           </div>
 
@@ -184,7 +184,7 @@ export function AddTransactionModal({ onClose, onSuccess }: AddTransactionModalP
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-400 focus:outline-none text-white text-sm"
             />
           </div>
 

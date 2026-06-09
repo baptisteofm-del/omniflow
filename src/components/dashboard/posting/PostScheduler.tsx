@@ -99,7 +99,7 @@ export function PostScheduler({ onPostScheduled }: PostSchedulerProps) {
         <select
           value={selectedContent}
           onChange={(e) => setSelectedContent(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500/50 focus:outline-none text-sm"
+          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500/50 focus:outline-none text-sm text-white"
         >
           <option value="">-- Sélectionnez un contenu --</option>
           {mockContent.map((item) => (
