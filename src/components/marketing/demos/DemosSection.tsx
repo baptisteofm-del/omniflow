@@ -38,11 +38,13 @@ const tabFeatures = {
   ],
   chatting: [
     'Chatting 100% automatisé',
-    'Répond en moins de 30s',
-    'Vente naturelle sans script',
-    'IA disponible 24h/24',
-    'Fidélisation automatique',
-    'Engagement continu',
+    'Conversations ultra naturelles',
+    'IA entraînée pour la vente',
+    'IA entraînée pour la fidélisation',
+    'Relationnel avancé',
+    'Engagement automatique',
+    'Conversion optimisée',
+    'Disponible 24h/24',
   ],
   generation: [
     'Scripts en 2 secondes',

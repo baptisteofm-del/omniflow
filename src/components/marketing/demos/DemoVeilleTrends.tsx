@@ -1,293 +1,225 @@
 'use client'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { TrendingUp } from 'lucide-react'
+import { Play, Heart, Bookmark, ExternalLink, TrendingUp, Zap } from 'lucide-react'
 
-interface Trend {
-  id: number
-  icon: string
-  title: string
-  views: number
-  engagement: number
-  badge: 'viral' | 'hausse' | 'explosif'
-  relevance: number
-}
-
-const initialTrends: Trend[] = [
-  { id: 1, icon: '🔥', title: 'Trend "Confidence Challenge"', views: 2400, engagement: 94, badge: 'viral', relevance: 92 },
-  { id: 2, icon: '💃', title: 'Dance Transition Routine', views: 1800, engagement: 87, badge: 'hausse', relevance: 85 },
-  { id: 3, icon: '🎵', title: 'Audio "Shut up" Remix', views: 3200, engagement: 91, badge: 'explosif', relevance: 88 },
-]
-
-const formatSuggestions = [
-  'Format vertical (9:16) pour TikTok',
-  'Transition rapide < 3 secondes',
-  'Utiliser l\'audio trending #1',
-  'Appel-à-action fort en fin',
+const trends = [
+  {
+    id: 1, title: 'Transition miroir — slow motion', author: '@creator.studio', engagement: '2.4M',
+    score: 97, why: 'Format ultra-viral — +420% en 48h', views: '8.1M', saved: false,
+    gradient: 'from-pink-500/20 to-purple-500/20',
+  },
+  {
+    id: 2, title: 'GRWM intime — lumière naturelle', author: '@morning.vibe', engagement: '1.8M',
+    score: 93, why: 'Format "intimité" en explosion', views: '5.3M', saved: false,
+    gradient: 'from-amber-500/20 to-orange-500/20',
+  },
+  {
+    id: 3, title: 'POV cinématique — coulisses', author: '@pov.films', engagement: '3.1M',
+    score: 91, why: 'Curiosité + coulisses = combo gagnant', views: '12M', saved: false,
+    gradient: 'from-cyan-500/20 to-blue-500/20',
+  },
+  {
+    id: 4, title: 'Teasing mystère — texte animé', author: '@teaser.ia', engagement: '987K',
+    score: 88, why: 'Rétention maximale — 94% complétion', views: '3.2M', saved: false,
+    gradient: 'from-green-500/20 to-emerald-500/20',
+  },
 ]
 
 export function DemoVeilleTrends() {
-  const [displayedTrends, setDisplayedTrends] = useState<Trend[]>([])
-  const [isScraping, setIsScraping] = useState(false)
-  const [scrapingText, setScrapingText] = useState('')
-  const [analyzedVideos, setAnalyzedVideos] = useState(847)
-  const [detectedTrends, setDetectedTrends] = useState(12)
-  const [selectedTrendSuggestions, setSelectedTrendSuggestions] = useState<string[]>([])
-
-  const scrapingMessages = [
-    'Scraping en cours...',
-    'Analysant TikTok trends...',
-    'Scanning Instagram Reels...',
-    'YouTube Shorts en cours...',
-  ]
+  const [visibleTrends, setVisibleTrends] = useState<typeof trends>([])
+  const [scanning, setScanning] = useState(true)
+  const [playingId, setPlayingId] = useState<number | null>(null)
+  const [savedIds, setSavedIds] = useState<number[]>([])
+  const [scanned, setScanned] = useState(0)
+  const [detectedAt, setDetectedAt] = useState('')
 
   useEffect(() => {
-    let messageIdx = 0
-    let trendIdx = 0
+    const run = () => {
+      setVisibleTrends([])
+      setScanning(true)
+      setScanned(0)
+      setSavedIds([])
+      setPlayingId(null)
 
-    const sequence = () => {
-      setIsScraping(true)
-      setScrapingText('')
-      setDisplayedTrends([])
-      setSelectedTrendSuggestions([])
-      setAnalyzedVideos(847)
-      setDetectedTrends(12)
+      let n = 0
+      const scanInterval = setInterval(() => {
+        n += Math.floor(Math.random() * 15) + 5
+        setScanned(Math.min(n, 847))
+        if (n >= 847) clearInterval(scanInterval)
+      }, 60)
 
-      // Rotating messages
-      const messageInterval = setInterval(() => {
-        setScrapingText(scrapingMessages[messageIdx % scrapingMessages.length])
-        messageIdx++
-      }, 800)
-
-      // Display trends one by one
-      const trendInterval = setInterval(() => {
-        if (trendIdx < initialTrends.length) {
-          setDisplayedTrends((prev) => [...prev, initialTrends[trendIdx]])
-          setDetectedTrends((prev) => prev + 1)
-          trendIdx++
-        } else {
-          clearInterval(trendInterval)
-        }
-      }, 600)
-
-      // Complete scraping
       setTimeout(() => {
-        setIsScraping(false)
-        setScrapingText('')
-        clearInterval(messageInterval)
-      }, 2500)
+        setScanning(false)
+        setDetectedAt(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))
+        trends.forEach((t, i) => {
+          setTimeout(() => setVisibleTrends(prev => [...prev, t]), i * 400)
+        })
+      }, 2000)
 
-      // Select trend and show suggestions
-      setTimeout(() => {
-        setSelectedTrendSuggestions(formatSuggestions)
-      }, 3000)
+      // Auto-play first
+      setTimeout(() => setPlayingId(1), 3500)
+      setTimeout(() => setPlayingId(null), 5000)
 
-      // Increment analyzed videos
-      const videoInterval = setInterval(() => {
-        setAnalyzedVideos((prev) => prev + Math.floor(Math.random() * 50))
-      }, 1000)
-
-      setTimeout(() => clearInterval(videoInterval), 4500)
-
-      // Reset
-      setTimeout(() => {
-        setDisplayedTrends([])
-        setSelectedTrendSuggestions([])
-      }, 7000)
+      // Auto-save top one
+      setTimeout(() => setSavedIds([1]), 5500)
     }
 
-    sequence()
-    const interval = setInterval(sequence, 9000)
+    run()
+    const interval = setInterval(run, 11000)
     return () => clearInterval(interval)
   }, [])
 
-  const getBadgeStyle = (badge: string) => {
-    switch (badge) {
-      case 'viral':
-        return { bg: 'bg-red-500/20', border: 'border-red-500/50', text: 'text-red-400', label: '🔥 Viral' }
-      case 'hausse':
-        return { bg: 'bg-orange-500/20', border: 'border-orange-500/50', text: 'text-orange-400', label: '📈 En hausse' }
-      case 'explosif':
-        return { bg: 'bg-yellow-500/20', border: 'border-yellow-500/50', text: 'text-yellow-400', label: '⚡ Explosif' }
-      default:
-        return { bg: 'bg-gray-500/20', border: 'border-gray-500/50', text: 'text-gray-400', label: 'Normal' }
-    }
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="w-full perspective"
-      style={{ perspective: '1200px' }}
-    >
-      <motion.div
-        animate={{ rotateX: -5, rotateY: 5 }}
-        transition={{ duration: 2, repeat: Infinity, repeatType: "mirror" }}
-        style={{ transformStyle: 'preserve-3d' }}
-      >
-        <div className="rounded-2xl overflow-hidden border border-purple-500/20 bg-[#0a0a10] shadow-2xl"
-             style={{ boxShadow: '0 0 40px rgba(139,92,246,0.15)' }}>
-          {/* Mac window bar */}
-          <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-b border-purple-500/20 px-4 py-3 flex items-center gap-3">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+      style={{ perspective: '1200px' }}>
+      <motion.div animate={{ rotateX: [-3, -6, -3], rotateY: [3, 6, 3] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ transformStyle: 'preserve-3d' }}>
+        <div className="rounded-2xl overflow-hidden border border-purple-500/20 bg-[#080810]"
+          style={{ boxShadow: '0 0 60px rgba(139,92,246,0.2)' }}>
+
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-purple-500/20 px-4 py-3 flex items-center gap-3">
             <div className="flex gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-amber-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <div className="w-3 h-3 rounded-full bg-red-500/80" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+              <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="text-gray-400 text-xs font-medium ml-auto">Veille Trends</span>
+            <div className="flex-1 text-center">
+              <span className="text-xs text-gray-400 bg-slate-800/80 px-4 py-1 rounded-full border border-gray-700/50">
+                OmniFlow — Veille Trends
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {scanning
+                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full" />
+                : <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
+                    className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              }
+              <span className="text-xs text-gray-400">{scanned} vidéos</span>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="p-8 space-y-6 min-h-[500px] flex flex-col">
-            {/* Scraping status */}
-            {isScraping && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center justify-center gap-3 p-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10"
-              >
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full"
-                />
-                <span className="text-cyan-300 text-sm font-semibold">{scrapingText}</span>
-              </motion.div>
-            )}
-
-            {/* Trends grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {displayedTrends.map((trend, idx) => {
-                const badgeStyle = getBadgeStyle(trend.badge)
-                return (
-                  <motion.div
-                    key={trend.id}
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: idx * 0.15 }}
-                    className="p-4 rounded-xl border border-purple-500/20 bg-slate-900/50 backdrop-blur hover:border-purple-500/50 transition-all cursor-pointer group"
-                  >
-                    {/* Thumbnail */}
-                    <div className="aspect-video rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                      <span className="text-3xl">{trend.icon}</span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white truncate">{trend.title}</p>
-                      </div>
-
-                      {/* Badge */}
-                      <motion.div
-                        className={`inline-block px-2 py-1 rounded text-xs font-semibold border ${badgeStyle.border} ${badgeStyle.bg} ${badgeStyle.text}`}
-                      >
-                        {badgeStyle.label}
-                      </motion.div>
-
-                      {/* Metrics */}
-                      <div className="space-y-2">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-gray-400">Engagement</span>
-                            <span className="text-xs font-semibold text-cyan-400">{trend.engagement}%</span>
-                          </div>
-                          <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden border border-cyan-500/30">
-                            <motion.div
-                              initial={{ width: '0%' }}
-                              animate={{ width: `${trend.engagement}%` }}
-                              transition={{ duration: 0.8, delay: idx * 0.15 + 0.2 }}
-                              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
-                          <TrendingUp size={14} />
-                          <span>{trend.views}K vues</span>
-                        </div>
-
-                        {/* Pertinence */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-gray-400">Pertinence</span>
-                            <span className="text-xs font-semibold text-green-400">{trend.relevance}%</span>
-                          </div>
-                          <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: '0%' }}
-                              animate={{ width: `${trend.relevance}%` }}
-                              transition={{ duration: 0.8, delay: idx * 0.15 + 0.3 }}
-                              className="h-full bg-green-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
+          <div className="p-4 flex flex-col gap-3 min-h-[460px]">
+            {/* Header strip */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={14} className="text-purple-400" />
+                <span className="text-sm font-semibold text-white">
+                  {scanning ? 'Scraping Instagram...' : `${visibleTrends.length} trends détectées`}
+                </span>
+              </div>
+              {!scanning && detectedAt && (
+                <span className="text-xs text-gray-500">Mis à jour {detectedAt}</span>
+              )}
             </div>
 
-            {/* Suggestions section */}
-            {selectedTrendSuggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border-t border-purple-500/20 pt-6"
-              >
-                <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Suggestions de formats</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {selectedTrendSuggestions.map((suggestion, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="p-3 rounded-lg bg-slate-900/50 border border-purple-500/20 text-sm text-gray-200 flex items-start gap-2"
-                    >
-                      <span className="text-purple-400 font-bold flex-shrink-0 mt-0.5">→</span>
-                      <span>{suggestion}</span>
+            {/* Scanning state */}
+            <AnimatePresence>
+              {scanning && (
+                <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="flex-1 flex flex-col items-center justify-center gap-6">
+                  <div className="relative w-20 h-20">
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      className="absolute inset-0 rounded-full border-2 border-purple-500/30 border-t-purple-500" />
+                    <motion.div animate={{ rotate: -360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                      className="absolute inset-3 rounded-full border-2 border-cyan-500/30 border-t-cyan-500" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Zap size={20} className="text-purple-400" />
+                    </div>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold text-white">Analyse en cours</p>
+                    <p className="text-xs text-gray-500">{scanned} vidéos Instagram scannées</p>
+                  </div>
+                  <div className="w-48 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <motion.div animate={{ width: `${(scanned / 847) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Trends grid */}
+            {!scanning && (
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                <AnimatePresence>
+                  {visibleTrends.map((trend, idx) => (
+                    <motion.div key={trend.id}
+                      initial={{ opacity: 0, y: 15, scale: 0.93 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.35, delay: idx * 0.05 }}
+                      className={`relative rounded-xl bg-gradient-to-br ${trend.gradient} border border-white/5 overflow-hidden group cursor-pointer`}>
+
+                      {/* Video preview placeholder */}
+                      <div className="h-24 bg-gradient-to-br from-slate-800/60 to-slate-900/60 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent" />
+                        {/* Fake video bars */}
+                        <div className="absolute bottom-0 left-0 right-0 flex items-end gap-0.5 px-2 pb-1 h-10">
+                          {[...Array(20)].map((_, i) => (
+                            <motion.div key={i}
+                              animate={{ height: [`${20 + Math.random() * 60}%`, `${20 + Math.random() * 60}%`] }}
+                              transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.05, repeatType: 'reverse' }}
+                              className="flex-1 bg-purple-400/30 rounded-sm" />
+                          ))}
+                        </div>
+                        <motion.div
+                          animate={playingId === trend.id ? { scale: [1, 1.1, 1] } : {}}
+                          transition={{ duration: 0.5, repeat: Infinity }}
+                          className={`absolute inset-0 flex items-center justify-center`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            playingId === trend.id
+                              ? 'bg-purple-500/80 border border-purple-400'
+                              : 'bg-black/40 border border-white/20'
+                          }`}>
+                            <Play size={12} className="text-white ml-0.5" />
+                          </div>
+                        </motion.div>
+
+                        {/* Score badge */}
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded-full">
+                          <div className="w-1 h-1 rounded-full bg-green-500" />
+                          <span className="text-xs font-bold text-white">{trend.score}</span>
+                        </div>
+
+                        {idx === 0 && (
+                          <div className="absolute top-1.5 left-1.5 bg-amber-500/80 px-1.5 py-0.5 rounded-full">
+                            <span className="text-xs font-bold text-black">#1 VIRAL</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-2.5 space-y-1.5">
+                        <p className="text-xs font-semibold text-white leading-tight line-clamp-1">{trend.title}</p>
+                        <p className="text-xs text-gray-500">{trend.author}</p>
+                        <div className="flex items-center gap-1.5">
+                          <Heart size={9} className="text-pink-400" />
+                          <span className="text-xs text-gray-400">{trend.engagement}</span>
+                        </div>
+                        <p className="text-xs text-cyan-400 leading-tight line-clamp-1">{trend.why}</p>
+                        <div className="flex gap-1 pt-0.5">
+                          <motion.button whileTap={{ scale: 0.9 }}
+                            onClick={() => setSavedIds(ids => ids.includes(trend.id) ? ids.filter(i => i !== trend.id) : [...ids, trend.id])}
+                            className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-xs border transition-all ${
+                              savedIds.includes(trend.id)
+                                ? 'bg-purple-500/20 border-purple-500/30 text-purple-300'
+                                : 'border-gray-700/30 text-gray-500 hover:border-purple-500/20'
+                            }`}>
+                            <Bookmark size={9} />
+                            {savedIds.includes(trend.id) ? 'Sauvé' : 'Sauver'}
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.9 }}
+                            className="flex items-center justify-center w-6 h-6 rounded-lg border border-gray-700/30 text-gray-500 hover:border-purple-500/20">
+                            <ExternalLink size={9} />
+                          </motion.button>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
-                </div>
-              </motion.div>
+                </AnimatePresence>
+              </div>
             )}
-
-            {/* Stats footer */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-auto border-t border-purple-500/20 pt-6 grid grid-cols-2 gap-4"
-            >
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Vidéos analysées</p>
-                <motion.p
-                  key={analyzedVideos}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="text-2xl font-bold text-cyan-400"
-                >
-                  {analyzedVideos}
-                </motion.p>
-              </div>
-
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Trends détectés</p>
-                <motion.p
-                  key={detectedTrends}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="text-2xl font-bold text-green-400"
-                >
-                  {detectedTrends}
-                </motion.p>
-              </div>
-            </motion.div>
           </div>
         </div>
       </motion.div>

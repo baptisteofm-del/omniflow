@@ -1,270 +1,238 @@
 'use client'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { Send } from 'lucide-react'
+import { Search, Star, Send, TrendingUp } from 'lucide-react'
 
-interface Creator {
-  id: number
-  name: string
-  avatar: string
-  stats: string
-  compatibility: number
-}
-
-const creators: Creator[] = [
-  { id: 1, name: 'Marie', avatar: '👩‍🦰', stats: '2.4K subs', compatibility: 92 },
-  { id: 2, name: 'Sophie', avatar: '👩', stats: '1.8K subs', compatibility: 78 },
-  { id: 3, name: 'Jessica', avatar: '👱', stats: '3.1K subs', compatibility: 85 },
+const profiles = [
+  { username: '@victoria_ofm', followers: '127K', niche: 'Lifestyle', score: 96, avatar: '👩‍🦳', platform: 'IG' },
+  { username: '@sophie_create', followers: '84K', niche: 'Fitness', score: 91, avatar: '👩‍🦱', platform: 'TK' },
+  { username: '@leamia_official', followers: '203K', niche: 'Fashion', score: 88, avatar: '👱‍♀️', platform: 'IG' },
+  { username: '@emma.studios', followers: '56K', niche: 'Beauty', score: 85, avatar: '🧕', platform: 'IG' },
+  { username: '@nina.content', followers: '178K', niche: 'Travel', score: 82, avatar: '👩', platform: 'TK' },
 ]
 
-const contactMessages = [
-  'Salut ! J\'aime ton univers. On pourrait collaborer ? 💫',
-  'Hey, intéressée par une col exclusif ? 🎬',
-  'Tes contenus sont incroyables ! Suis fan 🔥',
-]
+const outreachMsg = `Bonjour Victoria 👋
+
+J'ai remarqué ton contenu — ta façon d'engager ta communauté est vraiment unique.
+
+Notre agence travaille avec des créatrices comme toi pour maximiser leur revenus sur OnlyFans/MYM grâce à nos outils IA.
+
+Résultats typiques : +340% de revenus en 60 jours.
+
+Disponible pour un appel de 15min cette semaine ? 🚀`
 
 export function DemoProspection() {
-  const [searchText, setSearchText] = useState('')
-  const [displayedCreators, setDisplayedCreators] = useState<Creator[]>([])
-  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null)
-  const [messageIndex, setMessageIndex] = useState(0)
-  const [messageSent, setMessageSent] = useState(false)
-  const [totalAnalyzed, setTotalAnalyzed] = useState(127)
-  const [qualifiedContacts, setQualifiedContacts] = useState(12)
-  const [searchProgress, setSearchProgress] = useState(0)
-  const [showSearch, setShowSearch] = useState(true)
-
-  const displaySearch = 'Créatrices OnlyFans 18-25 ans'
+  const [phase, setPhase] = useState<'search' | 'results' | 'profile' | 'outreach'>('search')
+  const [visibleProfiles, setVisibleProfiles] = useState<typeof profiles>([])
+  const [selectedProfile, setSelectedProfile] = useState<typeof profiles[0] | null>(null)
+  const [typedMsg, setTypedMsg] = useState('')
+  const [sent, setSent] = useState(false)
+  const [scanned, setScanned] = useState(0)
 
   useEffect(() => {
-    const sequence = () => {
-      setShowSearch(true)
-      setSearchText('')
-      setDisplayedCreators([])
-      setSelectedCreator(null)
-      setMessageSent(false)
-      setSearchProgress(0)
+    const run = () => {
+      setPhase('search')
+      setVisibleProfiles([])
+      setSelectedProfile(null)
+      setTypedMsg('')
+      setSent(false)
+      setScanned(0)
 
-      // Typewriter search
-      let idx = 0
-      const typeInterval = setInterval(() => {
-        if (idx <= displaySearch.length) {
-          setSearchText(displaySearch.substring(0, idx))
-          idx++
-        } else {
-          clearInterval(typeInterval)
-          setSearchProgress(0)
+      // Scan counter
+      let s = 0
+      const scanInterval = setInterval(() => {
+        s += Math.floor(Math.random() * 8) + 3
+        setScanned(Math.min(s, 127))
+        if (s >= 127) clearInterval(scanInterval)
+      }, 80)
 
-          // Start cascade display
+      // Show results
+      setTimeout(() => {
+        setPhase('results')
+        profiles.forEach((p, i) => {
           setTimeout(() => {
-            creators.forEach((creator, i) => {
-              setTimeout(() => {
-                setDisplayedCreators((prev) => [...prev, creator])
-                setTotalAnalyzed((prev) => prev + Math.floor(Math.random() * 5))
-              }, i * 300)
-            })
-          }, 500)
+            setVisibleProfiles(prev => [...prev, p])
+          }, i * 300)
+        })
+      }, 1800)
 
-          // Select first creator
-          setTimeout(() => {
-            setSelectedCreator(creators[0])
-            setMessageIndex(Math.floor(Math.random() * contactMessages.length))
-          }, 1500)
+      // Select profile
+      setTimeout(() => {
+        setPhase('profile')
+        setSelectedProfile(profiles[0])
+      }, 4000)
 
-          // Send message
-          setTimeout(() => {
-            setMessageSent(true)
-            setQualifiedContacts((prev) => prev + 1)
-          }, 3500)
+      // Type outreach
+      setTimeout(() => {
+        setPhase('outreach')
+        let i = 0
+        const typeInterval = setInterval(() => {
+          setTypedMsg(outreachMsg.slice(0, i + 1))
+          i++
+          if (i >= outreachMsg.length) clearInterval(typeInterval)
+        }, 20)
+      }, 5500)
 
-          // Reset
-          setTimeout(() => {
-            setShowSearch(false)
-          }, 5500)
-        }
-      }, 40)
-
-      return () => clearInterval(typeInterval)
+      // Send
+      setTimeout(() => setSent(true), 9000)
     }
 
-    sequence()
-    const interval = setInterval(sequence, 8000)
+    run()
+    const interval = setInterval(run, 12000)
     return () => clearInterval(interval)
   }, [])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="w-full perspective"
-      style={{ perspective: '1200px' }}
-    >
-      <motion.div
-        animate={{ rotateX: -5, rotateY: 5 }}
-        transition={{ duration: 2, repeat: Infinity, repeatType: "mirror" }}
-        style={{ transformStyle: 'preserve-3d' }}
-      >
-        <div className="rounded-2xl overflow-hidden border border-purple-500/20 bg-[#0a0a10] shadow-2xl"
-             style={{ boxShadow: '0 0 40px rgba(139,92,246,0.15)' }}>
-          {/* Mac window bar */}
-          <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-b border-purple-500/20 px-4 py-3 flex items-center gap-3">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+      style={{ perspective: '1200px' }}>
+      <motion.div animate={{ rotateX: [-3, -6, -3], rotateY: [3, 6, 3] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ transformStyle: 'preserve-3d' }}>
+        <div className="rounded-2xl overflow-hidden border border-purple-500/20 bg-[#080810]"
+          style={{ boxShadow: '0 0 60px rgba(139,92,246,0.2)' }}>
+
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-purple-500/20 px-4 py-3 flex items-center gap-3">
             <div className="flex gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-amber-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <div className="w-3 h-3 rounded-full bg-red-500/80" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+              <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <span className="text-gray-400 text-xs font-medium ml-auto">Prospection</span>
+            <div className="flex-1 text-center">
+              <span className="text-xs text-gray-400 bg-slate-800/80 px-4 py-1 rounded-full border border-gray-700/50">
+                OmniFlow — Prospection
+              </span>
+            </div>
+            <span className="text-xs text-cyan-400">{scanned} profils scannés</span>
           </div>
 
-          {/* Content */}
-          <div className="p-8 space-y-6 min-h-[500px]">
-            {/* Search bar */}
-            <motion.div
-              initial={{ opacity: 1 }}
-              animate={{ opacity: showSearch ? 1 : 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-2"
-            >
-              <label className="text-xs font-semibold text-gray-400 uppercase">Recherche</label>
-              <div className="p-3 rounded-lg border border-purple-500/20 bg-slate-900/50 backdrop-blur">
-                <p className="text-gray-200 font-mono text-sm">
-                  {searchText}
-                  <motion.span
-                    animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    className="inline-block w-1 h-4 bg-purple-500 ml-1"
-                  />
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Results grid */}
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-4">
-                Profils trouvés ({displayedCreators.length})
-              </p>
-
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                {displayedCreators.map((creator, idx) => (
-                  <motion.div
-                    key={creator.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => setSelectedCreator(creator)}
-                    whileHover={{ scale: 1.05 }}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                      selectedCreator?.id === creator.id
-                        ? 'border-purple-500/50 bg-purple-500/10'
-                        : 'border-gray-600/30 bg-gray-900/30 hover:border-purple-500/30'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <span className="text-4xl">{creator.avatar}</span>
-                      <div className="text-center">
-                        <p className="font-semibold text-white text-sm">{creator.name}</p>
-                        <p className="text-xs text-gray-400">{creator.stats}</p>
-                      </div>
-
-                      {/* Compatibility score */}
-                      <div className="w-full">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-400">Compatibilité</span>
-                          <span className="text-xs font-semibold text-cyan-400">{creator.compatibility}%</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden border border-cyan-500/30">
-                          <motion.div
-                            initial={{ width: '0%' }}
-                            animate={{ width: `${creator.compatibility}%` }}
-                            transition={{ duration: 0.8, delay: idx * 0.1 }}
-                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+          <div className="flex h-[460px]">
+            {/* Left panel */}
+            <div className="w-1/2 border-r border-purple-500/10 p-4 flex flex-col gap-3">
+              {/* Search bar */}
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-900/60 border border-purple-500/20">
+                <Search size={14} className="text-purple-400" />
+                <span className="text-sm text-gray-300">Créatrices 50K-250K abonnés</span>
+                {phase === 'search' && (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="ml-auto w-3 h-3 border border-purple-400 border-t-transparent rounded-full" />
+                )}
+                {phase !== 'search' && (
+                  <span className="ml-auto text-xs text-green-400">✓</span>
+                )}
               </div>
 
-              {/* Contact message area */}
-              {selectedCreator && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border-t border-purple-500/20 pt-6 space-y-4"
-                >
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-gray-400 uppercase">
-                      Message de prise de contact
-                    </label>
-                    <div className="p-4 rounded-lg border border-purple-500/20 bg-slate-900/50 backdrop-blur min-h-16">
-                      <motion.p
-                        key={messageIndex}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-gray-200 text-sm leading-relaxed"
-                      >
-                        {contactMessages[messageIndex]}
-                      </motion.p>
-                    </div>
+              {/* Profile list */}
+              <div className="flex-1 space-y-1.5 overflow-y-auto">
+                <AnimatePresence>
+                  {visibleProfiles.map((p, i) => (
+                    <motion.div key={p.username}
+                      initial={{ opacity: 0, x: -15, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      onClick={() => setSelectedProfile(p)}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border transition-all ${
+                        selectedProfile?.username === p.username
+                          ? 'bg-purple-500/15 border-purple-500/30'
+                          : 'border-transparent hover:bg-slate-800/50'
+                      }`}>
+                      <span className="text-xl">{p.avatar}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{p.username}</p>
+                        <p className="text-xs text-gray-500">{p.followers} · {p.niche}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="flex items-center gap-1">
+                          <Star size={10} className="text-amber-400 fill-amber-400" />
+                          <span className="text-xs font-bold text-amber-400">{p.score}</span>
+                        </div>
+                        <span className="text-xs text-gray-600">{p.platform}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {phase === 'search' && (
+                  <div className="flex flex-col gap-1.5">
+                    {[...Array(3)].map((_, i) => (
+                      <motion.div key={i} animate={{ opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
+                        className="h-12 rounded-xl bg-slate-800/40" />
+                    ))}
                   </div>
-
-                  {/* Send button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-                      messageSent
-                        ? 'bg-green-500/20 border border-green-500/50 text-green-400'
-                        : 'bg-gradient-to-r from-purple-500/30 to-cyan-500/30 border border-purple-500/50 text-purple-300 hover:from-purple-500/40 hover:to-cyan-500/40'
-                    }`}
-                  >
-                    {messageSent ? (
-                      <>
-                        <span>✓ Envoyé</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send size={18} />
-                        Envoyer la démarche
-                      </>
-                    )}
-                  </motion.button>
-                </motion.div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Stats footer */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="border-t border-purple-500/20 pt-6 grid grid-cols-2 gap-4"
-            >
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Profils analysés</p>
-                <motion.p
-                  key={totalAnalyzed}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="text-2xl font-bold text-cyan-400"
-                >
-                  {totalAnalyzed}
-                </motion.p>
-              </div>
+            {/* Right panel */}
+            <div className="w-1/2 p-4 flex flex-col gap-3">
+              <AnimatePresence mode="wait">
+                {phase === 'search' && (
+                  <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="flex-1 flex flex-col items-center justify-center gap-4">
+                    <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                      className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 flex items-center justify-center">
+                      <Search size={24} className="text-purple-400" />
+                    </motion.div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-white">Scraping en cours...</p>
+                      <p className="text-xs text-gray-500">Instagram · TikTok</p>
+                    </div>
+                    <div className="w-32 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <motion.div animate={{ x: ['-100%', '100%'] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                        className="h-full w-1/2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full" />
+                    </div>
+                  </motion.div>
+                )}
 
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Contacts qualifiés</p>
-                <motion.p
-                  key={qualifiedContacts}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="text-2xl font-bold text-green-400"
-                >
-                  {qualifiedContacts}
-                </motion.p>
-              </div>
-            </motion.div>
+                {(phase === 'profile' || phase === 'outreach') && selectedProfile && (
+                  <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }} className="flex flex-col gap-3 h-full">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-purple-500/20">
+                      <span className="text-3xl">{selectedProfile.avatar}</span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-white text-sm">{selectedProfile.username}</p>
+                        <p className="text-xs text-gray-400">{selectedProfile.followers} abonnés · {selectedProfile.niche}</p>
+                      </div>
+                      <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                        <Star size={12} className="text-amber-400 fill-amber-400" />
+                        <span className="text-sm font-bold text-amber-400">{selectedProfile.score}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      {[['Engagement', '8.4%', 'text-cyan-400'], ['Croissance', '+2.1K/j', 'text-green-400'], ['Conversion', 'Haute', 'text-pink-400']].map(([l, v, c], i) => (
+                        <div key={i} className="flex-1 p-2 rounded-lg bg-slate-900/50 border border-gray-700/30 text-center">
+                          <p className={`text-xs font-bold ${c}`}>{v}</p>
+                          <p className="text-xs text-gray-600">{l}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {phase === 'outreach' && (
+                      <div className="flex-1 flex flex-col gap-2">
+                        <p className="text-xs font-semibold text-gray-400">Message IA généré</p>
+                        <div className="flex-1 p-3 rounded-xl bg-slate-900/60 border border-purple-500/20 overflow-y-auto">
+                          <p className="text-xs text-gray-200 whitespace-pre-wrap leading-relaxed">{typedMsg}
+                            {!sent && <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity }}
+                              className="inline-block w-0.5 h-3 bg-purple-400 ml-0.5 align-middle" />}
+                          </p>
+                        </div>
+                        <AnimatePresence>
+                          {sent && (
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                              className="flex items-center gap-2 p-2.5 rounded-xl bg-green-500/10 border border-green-500/30">
+                              <Send size={14} className="text-green-400" />
+                              <span className="text-xs font-semibold text-green-400">Message envoyé · Dans le pipeline</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </motion.div>
