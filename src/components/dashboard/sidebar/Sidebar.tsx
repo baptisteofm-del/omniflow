@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
-  Zap, ChevronDown, CreditCard, User, Gift, Menu, X,
+  Zap, ChevronDown, CreditCard, User, Menu, X,
   Image as ImageIcon, Search, Lock, TrendingUp, Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -16,7 +16,6 @@ const NAV_TOP = [
   { label: 'Dashboard',   href: '/dashboard',  icon: LayoutDashboard, tutorial: 'dashboard' },
   { label: 'Modèles',     href: '/accounts',   icon: Users,           tutorial: 'accounts' },
   { label: 'Finance',     href: '/finance',    icon: Wallet },
-  { label: 'Parrainage',  href: '/referral',   icon: Gift, badge: '10%' },
   { label: 'Prospection', href: '/accounts/prospection', icon: Search, requiredPlan: 'agency' },
 
 ]

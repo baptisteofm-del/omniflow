@@ -2,15 +2,16 @@
 
 import { useState, Suspense } from 'react'
 import dynamic from 'next/dynamic'
-import { User, CreditCard, Users, Settings2, Loader2 } from 'lucide-react'
+import { User, CreditCard, Users, Settings2, Loader2, Gift } from 'lucide-react'
 
 // Lazy load tab content components
 const ProfileContent = dynamic(() => import('./components/ProfileContent'), { ssr: false })
 const BillingContent = dynamic(() => import('./components/BillingContent'), { ssr: false })
 const TeamContent = dynamic(() => import('./components/TeamContent'), { ssr: false })
 const IntegrationsContent = dynamic(() => import('./components/IntegrationsContent'), { ssr: false })
+const ReferralContent = dynamic(() => import('./components/ReferralContent'), { ssr: false })
 
-type TabId = 'profile' | 'billing' | 'team' | 'integrations'
+type TabId = 'profile' | 'billing' | 'team' | 'integrations' | 'referral'
 
 interface Tab {
   id: TabId
@@ -23,6 +24,7 @@ const TABS: Tab[] = [
   { id: 'billing', label: 'Abonnement', icon: <CreditCard size={16} /> },
   { id: 'team', label: 'Équipes', icon: <Users size={16} /> },
   { id: 'integrations', label: 'Intégrations', icon: <Settings2 size={16} /> },
+  { id: 'referral', label: 'Parrainage', icon: <Gift size={16} /> },
 ]
 
 export default function SettingsPage() {
@@ -68,6 +70,7 @@ export default function SettingsPage() {
           {activeTab === 'billing' && <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-400" size={32} /></div>}><BillingContent /></Suspense>}
           {activeTab === 'team' && <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-400" size={32} /></div>}><TeamContent /></Suspense>}
           {activeTab === 'integrations' && <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-400" size={32} /></div>}><IntegrationsContent /></Suspense>}
+          {activeTab === 'referral' && <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="animate-spin text-purple-400" size={32} /></div>}><ReferralContent /></Suspense>}
         </div>
       </div>
     </div>
