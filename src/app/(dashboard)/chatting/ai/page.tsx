@@ -610,9 +610,13 @@ export default function ChattingAIPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center font-bold text-white text-sm">
-                          {model.name.slice(0, 2).toUpperCase()}
-                        </div>
+                        {model.avatar_url ? (
+                          <img src={model.avatar_url} alt={model.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
+                            {model.name?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                        )}
                         <div className="flex-1">
                           <p className="font-semibold text-white">{model.name}</p>
                           {isConfigured ? (
