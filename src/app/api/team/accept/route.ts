@@ -90,20 +90,24 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Insérer le membre (admin bypasse la RLS)
-    const { error: memberError } = await admin
-      .from('team_members')
-      .insert({
-        agency_id: targetAgencyId,
-        user_id: user.id,
-        email: user.email?.toLowerCase(),
-        role: invitation.role || 'member',
-        permissions: invitation.permissions || [],
-        status: 'active',
-        joined_at: new Date().toISOString(),
-      })
+    // Colonnes minimales compatibles avec le schéma réel
+    const memberData: any = {
+      agency_id: targetAgencyId,
+      user_id: user.id,
+      email: user.email?.toLowerCase(),
+      role: invitation.role || 'member',
+      joined_at: new Date().toISOString(),
+    }
+    // Tentative avec status (si la colonne existe), sinon sans
+    let memberError: any = null
+    const res1 = await admin.from('team_members').insert({ ...memberData, status: 'active' })
+    memberError = res1.error
+    if (memberError && (memberError.code === '42703' || memberError.message?.includes('column'))) {
+      const res2 = await admin.from('team_members').insert(memberData)
+      memberError = res2.error
+    }
 
     if (memberError && memberError.code !== '23505') {
-      // 23505 = unique violation (already exists) → ignore
       console.error('Insert team member error:', memberError)
       throw memberError
     }

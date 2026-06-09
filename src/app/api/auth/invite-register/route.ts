@@ -128,26 +128,36 @@ export async function POST(request: NextRequest) {
 
       userId = newUser.user.id
 
-      // Créer le profil
+      // Créer le profil (uniquement les colonnes qui existent)
       await admin.from('profiles').upsert({
         id: userId,
-        email: email.toLowerCase(),
         full_name: name || '',
       }).eq('id', userId)
     }
 
     // ── 4. Ajouter le membre à l'agence ─────────────────────
-    const { error: memberError } = await admin
-      .from('team_members')
-      .insert({
-        agency_id: targetAgencyId,
-        user_id: userId,
-        email: email.toLowerCase(),
-        role: invitation.role || 'member',
-        permissions: invitation.permissions || [],
-        status: 'active',
-        joined_at: new Date().toISOString(),
-      })
+    // Note: colonnes minimales compatibles avec le schéma existant
+    const memberData: any = {
+      agency_id: targetAgencyId,
+      user_id: userId,
+      email: email.toLowerCase(),
+      role: invitation.role || 'member',
+      joined_at: new Date().toISOString(),
+    }
+    // Ajouter status/permissions uniquement si les colonnes existent (migration future)
+    // Ces colonnes seront ignorées si absentes grâce au try/catch
+    let memberError: any = null
+    try {
+      const res1 = await admin.from('team_members').insert({ ...memberData, status: 'active' })
+      memberError = res1.error
+      if (memberError && (memberError.code === '42703' || memberError.message?.includes('column'))) {
+        // Colonne status absente → insérer sans
+        const res2 = await admin.from('team_members').insert(memberData)
+        memberError = res2.error
+      }
+    } catch (e) {
+      memberError = e
+    }
 
     if (memberError && memberError.code !== '23505') {
       console.error('Insert team member error:', memberError)

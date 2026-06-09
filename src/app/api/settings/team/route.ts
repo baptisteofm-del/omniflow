@@ -24,15 +24,15 @@ export async function GET(req: NextRequest) {
     // Get team members — exclure le propriétaire pour éviter les doublons
     const { data: members, error: membersError } = await supabase
       .from('team_members')
-      .select('id, email, role, permissions, status, joined_at, user_id')
+      .select('id, email, role, joined_at, user_id')
       .eq('agency_id', agency.id)
       .order('joined_at', { ascending: false })
 
     // Résoudre l'email du propriétaire maintenant pour le filtrage
     const ownerUserEmail = user.email || ''
 
-    // Filtrer le propriétaire des membres (il peut être dans team_members avec un ancien rôle)
-    const filteredMembers = (members || []).filter(m =>
+    // Filtrer le propriétaire des membres
+    const filteredMembers = (members || []).filter((m: any) =>
       m.user_id !== agency.owner_id &&
       m.email?.toLowerCase() !== ownerUserEmail.toLowerCase()
     )
@@ -67,9 +67,9 @@ export async function GET(req: NextRequest) {
       invitations = []
     }
 
-    // Aussi récupérer les membres avec status='invited' (fallback si team_invitations inexistante)
-    const invitedMembers = (filteredMembers || []).filter((m: any) => m.status === 'invited')
-    const activeMembers  = (filteredMembers || []).filter((m: any) => m.status !== 'invited')
+    // Tous les membres filtrés sont actifs (pas de colonne status dans le schéma actuel)
+    const invitedMembers: any[] = []
+    const activeMembers = filteredMembers
 
     // Fusionner : éviter les doublons entre invitations et invited members
     const invitedEmails = new Set(invitations.map((i: any) => i.email?.toLowerCase()))
@@ -139,8 +139,8 @@ export async function POST(req: NextRequest) {
 
     // Essayer d'insérer dans team_invitations (gestion souple des colonnes)
     let invitation: any = null
-    const insertData: any = { agency_id: agency.id, email: email.toLowerCase(), role, token, expires_at: expiresAt }
-    if (permissions.length > 0) insertData.permissions = permissions
+    // Schéma réel : pas de expires_at ni permissions dans team_invitations
+    const insertData: any = { agency_id: agency.id, email: email.toLowerCase(), role, token }
 
     // Tentative 1 : avec accepted column
     const { data: inv1, error: err1 } = await supabase.from('team_invitations').insert({ ...insertData, accepted: false }).select().single()
@@ -152,9 +152,8 @@ export async function POST(req: NextRequest) {
       if (!err2) {
         invitation = inv2
       } else {
-        // Fallback : insérer directement dans team_members avec status invited
-        const { data: member } = await supabase.from('team_members').insert({ agency_id: agency.id, email: email.toLowerCase(), role, permissions, status: 'invited', joined_at: new Date().toISOString() }).select().single()
-        invitation = member || { id: token, email, role, created_at: new Date().toISOString() }
+        // Fallback : créer une invitation minimale en mémoire
+        invitation = { id: token, email, role, created_at: new Date().toISOString() }
       }
     }
 
