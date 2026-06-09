@@ -1,10 +1,45 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, X, Zap, Bot, Users, Sparkles, RefreshCw, TrendingUp } from 'lucide-react'
-import { PLANS, RUN_PRICE_EUR, RUN_UNITS } from '@/lib/plans'
+import { Check, X, Zap, Star, ArrowRight, Shield } from 'lucide-react'
+import { PLANS } from '@/lib/plans'
 import { cn } from '@/lib/utils/cn'
 import type { BillingInterval } from '@/types'
+
+// ── Config visuelle par plan ─────────────────────────────────
+const PLAN_META: Record<string, {
+  accent: string
+  ctaClass: string
+  checkBg: string
+  checkColor: string
+  cardClass: string
+  badge?: string
+  scale?: boolean
+}> = {
+  starter: {
+    accent: 'text-gray-300',
+    ctaClass: 'bg-white/8 border border-white/15 text-white hover:bg-white/12 hover:border-white/25',
+    checkBg: 'bg-green-500/10',
+    checkColor: 'text-green-400',
+    cardClass: 'glass border-white/8',
+  },
+  pro: {
+    accent: 'text-purple-300',
+    ctaClass: 'bg-gradient-to-r from-purple-600 to-violet-700 text-white hover:opacity-90 shadow-lg shadow-purple-500/20',
+    checkBg: 'bg-purple-500/10',
+    checkColor: 'text-purple-400',
+    cardClass: 'bg-gradient-to-b from-purple-900/30 to-purple-900/10 border border-purple-500/25',
+  },
+  agency: {
+    accent: 'text-cyan-300',
+    ctaClass: 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:opacity-90 shadow-xl shadow-cyan-500/25',
+    checkBg: 'bg-cyan-500/10',
+    checkColor: 'text-cyan-400',
+    cardClass: 'bg-gradient-to-b from-[#0d2030] to-[#100d20] border border-cyan-500/35',
+    badge: 'Recommandé',
+    scale: true,
+  },
+}
 
 export function PricingSection() {
   const [interval, setInterval] = useState<BillingInterval>('monthly')
@@ -29,29 +64,30 @@ export function PricingSection() {
     }
   }
 
-  // Afficher uniquement les plans payants (starter, pro, agency)
-  const displayPlans = PLANS
-
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 gradient-bg">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
         {/* ── Header ── */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm font-medium mb-5">
+            <Zap size={13} />
+            Tarifs transparents · sans engagement
+          </div>
           <h2 className="text-4xl sm:text-5xl font-bold mb-4">
             Choisissez votre <span className="gradient-text">formule</span>
           </h2>
-          <p className="text-gray-400 text-lg mb-8">
+          <p className="text-gray-400 text-lg">
             Résiliez quand vous voulez
           </p>
 
           {/* Toggle mensuel / annuel */}
-          <div className="inline-flex items-center glass rounded-xl p-1">
+          <div className="inline-flex items-center glass rounded-xl p-1 mt-8">
             <button
               onClick={() => setInterval('monthly')}
               className={cn(
                 'px-6 py-2 rounded-lg text-sm font-medium transition-all',
-                interval === 'monthly' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                interval === 'monthly' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               )}>
               Mensuel
             </button>
@@ -59,161 +95,137 @@ export function PricingSection() {
               onClick={() => setInterval('yearly')}
               className={cn(
                 'px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
-                interval === 'yearly' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                interval === 'yearly' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               )}>
               Annuel
-              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">-20%</span>
+              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-semibold">-20%</span>
             </button>
           </div>
         </div>
 
-        {/* ── Plans ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {displayPlans.map((plan) => {
+        {/* ── Grille des plans ── */}
+        {/* Agency est au centre sur desktop, donc on réordonne pour mobile : Starter, Pro, Agency */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          {PLANS.map((plan) => {
+            const meta = PLAN_META[plan.id]
             const price = interval === 'monthly' ? plan.price.monthly : plan.price.yearly
+            const includedFeatures = plan.features.filter(f => f.included)
+            const excludedFeatures = plan.features.filter(f => !f.included)
+            const isAgency = plan.id === 'agency'
+
             return (
               <div
                 key={plan.id}
                 className={cn(
-                  'relative rounded-2xl p-8 flex flex-col',
-                  plan.highlighted
-                    ? 'bg-gradient-to-b from-purple-900/60 to-purple-800/20 border border-purple-500/50 glow'
-                    : 'glass'
+                  'relative rounded-2xl flex flex-col transition-all duration-300',
+                  meta.cardClass,
+                  isAgency
+                    ? 'p-8 md:scale-105 md:z-10 shadow-2xl shadow-black/40'
+                    : 'p-7'
                 )}>
 
-                {plan.highlighted && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <div className="flex items-center gap-1 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full text-sm font-medium">
-                      <Zap size={12} />
-                      Le plus populaire
+                {/* Badge Recommandé */}
+                {meta.badge && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
+                    <div className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full text-sm font-semibold text-white shadow-lg shadow-purple-500/30">
+                      <Star size={12} fill="currentColor" />
+                      {meta.badge}
                     </div>
                   </div>
                 )}
 
-                {/* Plan header */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{plan.description}</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-4xl font-bold">{price}€</span>
-                    <span className="text-gray-400 mb-1">/mois</span>
+                {/* ── En-tête du plan ── */}
+                <div className={cn('mb-6', isAgency && 'mt-2')}>
+                  <h3 className={cn('text-xl font-bold mb-1', meta.accent)}>{plan.name}</h3>
+                  <p className="text-gray-500 text-sm mb-5 leading-relaxed">{plan.description}</p>
+
+                  {/* Prix */}
+                  <div className="flex items-end gap-1.5">
+                    <span className={cn('font-extrabold tracking-tight', isAgency ? 'text-5xl text-white' : 'text-4xl text-white')}>
+                      {price}€
+                    </span>
+                    <span className="text-gray-500 mb-1.5 text-sm">/mois</span>
                   </div>
+
                   {interval === 'yearly' && (
-                    <p className="text-green-400 text-sm mt-1">
-                      Économisez {(plan.price.monthly - plan.price.yearly) * 12}€/an
+                    <p className="text-green-400 text-xs mt-2 font-medium">
+                      💰 Économisez {(plan.price.monthly - plan.price.yearly) * 12}€ par an
                     </p>
                   )}
                 </div>
 
-                {/* CTA Principal & Secondaire */}
-                <div className="space-y-2 mb-6">
+                {/* ── CTA ── */}
+                <div className="mb-7 space-y-2">
                   <Link
                     href={`/register?plan=${plan.id}&interval=${interval}`}
                     className={cn(
-                      'block text-center py-3 rounded-xl font-semibold transition-all',
-                      plan.highlighted
-                        ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 glow-sm'
-                        : 'glass border border-purple-500/30 hover:border-purple-500/60 hover:text-white'
+                      'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all text-sm',
+                      meta.ctaClass
                     )}>
                     Choisir ce plan
+                    <ArrowRight size={14} />
                   </Link>
 
+                  <button
+                    onClick={() => handleCryptoPay(plan.id)}
+                    disabled={loadingPlan === plan.id}
+                    className="w-full text-center py-1.5 text-xs text-gray-600 hover:text-yellow-400 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40">
+                    <span>{loadingPlan === plan.id ? '⏳' : '₿'}</span>
+                    {loadingPlan === plan.id ? 'Chargement...' : 'Payer en crypto (USDT / BTC)'}
+                  </button>
                 </div>
 
-                {/* Crypto */}
-                <button
-                  onClick={() => handleCryptoPay(plan.id)}
-                  disabled={loadingPlan === plan.id}
-                  className="w-full text-center py-2 text-sm text-gray-400 hover:text-yellow-400 transition-colors flex items-center justify-center gap-2 mb-6 disabled:opacity-50">
-                  <span>{loadingPlan === plan.id ? '⏳' : '₿'}</span>
-                  {loadingPlan === plan.id ? 'Chargement...' : 'Payer en crypto (USDT/BTC)'}
-                </button>
+                {/* ── Séparateur ── */}
+                <div className="border-t border-white/8 mb-5" />
 
-                {/* Features list - Only included features */}
-                <ul className="space-y-3 flex-1">
-                  {plan.features.filter(f => f.included).map((f) => (
+                {/* ── Fonctionnalités incluses ── */}
+                <ul className="space-y-2.5 flex-1">
+                  {includedFeatures.map((f) => (
                     <li key={f.name} className="flex items-center gap-3 text-sm">
-                      <Check size={16} className="text-green-400 flex-shrink-0" />
+                      <span className={cn(
+                        'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0',
+                        meta.checkBg
+                      )}>
+                        <Check size={11} className={meta.checkColor} strokeWidth={2.5} />
+                      </span>
                       <span className="text-gray-200">{f.name}</span>
                     </li>
                   ))}
                 </ul>
+
+                {/* ── Fonctionnalités non incluses ── */}
+                {excludedFeatures.length > 0 && (
+                  <>
+                    <div className="border-t border-white/5 mt-5 mb-4" />
+                    <ul className="space-y-2">
+                      {excludedFeatures.map((f) => (
+                        <li key={f.name} className="flex items-center gap-3 text-sm">
+                          <span className="w-5 h-5 rounded-full bg-white/4 flex items-center justify-center flex-shrink-0 flex-shrink-0">
+                            <X size={10} className="text-gray-700" strokeWidth={2.5} />
+                          </span>
+                          <span className="text-gray-600 line-through decoration-gray-700/60">{f.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
             )
           })}
         </div>
 
-        {/* ── Veille Trends Instagram ── */}
-        <div className="glass rounded-2xl p-8 mb-8">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <TrendingUp size={20} className="text-pink-400" />
-                <h3 className="text-xl font-bold">Veille Trends Instagram</h3>
-              </div>
-              <p className="text-gray-400 text-sm mb-3">
-                Analysez les contenus performants sur Instagram. Notre système apprend de vos likes/dislikes 
-                pour vous suggérer les tendances les plus adaptées à votre audience.
-              </p>
-              <p className="text-gray-500 text-xs">
-                Chaque matin, recevez une sélection personnalisée de trends qui fonctionnent dans votre niche.
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-center flex-shrink-0">
-              <div className="glass rounded-xl px-5 py-3">
-                <div className="text-2xl font-bold text-white">5</div>
-                <div className="text-xs text-gray-400 mt-0.5">trends/jour</div>
-                <div className="text-xs text-pink-400 font-medium mt-1">Starter</div>
-              </div>
-              <div className="glass rounded-xl px-5 py-3 border border-purple-500/30">
-                <div className="text-2xl font-bold text-white">10</div>
-                <div className="text-xs text-gray-400 mt-0.5">trends/jour</div>
-                <div className="text-xs text-purple-400 font-medium mt-1">Pro</div>
-              </div>
-              <div className="glass rounded-xl px-5 py-3">
-                <div className="text-2xl font-bold text-white">20</div>
-                <div className="text-xs text-gray-400 mt-0.5">trends/jour</div>
-                <div className="text-xs text-cyan-400 font-medium mt-1">Agency</div>
-              </div>
-            </div>
+        {/* ── Footer ── */}
+        <div className="text-center mt-12">
+          <div className="inline-flex items-center gap-3 text-gray-600 text-sm">
+            <span className="flex items-center gap-1.5">
+              <Shield size={13} className="text-gray-700" />
+              Paiement sécurisé
+            </span>
+            <span className="text-gray-800">·</span>
+            <span>Sans engagement</span>
+            <span className="text-gray-800">·</span>
+            <span>Résiliez quand vous voulez</span>
           </div>
-        </div>
-
-        {/* ── Crédits supplémentaires ── */}
-        <div className="glass rounded-2xl p-8 mb-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <RefreshCw size={20} className="text-cyan-400" />
-                <h3 className="text-xl font-bold">Crédits supplémentaires</h3>
-              </div>
-              <p className="text-gray-400 text-sm mb-2">
-                Dépassez votre quota mensuel à la demande, sans engagement.
-                Chaque RUN ajoute <strong className="text-white">{RUN_UNITS} crédits</strong> utilisables pour :
-                générations IA ou nouvelles tendances Instagram.
-              </p>
-              <ul className="text-sm text-gray-500 space-y-1 mt-3">
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Générations vidéo IA</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Nouvelles tendances Instagram</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Crédits valides 30 jours</li>
-              </ul>
-            </div>
-            <div className="text-center flex-shrink-0">
-              <div className="glass rounded-2xl px-10 py-6 border border-cyan-500/20">
-                <div className="text-5xl font-bold gradient-text mb-1">{RUN_PRICE_EUR}€</div>
-                <div className="text-gray-400 text-sm">par RUN</div>
-                <div className="text-gray-500 text-xs mt-2">{RUN_UNITS} crédits / RUN</div>
-                <div className="text-xs text-cyan-400 mt-1">{(RUN_PRICE_EUR / RUN_UNITS).toFixed(2)}€ par crédit</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer note */}
-        <div className="text-center">
-          <p className="text-gray-500 text-sm">
-            ✓ Paiement sécurisé · Résiliez quand vous voulez
-          </p>
         </div>
 
       </div>

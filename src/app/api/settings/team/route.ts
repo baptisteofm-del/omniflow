@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Get team members — exclure le propriétaire pour éviter les doublons
     const { data: members, error: membersError } = await supabase
       .from('team_members')
-      .select('id, email, role, joined_at, user_id')
+      .select('id, email, role, joined_at, user_id, status, permissions')
       .eq('agency_id', agency.id)
       .order('joined_at', { ascending: false })
 
@@ -47,9 +47,9 @@ export async function GET(req: NextRequest) {
       const admin = await createAdminClient()
       const { data: inv, error: invErr } = await admin
         .from('team_invitations')
-        .select('id, email, role, created_at')
+        .select('id, email, role, created_at, status, expires_at')
         .eq('agency_id', agency.id)
-        .neq('accepted', true)   // retourne false ET null (invitations non encore acceptées)
+        .in('status', ['pending', 'opened'])  // invitations non acceptées
         .order('created_at', { ascending: false })
 
       if (invErr) {
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
     }
 
-    const VALID_ROLES = ['member', 'admin', 'video_editor', 'chatting_manager', 'marketing_manager']
+    const VALID_ROLES = ['member', 'admin', 'video_editor', 'chatting_manager', 'marketing_manager', 'accountant', 'community_manager', 'chatter']
     if (!role || !VALID_ROLES.includes(role)) {
       return NextResponse.json({ error: `Rôle invalide. Choisissez parmi : ${VALID_ROLES.join(', ')}` }, { status: 400 })
     }
@@ -139,12 +139,13 @@ export async function POST(req: NextRequest) {
       role,
       token,
       accepted: false,
+      status: 'pending',
       expires_at: expiresAt,
     }
     const { data: invitation, error: insertError } = await admin
       .from('team_invitations')
       .insert(insertData)
-      .select('id, email, role, created_at')
+      .select('id, email, role, created_at, status')
       .single()
 
     if (insertError) {

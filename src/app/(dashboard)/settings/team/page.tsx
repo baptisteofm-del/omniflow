@@ -14,9 +14,10 @@ interface TeamMember {
   id: string
   email: string
   role: string
-  permissions: string[]
+  permissions?: string[]
   joined_at: string
-  status: 'active' | 'invited' | 'suspended'
+  status?: 'active' | 'invited' | 'suspended'
+  user_id?: string
 }
 
 interface TeamInvitation {
@@ -24,6 +25,8 @@ interface TeamInvitation {
   email: string
   role: string
   created_at: string
+  status?: 'pending' | 'opened' | 'accepted' | 'expired' | 'cancelled'
+  expires_at?: string
 }
 
 // ── Rôles prédéfinis ──────────────────────────────────────────
@@ -34,9 +37,9 @@ const ROLES = [
     icon: Film,
     color: 'text-purple-400',
     bg: 'bg-purple-500/10 border-purple-500/20',
-    desc: 'Accès strictement limité à Édition & Spoof',
+    desc: 'Édition & Spoof',
     permissions: ['editor'],
-    locked: true, // permissions non modifiables
+    locked: true,
   },
   {
     id: 'chatting_manager',
@@ -44,7 +47,7 @@ const ROLES = [
     icon: MessageSquare,
     color: 'text-cyan-400',
     bg: 'bg-cyan-500/10 border-cyan-500/20',
-    desc: 'Chatting IA et Rapports Chatting',
+    desc: 'Chatting IA & Rapports',
     permissions: ['chatting_ai', 'chatting_reports'],
     locked: false,
   },
@@ -54,8 +57,38 @@ const ROLES = [
     icon: TrendingUp,
     color: 'text-green-400',
     bg: 'bg-green-500/10 border-green-500/20',
-    desc: 'Toutes les fonctionnalités marketing',
+    desc: 'Marketing complet',
     permissions: ['veille', 'posting', 'ai_generation', 'telegram', 'media'],
+    locked: false,
+  },
+  {
+    id: 'accountant',
+    label: 'Comptable',
+    icon: Shield,
+    color: 'text-orange-400',
+    bg: 'bg-orange-500/10 border-orange-500/20',
+    desc: 'Finance et transactions',
+    permissions: ['finance'],
+    locked: false,
+  },
+  {
+    id: 'community_manager',
+    label: 'Community Manager',
+    icon: Users,
+    color: 'text-pink-400',
+    bg: 'bg-pink-500/10 border-pink-500/20',
+    desc: 'Gestion communauté',
+    permissions: ['posting', 'media', 'chatting_reports'],
+    locked: false,
+  },
+  {
+    id: 'chatter',
+    label: 'Chatter',
+    icon: MessageSquare,
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10 border-blue-500/20',
+    desc: 'Opérateur chatting',
+    permissions: ['chatting_ai'],
     locked: false,
   },
   {
@@ -64,8 +97,18 @@ const ROLES = [
     icon: Shield,
     color: 'text-yellow-400',
     bg: 'bg-yellow-500/10 border-yellow-500/20',
-    desc: 'Accès complet à toutes les fonctionnalités',
+    desc: 'Accès complet',
     permissions: ['all'],
+    locked: false,
+  },
+  {
+    id: 'member',
+    label: 'Membre',
+    icon: Users,
+    color: 'text-gray-400',
+    bg: 'bg-gray-500/10 border-gray-500/20',
+    desc: 'Accès de base',
+    permissions: [],
     locked: false,
   },
 ]
@@ -232,10 +275,17 @@ export default function TeamPage() {
       if (data.owner) setOwner(data.owner)
       setMembers((data.members || []).map((m: any) => ({
         ...m,
-        permissions: m.permissions || ROLES.find(r => r.id === m.role)?.permissions || [],
+        permissions: m.permissions && Array.isArray(m.permissions) ? m.permissions : ROLES.find(r => r.id === m.role)?.permissions || [],
         status: m.status || 'active',
       })))
-      setInvitations(data.invitations || [])
+      // Filtrer les invitations expirées
+      const now = new Date()
+      setInvitations((data.invitations || []).filter((inv: any) => {
+        if (inv.status === 'expired' || (inv.expires_at && new Date(inv.expires_at) < now)) {
+          return false
+        }
+        return ['pending', 'opened'].includes(inv.status || 'pending')
+      }))
     } catch { toast.error('Erreur de chargement') }
     finally { setLoading(false) }
   }
@@ -286,11 +336,15 @@ export default function TeamPage() {
   }
 
   const handleDelete = async (id: string, type: 'member' | 'invitation') => {
-    if (!confirm('Supprimer ce membre/invitation ?')) return
+    const msg = type === 'member' ? 'Supprimer ce membre ?' : 'Annuler cette invitation ?'
+    if (!confirm(msg)) return
     try {
       const res = await fetch(`/api/settings/team?id=${id}&type=${type}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Erreur de suppression')
-      toast.success('Supprimé')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur de suppression')
+      }
+      toast.success(type === 'member' ? 'Membre supprimé' : 'Invitation annulée')
       await loadTeam()
     } catch (e: any) { toast.error(e.message || 'Erreur') }
   }
@@ -385,9 +439,10 @@ export default function TeamPage() {
             {members.map(member => {
               const role = getRoleInfo(member.role)
               const RoleIcon = role.icon
-              const statusCfg = STATUS_CONFIG[member.status] || STATUS_CONFIG.active
-              const pageCount = member.permissions.includes('all') ? ALL_PAGES.length
-                : member.permissions.filter(p => ALL_PAGES.some(pg => pg.id === p)).length
+              const statusCfg = STATUS_CONFIG[member.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.active
+              const perms = member.permissions ?? []
+              const pageCount = perms.includes('all') ? ALL_PAGES.length
+                : perms.filter((p: string) => ALL_PAGES.some(pg => pg.id === p)).length
 
               return (
                 <div key={member.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/3 transition-colors group">
@@ -432,10 +487,12 @@ export default function TeamPage() {
             {invitations.map(inv => {
               const role = getRoleInfo(inv.role)
               const RoleIcon = role.icon
+              const isExpired = inv.expires_at && new Date(inv.expires_at) < new Date()
               return (
                 <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/3 group transition-colors">
-                  <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-dashed border-amber-500/25 flex items-center justify-center flex-shrink-0">
-                    <Mail size={14} className="text-amber-500" />
+                  <div className={cn("w-9 h-9 rounded-full border border-dashed flex items-center justify-center flex-shrink-0",
+                    isExpired ? 'bg-red-500/10 border-red-500/25' : 'bg-amber-500/10 border-amber-500/25')}>
+                    <Mail size={14} className={isExpired ? 'text-red-500' : 'text-amber-500'} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-300 truncate">{inv.email}</p>
@@ -443,13 +500,14 @@ export default function TeamPage() {
                       <span className={cn('inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border', role.bg)}>
                         <RoleIcon size={9} className={role.color} />{role.label}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-400">
-                        <Clock size={9} />En attente
+                      <span className={cn('inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border',
+                        isExpired ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400')}>
+                        <Clock size={9} />{isExpired ? 'Expirée' : 'En attente'}
                       </span>
                     </div>
                   </div>
                   <span className="text-xs text-gray-600 flex-shrink-0 hidden sm:block tabular-nums">
-                    Envoyé {fmtDate(inv.created_at)}
+                    {isExpired ? 'Expirée' : 'Envoyé ' + fmtDate(inv.created_at)}
                   </span>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button

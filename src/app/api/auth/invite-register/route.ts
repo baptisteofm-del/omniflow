@@ -30,6 +30,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: 'Email invalide' },
+        { status: 400 }
+      )
+    }
 
     const admin = await createAdminClient()
 
@@ -71,100 +77,120 @@ export async function POST(request: NextRequest) {
 
     const targetAgencyId = invitation.agency_id || agencyId
 
-    // ── 2. Vérifier si le compte existe déjà ────────────────
-    const { data: existingUsers } = await admin.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(
-      u => u.email?.toLowerCase() === email.toLowerCase()
-    )
-
+    // ── 2. Créer le compte ou récupérer l'utilisateur existant ───
     let userId: string
+    let isNewUser = false
 
-    if (existingUser) {
-      // L'utilisateur existe déjà → vérifier s'il est déjà membre
-      userId = existingUser.id
-      const { data: existingMember } = await admin
-        .from('team_members')
-        .select('id')
-        .eq('agency_id', targetAgencyId)
-        .eq('user_id', userId)
-        .maybeSingle()
+    // Essayer de créer le compte
+    const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+      email: email.toLowerCase(),
+      password,
+      email_confirm: true,   // ← Bypass de la confirmation email
+      user_metadata: {
+        full_name: name || '',
+        is_team_member: true,
+        agency_id: targetAgencyId,
+      },
+    })
 
-      if (existingMember) {
-        // Déjà membre → marquer invitation comme acceptée et laisser le client se connecter
-        await admin
-          .from('team_invitations')
-          .update({ accepted: true, accepted_at: new Date().toISOString() })
-          .eq('id', invitation.id)
-        return NextResponse.json({ success: true, alreadyMember: true })
-      }
-    } else {
-      // ── 3. Créer le compte avec email confirmé ─────────────
-      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-        email: email.toLowerCase(),
-        password,
-        email_confirm: true,   // ← Bypass de la confirmation email
-        user_metadata: {
-          full_name: name || '',
-          is_team_member: true,
-          agency_id: targetAgencyId,
-        },
-      })
-
-      if (createError) {
-        console.error('createUser error:', createError)
-        // Erreur "already exists" → récupérer l'user
-        if (createError.message?.includes('already')) {
+    if (createError) {
+      console.error('createUser error:', createError)
+      
+      // Erreur "already exists" → récupérer l'user via admin API
+      if (createError.message?.includes('already') || createError.code === 'user_already_exists') {
+        try {
+          // Chercher l'utilisateur existant
+          const { data: existingUsersData } = await admin.auth.admin.listUsers()
+          const existingUser = existingUsersData?.users?.find(
+            u => u.email?.toLowerCase() === email.toLowerCase()
+          )
+          
+          if (existingUser) {
+            userId = existingUser.id
+            console.log(`User already exists: ${userId}`)
+          } else {
+            return NextResponse.json(
+              { error: 'Un compte existe déjà avec cet email. Utilisez "Se connecter".' },
+              { status: 409 }
+            )
+          }
+        } catch (listError) {
+          console.error('Error listing users:', listError)
           return NextResponse.json(
-            { error: 'Un compte existe déjà avec cet email. Utilisez "Se connecter".' },
-            { status: 409 }
+            { error: 'Erreur lors de la vérification du compte existant' },
+            { status: 500 }
           )
         }
-        throw createError
+      } else {
+        // Autres erreurs Supabase
+        console.error('Supabase auth error:', createError)
+        return NextResponse.json(
+          { error: `Erreur lors de la création du compte: ${createError.message || 'Unknown error'}` },
+          { status: 400 }
+        )
       }
-
+    } else {
       if (!newUser?.user) {
-        throw new Error('Création du compte échouée')
+        return NextResponse.json(
+          { error: 'Création du compte échouée' },
+          { status: 500 }
+        )
       }
-
       userId = newUser.user.id
-
-      // Créer le profil (uniquement les colonnes qui existent)
-      await admin.from('profiles').upsert({
-        id: userId,
-        full_name: name || '',
-      }).eq('id', userId)
+      isNewUser = true
     }
 
-    // ── 4. Ajouter le membre à l'agence ─────────────────────
-    // Note: colonnes minimales compatibles avec le schéma existant
-    const memberData: any = {
-      agency_id: targetAgencyId,
-      user_id: userId,
-      email: email.toLowerCase(),
-      role: invitation.role || 'member',
-      joined_at: new Date().toISOString(),
-    }
-    // Ajouter status/permissions uniquement si les colonnes existent (migration future)
-    // Ces colonnes seront ignorées si absentes grâce au try/catch
-    let memberError: any = null
-    try {
-      const res1 = await admin.from('team_members').insert({ ...memberData, status: 'active' })
-      memberError = res1.error
-      if (memberError && (memberError.code === '42703' || memberError.message?.includes('column'))) {
-        // Colonne status absente → insérer sans
-        const res2 = await admin.from('team_members').insert(memberData)
-        memberError = res2.error
+    // ── 3. Créer ou mettre à jour le profil ───────────────────────
+    if (isNewUser) {
+      try {
+        // Pour les nouveaux utilisateurs, créer le profil
+        await admin.from('profiles').insert({
+          id: userId,
+          full_name: name || '',
+          role: 'member', // Rôle par défaut
+          agency_id: targetAgencyId, // Lier à l'agence
+        })
+      } catch (profileError) {
+        console.warn('Profile creation warning:', profileError)
+        // Ne pas bloquer si le profil existe ou si la création échoue
+        // Car il peut y avoir une trigger qui crée le profil automatiquement
       }
-    } catch (e) {
-      memberError = e
     }
 
-    if (memberError && memberError.code !== '23505') {
-      console.error('Insert team member error:', memberError)
-      throw memberError
+    // ── 4. Vérifier si l'utilisateur est déjà membre de l'agence ──
+    const { data: existingMember } = await admin
+      .from('team_members')
+      .select('id')
+      .eq('agency_id', targetAgencyId)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    // ── 5. Ajouter le membre à l'agence (si pas déjà membre) ──────
+    if (!existingMember) {
+      const memberData = {
+        agency_id: targetAgencyId,
+        user_id: userId,
+        email: email.toLowerCase(),
+        role: invitation.role || 'member',
+        joined_at: new Date().toISOString(),
+        status: 'active',
+        permissions: [],
+      }
+
+      const { error: memberError } = await admin.from('team_members').insert(memberData)
+
+      if (memberError) {
+        // Si c'est un duplicate key error (23505), ignorer car le membre existe déjà
+        if (memberError.code === '23505') {
+          console.log('Member already exists (duplicate)')
+        } else {
+          console.error('Insert team member error:', memberError)
+          throw memberError
+        }
+      }
     }
 
-    // ── 5. Marquer l'invitation comme acceptée ───────────────
+    // ── 6. Marquer l'invitation comme acceptée ───────────────
     await admin
       .from('team_invitations')
       .update({
@@ -173,7 +199,7 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', invitation.id)
 
-    // ── 6. Récupérer le nom de l'agence ─────────────────────
+    // ── 7. Récupérer le nom de l'agence ─────────────────────
     const { data: agency } = await admin
       .from('agencies')
       .select('name')

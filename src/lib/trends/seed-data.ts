@@ -40,7 +40,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-3',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "I mean he did fall for it though lol ",
     url: 'https://www.instagram.com/p/DTTGswcjq64/',
     thumbnailUrl: 'https://scontent-ord5-2.cdninstagram.com/v/t51.71878-15/612178572_1569565317721859_2166330940859405226_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gEgliT13lCy6tGjt0HuZKuGCjHhfIEFUz5mM8CvGUXZMh73fY_Qgd6kAYoa-9BhIn0&_nc_ohc=k09-xMvYil8Q7kNvwH9Ip_L&_nc_gid=UwD-Ja3qZItQJRlB4rPoLw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5YnbG-6XnQxQ1wt0pN1Q6QXYcQdXOK833T_t-1qA4ftg&oe=6A162E19&_nc_sid=10d13b',
@@ -54,7 +54,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-36',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "fellas is this the move ??",
     url: 'https://www.instagram.com/p/DWYNc2YjtLo/',
     thumbnailUrl: 'https://scontent-ord5-2.cdninstagram.com/v/t51.71878-15/655910635_1567121201031784_5883591949434982560_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2gHz1y3BseMP1Dx1gpz1cr7D2-Jc_VeL9cwDXTUPF_Xjbx27XuSrQ93RkaXGrpO0gT8&_nc_ohc=kIAAszi1luMQ7kNvwHy23P3&_nc_gid=NQvlNKZ7hqEU0Zk1MGiUlg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af59XarYxnmYzqnWOFzM1EGrtxC36C8lp9Iq_HSkE-WTEw&oe=6A16392D&_nc_sid=10d13b',
@@ -68,7 +68,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-2',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Goth girls know the best spots ",
     url: 'https://www.instagram.com/p/DSX0W-ujGlu/',
     thumbnailUrl: 'https://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/601967017_2291936464635279_295097522633962729_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gEIlFxKn1GHOS59rWK1l76j-RId1RGa8ER1OEvtMXjWvKAXL6JT4ycEqi-vwQu7en0&_nc_ohc=J5VazwR7NIEQ7kNvwE7BvvA&_nc_gid=oXt9_4iGwmmtvMnmabh5PQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4BHNodKK91qJi3hFaqaaaD_uzk_C_AdegwznmNdVkoWg&oe=6A162B11&_nc_sid=10d13b',
@@ -82,7 +82,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-6',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "PTDR la petite pensée du soir😭🧚‍♀️",
     url: 'https://www.instagram.com/p/DRneez5jJel/',
     thumbnailUrl: 'https://scontent-lax3-2.cdninstagram.com/v/t51.71878-15/587266472_2109952339834143_7811048729557383633_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gFbamMCuv5K-bg2Hrdwn4aGne_rQzFGpTGmkQKuDpU-mCqm0voJRXy7L7UJxKNE820&_nc_ohc=cRjdCpEcVy8Q7kNvwFqLOP1&_nc_gid=o0Aed_GDKbY_dmr9cVepNQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5pPWBdcSqN0gHb5dEa8xMFcWGpVcESV6uVpRsxbwcLzA&oe=6A163551&_nc_sid=10d13b',
@@ -96,7 +96,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-7',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Le fameux gel douche 12-en-1 : corps, visage, cheveux, liqui",
     url: 'https://www.instagram.com/p/DPb33nNjKGL/',
     thumbnailUrl: 'https://scontent-mia5-2.cdninstagram.com/v/t51.71878-15/558972001_1511123763247668_7333074605567260134_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-mia5-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2gGOHYi7sDaEgGTAA878YZp4rPMwpRSholgf-tes0qkmVgldVJNEatLVbT7S-KGINaE&_nc_ohc=fIUC4E6PPhgQ7kNvwHA65gr&_nc_gid=MtE3ml54HSjiAoapor_OAA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5F2FzcKTNEYaolLEBiSdXn5THJnxEEvjYS5QNLEGs3Cw&oe=6A16149A&_nc_sid=10d13b',
@@ -110,7 +110,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-11',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Run.",
     url: 'https://www.instagram.com/p/DU9S7GdDZ_O/',
     thumbnailUrl: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.71878-15/637747126_1833462264022339_3842837207833273322_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2gG2b-ri690G9rnr75dDMrQEmNF0VXeqFysP-HTEFDCaORmPVbeGXInAo7Zshf_VvVE&_nc_ohc=iPGW9Q-CHaQQ7kNvwE_lQv5&_nc_gid=sKdH1v5gf83Z6aVnj7aTIA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4qSoeeNaDd2NmB1D7AA_2oftiDEMw2lCSeYuRjGqSGog&oe=6A16200D&_nc_sid=10d13b',
@@ -124,7 +124,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-1',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Oops🤭",
     url: 'https://www.instagram.com/p/DS043OWCC-B/',
     thumbnailUrl: 'https://scontent-atl3-3.cdninstagram.com/v/t51.71878-15/608048916_1429734068843469_2530373873850721946_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2gGMsxjxwrq0XvndTzLDmg10ak1iWvghDtIC_sMxQPNuJQYd9Ma_LWL__Vwoh9qwl2I&_nc_ohc=79-N1BZVzpoQ7kNvwH2RzGf&_nc_gid=KyytLOjA5D-Bb8aehsU0AA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7xdFM37ul8XSMg-Pkvi13Ap3H8bekz5-KHIynAyikeYQ&oe=6A161B95&_nc_sid=10d13b',
@@ -138,7 +138,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-29',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "4/23 8PM ET. Be there🫡",
     url: 'https://www.instagram.com/p/DXdf78tDQql/',
     thumbnailUrl: 'https://scontent-ord5-2.cdninstagram.com/v/t51.71878-15/670814497_1479967703827382_5096635268249349298_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2gG9vKQVeUdzrr2i4lHtEoEqNK_4qJ3Y_XeglY4R5sv-Ysd_AxApiX5pa4orsPCLxXs&_nc_ohc=95hIvvr9d18Q7kNvwFj-sN0&_nc_gid=GC6OjVs8mKlpmrfCDw1IZQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7Dewe8m6j_5syD8im6HluNTwR3US-tHcGRoIN_mU8f0w&oe=6A162176&_nc_sid=10d13b',
@@ -152,7 +152,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-5',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Lowkey shes girlfriend number 2. ",
     url: 'https://www.instagram.com/p/DYOPWKYNF86/',
     thumbnailUrl: 'https://scontent-atl3-2.cdninstagram.com/v/t51.71878-15/689672450_1279393460990764_7531482758098609521_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2gHUJODnBv_m1sQEeAMP1kToDrGJRpfU9nMbMy5tqm1b3ySIA4a3Z3HmvI62S1qjrb0&_nc_ohc=m4txi7BUNjYQ7kNvwE-ChgP&_nc_gid=I5rHF9BxPwe5eHxzwbTq0w&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5k2TrPipCjvwjCcKIWVSy9QlTKnK8eceo92mWB4nidTQ&oe=6A161362&_nc_sid=10d13b',
@@ -166,7 +166,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-1',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "People who are shy ",
     url: 'https://www.instagram.com/p/DYDAJw5AeBG/',
     thumbnailUrl: 'https://instagram.frst1-1.fna.fbcdn.net/v/t51.71878-15/687269032_2033766964245543_4659225924297134310_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=instagram.frst1-1.fna.fbcdn.net&_nc_cat=103&_nc_oc=Q6cZ2gEVKpSrw562WvpeT4UjVTQy7-ClfioLAYh_1JKwpWTaBEy8EVgHlZoWRBEUXP75ilo&_nc_ohc=uFWu7brelssQ7kNvwHuBBJC&_nc_gid=oAgHbw0tPfpXlB-GW6c7BQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4LQzI7__HJUUKD8H3MS-VQ1ql2aN_mvdZdlhS9OpZXnw&oe=6A160857&_nc_sid=10d13b',
@@ -180,7 +180,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-8',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "enjoy!😊",
     url: 'https://www.instagram.com/p/DVWlf06kpZe/',
     thumbnailUrl: 'https://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/640747003_917060241082724_4593845632179149009_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2gHB_FdnRClLcjE93hSMnaUM4lHa3ktoq2w3kyky-3EeiRg3-p4Yt9RH-PerFTWQXTz0qM8FM_kq9IVcDMy-1ExI&_nc_ohc=MPzAg-GPFwAQ7kNvwHVu-ya&_nc_gid=IUmVnR6bSQgsPKN4E-EsEQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af44SBZdJg9xMrkeQ9-F-GiyglpC0wBKaios8F5LY2yjvA&oe=6A161977&_nc_sid=10d13b',
@@ -194,7 +194,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-30',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "works every time 🙂‍↕️",
     url: 'https://www.instagram.com/p/DVLwuZiDlAw/',
     thumbnailUrl: 'https://scontent-sjc6-1.cdninstagram.com/v/t51.82787-15/640506379_17910987882338342_6130652041740154845_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2gHoxlyrkiYmXWrNEUljdgrhaBTQ_qgLdWsnryG7KNeKbLflVv9RLRuab5dJSu7IzR0&_nc_ohc=_wB1hzTQqPQQ7kNvwGaGFc3&_nc_gid=vbkzRs9NrlsQwGft5qL1-Q&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4uhmfr-FeErylBpr97CtJ5w4zP7BEn0P-eDgKiOuvJVQ&oe=6A160DD6&_nc_sid=10d13b',
@@ -208,7 +208,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-13',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "jsp comment ils font",
     url: 'https://www.instagram.com/p/DMnfhmjoDsm/',
     thumbnailUrl: 'https://scontent-phx1-1.cdninstagram.com/v/t51.82787-15/525460107_18515437027041627_7047227878253209179_n.jpg?stp=dst-jpg_e35_p1080x1080_sh2.08_tt6&_nc_ht=scontent-phx1-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gEnwuh9dF4wBGbmgfs0JpHHt-BpAXUUH-w5oQ3kd_C5dPUxot4zSmYpvPSZ9bZWH34&_nc_ohc=h7dRm_kURnIQ7kNvwGWC4FF&_nc_gid=A2hO9-nspmJwsDTYQ7vbsg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af75Wvd6oUSG9tjJRp8jCXm0aovjGAiDQeOtvpb7T97gaw&oe=6A160936&_nc_sid=10d13b',
@@ -222,7 +222,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-26',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "was it something I said? 😅 ",
     url: 'https://www.instagram.com/p/DUrG1zpkhO7/',
     thumbnailUrl: 'https://scontent-lax3-1.cdninstagram.com/v/t51.82787-15/629234843_18089902112471972_3901224706052284359_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2gGdFnlnaUHev3L1vsw0XschZfXBKygPpuH-ofYvCPJMf2PzVFpZJ0wlSZNNGawmaAE&_nc_ohc=zs0IKNTVHHUQ7kNvwFptYOV&_nc_gid=7rkU16Q5eikCXA29jXQ4Dw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7tdmakQnfTmbocAXRjrAj5dmy7ql_4PujtMS3VyGQ1dg&oe=6A161C3D&_nc_sid=10d13b',
@@ -236,7 +236,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-9',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Who doesn’t like toppings? #grill #bbq #grilling #explorepag",
     url: 'https://www.instagram.com/p/DR7eDPYDmW2/',
     thumbnailUrl: 'https://scontent-ord5-2.cdninstagram.com/v/t51.71878-15/591169748_1520293479178919_5386682232432431001_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gHdOMeTuvny7xi3ZrwYxmrWcCgSUAjsFOB7W0icY5NEMmIBQhLA11sQotGoXdBfgWPMBEVuVYEQhEMCewngCGsT&_nc_ohc=reCneImbzQoQ7kNvwHjXFc_&_nc_gid=_cQXqAWAgkg1uhTTOiqnKg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7hyfy5-RoKiEfE7S2HVwKmiIj7Nbf1jLkVCrr0461Qrg&oe=6A160433&_nc_sid=10d13b',
@@ -250,7 +250,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-33',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Instagram Photo",
     url: 'https://www.instagram.com/p/DUVqqVcjQX7/',
     thumbnailUrl: 'https://scontent-lga3-2.cdninstagram.com/v/t51.71878-15/629321061_2089988955088397_8555467785402498871_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2gEHB98fhOxxurzUGMjpF_UJWxLzvczwhHQu_BfAsJMttu39hNRZfajulW5XO1UTY-0&_nc_ohc=qerYouSRpQUQ7kNvwF7UdHx&_nc_gid=ebYchLI31P6JdKtkjlj1jA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4EsNwCzFNdqBuIPWBRini_GowLd8q_jk1gHknQP6rw4Q&oe=6A160417&_nc_sid=10d13b',
@@ -264,7 +264,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-3',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "was he wrong for this?",
     url: 'https://www.instagram.com/p/DU6T1Emkj_u/',
     thumbnailUrl: 'https://scontent-xxc1-1.cdninstagram.com/v/t51.71878-15/638325042_1261136969224157_6821233823292319244_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-xxc1-1.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2gF2kCWibNME-xcCxEHSj1V-YiNOyuUrWMvlwpB2uQlqUI7yQMcZGYkXae3nRtB2SBg&_nc_ohc=E9LYl3q7uU4Q7kNvwGs3bM2&_nc_gid=mTUAnkfppAE4NWWe6H_ZkA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af6Nm1KRsSDocUUyP9wkM0FlOUj3lzrCqrjIdPkX3pkt6A&oe=6A161F1F&_nc_sid=10d13b',
@@ -278,7 +278,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-13',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "24 heures sans dire non.",
     url: 'https://www.instagram.com/p/DVG6_AzD0z-/',
     thumbnailUrl: 'https://instagram.fsan1-2.fna.fbcdn.net/v/t51.71878-15/639980700_1887495775214041_8830605074857665301_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=instagram.fsan1-2.fna.fbcdn.net&_nc_cat=101&_nc_oc=Q6cZ2gEviuw3O2C7er26_QDJ6T0lXAkvui7ChrbEcFxo-W8XDncEmYoaJHeT0JV72oV2fDqOYpdnfzs5uv5hNQTnECck&_nc_ohc=1igD-khPDH4Q7kNvwGO6VZy&_nc_gid=vgoGKm7pje6G0cU7YokjJQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af6kv9CyyfyGThGpnjnVALHWbeq-GqGgc1F3r8eGMuK9Hw&oe=6A160491&_nc_sid=10d13b',
@@ -292,7 +292,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-32',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Women always want to talk about women’s rights and being fem",
     url: 'https://www.instagram.com/p/DYHlw1euCnR/',
     thumbnailUrl: 'https://scontent-msp1-1.cdninstagram.com/v/t51.71878-15/688888294_27680834414852035_5273745544985645959_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-msp1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2gE0-DMS8SrDBXuuFJrviJYeaeNBuGfSeGaGrW743CzVZrH7khMWHiKppY0__kPpxhs&_nc_ohc=JXRw7ssaUsgQ7kNvwHoQ98H&_nc_gid=fz6LoiK8qF6FkM7RmuGrWQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7DRhZmmmF3TpQr_k98j2xEs2QlZJCunFnDDG_gPI3Iuw&oe=6A160586&_nc_sid=10d13b',
@@ -306,7 +306,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-31',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "CEST JUSTE UNE BLAGUE!!!!",
     url: 'https://www.instagram.com/p/DXcX-UfCBEn/',
     thumbnailUrl: 'https://scontent-lax3-2.cdninstagram.com/v/t51.71878-15/671284048_975064728806568_2067779049439558693_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2gEKuNxZcuayF50rwdbxWqDYC6HH24KTQbRkysOH6hKKWRyr_zBeSNxY5qcNVwORxP8&_nc_ohc=Pvu0GjAO8AoQ7kNvwHygsFM&_nc_gid=4X7UVo8-uog_ZjMphw_vHg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7lUuYsguV4POG91XYtFFLEOFmspQJd8kOQQuIZ76x8oQ&oe=6A162EFA&_nc_sid=10d13b',
@@ -348,7 +348,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-14',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Mon âge ? 👀",
     url: 'https://www.instagram.com/p/DWRkQ43CCCY/',
     thumbnailUrl: 'https://instagram.fsac1-2.fna.fbcdn.net/v/t51.71878-15/657176306_948476217666533_8003185837148132693_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=instagram.fsac1-2.fna.fbcdn.net&_nc_cat=105&_nc_oc=Q6cZ2gGJY02jonShhorNW5JGictNWB0eroUK88JhJCi0QzOnej1Euetq70nGuW4a5aTNGKk&_nc_ohc=yZsTA87xGAUQ7kNvwFKlmGn&_nc_gid=k371VxSSwHbSMWKAVb28Iw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7yK0DRLwJ_nIFhAto55fM3FKwcT1IVgvhow1MVjYaK3g&oe=6A1627D8&_nc_sid=10d13b',
@@ -362,7 +362,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-22',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Vraiment très cocooning ce salon 🤭",
     url: 'https://www.instagram.com/p/DWy-z4aDIKa/',
     thumbnailUrl: 'https://scontent-atl3-3.cdninstagram.com/v/t51.71878-15/660340173_1460892405660873_4201365902741108396_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2gHuC6BfyalptBCQrojZrKjy--X3OwYeFlHeFyGJj30oM5AIoeSLOtCxwbAco_WUcbw&_nc_ohc=JJlBfRsvAYIQ7kNvwFPY4QL&_nc_gid=nbm1YeL0Tb8hJzXYCZhPIQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4DK0XKbrUVfAEQiSJSqlsL1uCvvsCcTRpBS9eOyJSJtg&oe=6A160303&_nc_sid=10d13b',
@@ -376,7 +376,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-19',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Is wearing white after Easter bad luck?",
     url: 'https://www.instagram.com/p/DXShOw5kr8r/',
     thumbnailUrl: 'https://scontent-lga3-3.cdninstagram.com/v/t51.71878-15/670595983_981538821198032_7339644805845079908_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lga3-3.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2gFdWd3XWPzj0I3uf-tskgsMKdQ_YswD73-gzF4-NXB4MIW_-4iajP2qVONe_j8ILeQ&_nc_ohc=5VGlvrpebSMQ7kNvwEebjrl&_nc_gid=Jyw_syNR9cFDqKjzEGlD5Q&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af6HpUfpz0gGeZPNRYhokcG4F6S2ufKOtl-qMic0wd83sw&oe=6A160DCE&_nc_sid=10d13b',
@@ -390,7 +390,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-10',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Toi aussi t’attends un colis bientôt ? 🫣 #humour #explore",
     url: 'https://www.instagram.com/p/DWyTyOLjDVx/',
     thumbnailUrl: 'https://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/661473563_4218224301724011_2650556006801432858_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gF0J6F5dKG2_Cgo-bOgxVtCxuOclNZnS2EAcluIsvxbgv_KFBJyjNHuzheDEmkbY5o&_nc_ohc=QJr4uFfWjQgQ7kNvwGVhQUX&_nc_gid=1Z1QR7ZNJjGyn5CSvG7c6w&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5b838hDyXwgEHcluNjhyMcVfv_pba4oABeG0xCIred7A&oe=6A163809&_nc_sid=10d13b',
@@ -404,7 +404,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-17',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Comment vous auriez réagis ? 😭😭",
     url: 'https://www.instagram.com/p/DXztRO8NllM/',
     thumbnailUrl: 'https://scontent-mia5-1.cdninstagram.com/v/t51.71878-15/684265869_998113306305326_8308443412847539889_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-mia5-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2gGifZDeoKbhwmIBApYyKQdKvAc6hnmTCVw0acZFhCrTXZomXLfm_lCCQgQkpukSRIQ&_nc_ohc=0MPN9TKaH2wQ7kNvwGxZf_y&_nc_gid=CQ6vHMST3Ew6dJlxPZTtTg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7GwYRhwWI_uFethPH_WV806yOUmocxUrtcBrgeduyUcA&oe=6A16156C&_nc_sid=10d13b',
@@ -418,7 +418,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-20',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "J’attend ton commentaire ⬇️😌 @iam_kiaira",
     url: 'https://www.instagram.com/p/DYFTKvssTW2/',
     thumbnailUrl: 'https://scontent-iad3-1.cdninstagram.com/v/t51.71878-15/686863909_974864981920330_6407538196491893604_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gEMAZtnGQbkS3ejckQ74vlHFkU8p2tgQl72niC9yk3__4cpZDunFE1ME8-Vo73P5GU&_nc_ohc=FMDBlbU1uL0Q7kNvwHRkbx5&_nc_gid=TNSREmuR0gUcZ9KjbbjDqA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af55epj0DYxLTrAak-ZL0BdfHssdPlenOtWF0v6O0GrFRA&oe=6A1635D0&_nc_sid=10d13b',
@@ -432,7 +432,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-15',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "C’est peut être moi la voiture de tes rêves ? 😇",
     url: 'https://www.instagram.com/p/DR8MGmzCEmb/',
     thumbnailUrl: 'https://scontent-lga3-3.cdninstagram.com/v/t51.71878-15/589988421_922308833695790_5512929879825098800_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lga3-3.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2gG8XC3U3kb6nxSmDVDP3ArOHYBnqOqUOGioeZB029GIGPdC7lSw7Ao7XzMAUaQhLPU&_nc_ohc=VXJmc8k0JjoQ7kNvwE0uc5g&_nc_gid=MhMVd9sds8lMWdwjUQ3ocg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5AoKGb9vFwmPxOzFTfRb5HMM7tnMX-LWvDO6JNIHLWkA&oe=6A1605CA&_nc_sid=10d13b',
@@ -446,7 +446,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-10',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "T’en penses quoi ? 😳",
     url: 'https://www.instagram.com/p/DRK6HM3gMvY/',
     thumbnailUrl: 'https://scontent-lga3-1.cdninstagram.com/v/t51.71878-15/582324675_860496910269719_870117198942102271_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lga3-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gFzFfo08KtuEsbJngYQM2NfyfNqx682jiUdRoDf2M8kE4msMtREHTYR4G_4MuKRxso&_nc_ohc=P3fnUE52mAEQ7kNvwH8uJgh&_nc_gid=nHpAvpI8Kn9Y_SD5PgsYzw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5sAXriLxL7DVtwvdpBLLeXenoOTSeGwDBs79SNtbjZtg&oe=6A162C50&_nc_sid=10d13b',
@@ -460,7 +460,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-8',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Alors ❤️ / 💙 ou 🖤 😙😙??",
     url: 'https://www.instagram.com/p/DQzy-9HAIwD/',
     thumbnailUrl: 'https://instagram.frkh1-1.fna.fbcdn.net/v/t51.71878-15/574116235_837392715894844_6618992391091877549_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=instagram.frkh1-1.fna.fbcdn.net&_nc_cat=104&_nc_oc=Q6cZ2gG_CehR6IkJLGDDPlZc6oUOGjwLkm63AXS-m1vwXcK0t0DXjfDlwO1fJGyCRauyNIY&_nc_ohc=ljvzcAXfttoQ7kNvwGvDVHn&_nc_gid=dx1LOWO9AlBqOsaXNx_6AA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af53Gi821iqJzXGjskhg_0u5cnCg_Ia2V_24WF1bPwh01g&oe=6A16094C&_nc_sid=10d13b',
@@ -474,7 +474,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-6',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "😆🫣 #humour #explore #salledesport #gym #gymgirls",
     url: 'https://www.instagram.com/p/DXNPuX9jEMz/',
     thumbnailUrl: 'https://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/671129918_1277203421260817_5186457155591755181_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2gFrCYmAz5l8lAzFspUdrixwwND1MDY1Np_stis0oVz2zGXOoGbLiEnMWL58XDtW30Q&_nc_ohc=YxmPt6XwTYwQ7kNvwECmMzC&_nc_gid=u1XHY8Ms-NPawlG7HdDEoA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4pxF3OM8ZagDt92EunpLbhesrryJnBZex8KQiarTk2mw&oe=6A163826&_nc_sid=10d13b',
@@ -488,7 +488,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-12',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Et oui c’est vrai !! Promis 😁",
     url: 'https://www.instagram.com/p/DYHsT_gRzba/',
     thumbnailUrl: 'https://scontent-lax3-2.cdninstagram.com/v/t51.71878-15/687450791_1004947135205179_6180468958068606408_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2gFmi3FDekLhNkwDVZ_FWKmUswmuR-3DExb73cVl7_5LupFKYaHyh8FasJUDPY0f5x0&_nc_ohc=ehL-xVHoTesQ7kNvwFjEZnd&_nc_gid=2OOdFlU9DRrE5M4WJedm1w&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af6xjOtSVAAt-I1vM1XU0vtQ0ZPQ-jL4kCgRIF2_WIT9Aw&oe=6A16207A&_nc_sid=10d13b',
@@ -502,7 +502,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-reel-4',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "« J’attendais le bon moment » 😐",
     url: 'https://www.instagram.com/p/DUS5I3WjOjD/',
     thumbnailUrl: 'https://scontent-atl3-2.cdninstagram.com/v/t51.71878-15/627822231_949012420793340_3598711662731016754_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2gEekxhGlEGGPGk3sV40ArlgLNfhrr5s0eZgwwWs3bxdYdzFL8c5imlS4xDZaSAW5s4&_nc_ohc=z3sipQYFuawQ7kNvwF_O6-p&_nc_gid=L5Ko975yPd2wUfTYMBXNqQ&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af5in53EipyqMEXN3OJolGZNCCtXmjD-scQtWU3iwfBk3Q&oe=6A163219&_nc_sid=10d13b',
@@ -516,7 +516,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-7',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Vous êtes fort en « réparation »? 😏",
     url: 'https://www.instagram.com/p/DXZny6Ugsnd/',
     thumbnailUrl: 'https://scontent-atl3-1.cdninstagram.com/v/t51.82787-15/670322114_18048013325565483_6454767136232446649_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gE1-cRJ0JVxdnLSqxIVRp9HlNRh01sgJF50anwjKqbB4mZmAdA5wJ6ViHLe0UyB6U-6wlR5OOad3yrhnrKDqjSd&_nc_ohc=EV5pEPgzDEcQ7kNvwGyPh2y&_nc_gid=u5j9VY8_U0SBlfj29lky4g&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af61Cu3rZztpyPPGfdSqEZNhjtAPaVMqTV33wQ5YmJC-HA&oe=6A161689&_nc_sid=10d13b',
@@ -530,7 +530,7 @@ export const SEED_TRENDS: SeedTrend[] = [
   {
     id: 'seed-ig-post-4',
     platform: 'instagram' as const,
-    contentType: 'photo' as const,
+    contentType: 'reel' as const,
     title: "Avouez, vous avez déjà fait un truc pareil?😏",
     url: 'https://www.instagram.com/p/DXMxPHMAs2S/',
     thumbnailUrl: 'https://scontent-iad3-2.cdninstagram.com/v/t51.82787-15/662896921_18047196263565483_7317150613743173480_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gE7sUZCs6m8AN3U_AFWy_aolqevV2bXTd8RIJqmspV7Lbms9QPtgJDkN2pew9wb4-s&_nc_ohc=fBzzsMvJ4F0Q7kNvwF7Pu2r&_nc_gid=cj39Nhz2FwMWqJZFpsA7aw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af6Z2JpVqxy3k6LoUPSP4l3aF-Ju4FyPYXMV6N95RVVAnA&oe=6A1627ED&_nc_sid=10d13b',

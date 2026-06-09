@@ -1,12 +1,18 @@
 'use client'
+
 import { useState, useEffect, useCallback } from 'react'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { TrendingUp, Loader2, AlertCircle, Zap, Eye, Calendar, RefreshCw, ShoppingCart } from 'lucide-react'
+import {
+  TrendingUp, Loader2, RefreshCw, Zap, Eye,
+  Calendar, ShoppingCart, Film, AlertCircle,
+  Sparkles, Lock, BarChart3
+} from 'lucide-react'
 import { OveruseModal } from '@/components/ui/OveruseModal'
 import toast from 'react-hot-toast'
 import { TrendCard } from '@/components/dashboard/trends/TrendCard'
 import { cn } from '@/lib/utils/cn'
 import { RUN_PRICE_EUR, RUN_UNITS } from '@/lib/plans'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Trend {
   id: string
@@ -14,6 +20,7 @@ interface Trend {
   title: string
   url: string
   thumbnailUrl?: string
+  videoUrl?: string
   authorUsername?: string
   authorUrl?: string
   contentType: string
@@ -32,27 +39,33 @@ interface QuotaInfo {
   usedToday: number
   remaining: number
   canGenerate: boolean
-  dailyTrendsCount: number   // trends par veille (5 / 10 / 20 selon plan)
+  dailyTrendsCount: number
   resetAt: string
 }
 
-const CATEGORIES = ['lifestyle', 'fitness', 'glamour', 'fashion', 'beauty', 'wellness', 'motivation', 'travel', 'dance']
-const CATEGORY_EMOJIS: Record<string, string> = {
-  lifestyle: '✨', fitness: '💪', glamour: '💄', fashion: '👗',
-  beauty: '💅', wellness: '🧘', motivation: '🔥', travel: '🌍', dance: '💃',
+// ─── Plan config ──────────────────────────────────────────────────────────────
+
+const PLAN_CONFIG: Record<string, {
+  label: string; color: string; bg: string; border: string;
+  trendsPerDay: number; runsPerMonth: number
+}> = {
+  starter: { label: 'Starter', color: 'text-gray-300', bg: 'bg-gray-500/15', border: 'border-gray-500/20', trendsPerDay: 0, runsPerMonth: 0 },
+  pro:     { label: 'Pro',     color: 'text-blue-300',  bg: 'bg-blue-500/15',  border: 'border-blue-500/20',  trendsPerDay: 10, runsPerMonth: 30 },
+  agency:  { label: 'Agency',  color: 'text-purple-300', bg: 'bg-purple-500/15', border: 'border-purple-500/20', trendsPerDay: 20, runsPerMonth: 30 },
 }
 
-export default function VeillePage() {
-  const [trends, setTrends]         = useState<Trend[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [generating, setGenerating] = useState(false)
-  const [category, setCategory]     = useState<string | null>(null)
-  const [isDemo, setIsDemo]         = useState(false)
-  const [error, setError]           = useState<string | null>(null)
-  const [quota, setQuota]           = useState<QuotaInfo | null>(null)
-  const [showOveruse, setShowOveruse] = useState(false)
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-  // Charge le quota utilisateur
+export default function VeillePage() {
+  const [trends, setTrends]               = useState<Trend[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [generating, setGenerating]       = useState(false)
+  const [isDemo, setIsDemo]               = useState(false)
+  const [error, setError]                 = useState<string | null>(null)
+  const [quota, setQuota]                 = useState<QuotaInfo | null>(null)
+  const [showOveruse, setShowOveruse]     = useState(false)
+
+  // ── Load quota ─────────────────────────────────────────────────────────────
   const loadQuota = useCallback(async () => {
     try {
       const res = await fetch('/api/usage/trends')
@@ -60,14 +73,12 @@ export default function VeillePage() {
     } catch {}
   }, [])
 
-  // Charge les trends depuis la DB (ou mock)
+  // ── Load trends ─────────────────────────────────────────────────────────────
   const loadTrends = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ platform: 'instagram' })
-      if (category) params.set('category', category)
-      const res = await fetch(`/api/trends?${params}`)
+      const res = await fetch('/api/trends?platform=instagram')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       if (data.success) {
@@ -79,25 +90,17 @@ export default function VeillePage() {
         setIsDemo(data.source === 'demo')
       } else throw new Error(data.error || 'Erreur API')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(msg)
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
       setLoading(false)
     }
-  }, [category])
+  }, [])
 
-  useEffect(() => {
-    loadTrends()
-    loadQuota()
-  }, [loadTrends, loadQuota])
+  useEffect(() => { loadTrends(); loadQuota() }, [loadTrends, loadQuota])
 
-  // Génération manuelle (1 RUN = 10 trends)
-  const handleRun = async () => {
-    if (!quota?.canGenerate) {
-      setShowOveruse(true)
-      return
-    }
-
+  // ── Generate new trends ─────────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    if (!quota?.canGenerate) { setShowOveruse(true); return }
     setGenerating(true)
     try {
       const res = await fetch('/api/trends/fetch', {
@@ -105,292 +108,315 @@ export default function VeillePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'instagram', limit: RUN_UNITS }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       if (data.success) {
         const count = data.trendsCount || 0
         toast.success(
           data.warning
             ? `${count} trend${count > 1 ? 's' : ''} chargé${count > 1 ? 's' : ''} (mode démo)`
-            : `${count} nouveau${count > 1 ? 'x' : ''} trend${count > 1 ? 's' : ''} Instagram récupéré${count > 1 ? 's' : ''} ✓`
+            : `${count} nouveau${count > 1 ? 'x' : ''} Reel${count > 1 ? 's' : ''} Instagram récupéré${count > 1 ? 's' : ''} ✓`,
+          { duration: 4000 }
         )
         await loadTrends(true)
         await loadQuota()
-      } else throw new Error(data.error || 'Erreur de génération')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur réseau')
+      } else {
+        if (data.error === 'quota_exceeded') { setShowOveruse(true) }
+        else toast.error(data.message || 'Erreur de génération')
+      }
+    } catch {
+      toast.error('Erreur réseau')
     } finally {
       setGenerating(false)
     }
   }
 
-  // Callback feedback
   const handleFeedback = useCallback((trendId: string, newFeedback: 'like' | 'dislike' | null) => {
     setTrends(prev => prev.map(t => t.id === trendId ? { ...t, userFeedback: newFeedback } : t))
   }, [])
 
-  // Filtrage par catégorie
-  const filteredTrends = category ? trends.filter(t => t.category === category) : trends
+  const planCfg = PLAN_CONFIG[quota?.planId || 'starter'] ?? PLAN_CONFIG.starter
+  const noAccess = quota && quota.dailyTrendsCount === 0
 
-  // Séparation daily / manual (les 1er = daily auto, le reste = manual)
-  const dailyCount = quota?.dailyTrendsCount ?? 5
-  const dailyTrends = filteredTrends.slice(0, dailyCount)
-  const extraTrends = filteredTrends.slice(dailyCount)
-
-  // Stats
-  const likedCount    = trends.filter(t => t.userFeedback === 'like').length
-  const dislikedCount = trends.filter(t => t.userFeedback === 'dislike').length
-
-  const planLabel: Record<string, string> = {
-    trial: 'Essai', starter: 'Starter', pro: 'Pro', agency: 'Agency',
+  // ─── LOCKED STATE ────────────────────────────────────────────────────────────
+  if (!loading && noAccess) {
+    return (
+      <div className="p-6 lg:p-8 max-w-screen-xl mx-auto">
+        <PageHeaderVeille isDemo={false} />
+        <div className="mt-8 glass rounded-3xl border border-amber-500/20 p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center mx-auto mb-5">
+            <Lock size={28} className="text-amber-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Fonctionnalité Pro & Agency</h2>
+          <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">
+            La Veille Trends Instagram est incluse à partir du plan <strong className="text-white">Pro</strong>.
+            Détectez les Reels viraux et gardez une longueur d'avance.
+          </p>
+          <a href="/settings/billing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl font-semibold text-black text-sm hover:opacity-90 transition-opacity">
+            <Zap size={15} />
+            Passer au plan Pro
+          </a>
+        </div>
+      </div>
+    )
   }
 
+  // ─── MAIN VIEW ────────────────────────────────────────────────────────────────
   return (
     <>
-    <div className="p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto">
+    <div className="p-6 lg:p-8 max-w-screen-2xl mx-auto space-y-6">
 
-      {/* ── HEADER ── */}
-      <PageHeader
-        icon={Eye}
-        title="Veille & tendances"
-        subtitle="Tendances Instagram du jour — mis à jour automatiquement chaque matin"
-        iconColor="text-blue-400"
-        iconBg="bg-blue-500/10"
-        actions={
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-8 h-8 rounded-xl bg-pink-500/15 border border-pink-500/20 flex items-center justify-center">
+              <TrendingUp size={17} className="text-pink-400" />
+            </div>
+            <h1 className="text-xl font-bold text-white">Veille & Tendances</h1>
+            {isDemo && (
+              <span className="text-xs px-2 py-0.5 bg-amber-500/12 border border-amber-500/20 text-amber-400 rounded-lg font-medium">
+                Mode démo
+              </span>
+            )}
+          </div>
+          <p className="text-gray-500 text-sm">
+            Reels Instagram viraux — mis à jour automatiquement chaque matin
+          </p>
+        </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Indicateur démo */}
-          {isDemo && (
-            <span className="text-xs px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg">
-              Mode démo
-            </span>
-          )}
-
-          {/* Quota journalier */}
+          {/* Quota pill */}
           {quota && (
             <div className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs border',
+              'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border',
               quota.canGenerate
-                ? 'border-green-500/20 bg-green-500/5 text-green-400'
-                : 'border-red-500/20 bg-red-500/5 text-red-400'
+                ? 'border-green-500/20 bg-green-500/6 text-green-400'
+                : 'border-red-500/20 bg-red-500/6 text-red-400'
             )}>
-              <Calendar size={11} />
+              <Calendar size={12} />
               {quota.canGenerate
-                ? `${quota.remaining}/${quota.dailyLimit} runs restants`
-                : 'Quota journalier atteint'}
+                ? `${quota.remaining}/${quota.dailyLimit} runs ce mois`
+                : 'Quota mensuel atteint'}
             </div>
           )}
 
-          {/* Bouton RUN principal */}
+          {/* Generate button */}
           <button
-            onClick={handleRun}
-            disabled={generating}
+            onClick={handleGenerate}
+            disabled={generating || loading}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
-              generating
+              'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
+              generating || loading
                 ? 'bg-white/5 text-gray-500 cursor-not-allowed'
                 : quota?.canGenerate === false
-                  ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30'
-                  : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:opacity-90'
+                  ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
+                  : 'bg-gradient-to-r from-pink-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-pink-500/20'
             )}
           >
             {generating
-              ? <><Loader2 size={15} className="animate-spin" />Génération...</>
+              ? <><Loader2 size={15} className="animate-spin" />Génération…</>
               : quota?.canGenerate === false
                 ? <><ShoppingCart size={15} />Acheter un RUN ({RUN_PRICE_EUR}€)</>
-                : <><RefreshCw size={15} />Générer {RUN_UNITS} trends</>}
+                : <><RefreshCw size={15} />Générer {RUN_UNITS} Reels</>
+            }
           </button>
         </div>
-        }
-      />
+      </div>
 
-      {/* ── STATS STRIP ── */}
+      {/* ── Stats strip ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="glass rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Trends</span>
-          <span className="text-lg font-bold text-pink-400">{trends.length}</span>
-        </div>
-        <div className="glass rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Plan</span>
-          <span className="text-lg font-bold text-purple-400">{planLabel[quota?.planId || ''] || '—'}</span>
-        </div>
-        <div className="glass rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Aimés 👍</span>
-          <span className="text-lg font-bold text-green-400">{likedCount}</span>
-        </div>
-        <div className="glass rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Ignorés 👎</span>
-          <span className="text-lg font-bold text-red-400">{dislikedCount}</span>
+        <StatPill
+          icon={Film}
+          label="Reels détectés"
+          value={trends.length}
+          color="text-pink-400"
+        />
+        <StatPill
+          icon={TrendingUp}
+          label="Plan actif"
+          value={planCfg.label}
+          color={planCfg.color}
+        />
+        <StatPill
+          icon={BarChart3}
+          label="Veille / jour"
+          value={quota?.dailyTrendsCount ?? '—'}
+          color="text-blue-400"
+        />
+        <StatPill
+          icon={Sparkles}
+          label="Aimés"
+          value={trends.filter(t => t.userFeedback === 'like').length}
+          color="text-green-400"
+        />
+      </div>
+
+      {/* ── How it works ────────────────────────────────────────────────────── */}
+      <div className="flex items-start gap-3 p-4 glass rounded-2xl border border-pink-500/12 bg-pink-500/3">
+        <Zap size={14} className="text-pink-400 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>
+            <span className="text-gray-300 font-medium">Veille automatique</span> —
+            {quota?.dailyTrendsCount ?? '?'} Reels Instagram sont générés chaque matin.
+            Inspirez-vous des formats viraux et générez du contenu similaire avec l'IA.
+          </p>
+          <p>
+            <span className="text-gray-300 font-medium">RUN manuel</span> —
+            Générez {RUN_UNITS} Reels supplémentaires à la demande.
+            Quota épuisé : {RUN_PRICE_EUR}€ / RUN.
+          </p>
         </div>
       </div>
 
-      {/* ── INFO RUN ── */}
-      <div className="glass rounded-xl p-4 border border-pink-500/15 bg-pink-500/3">
-        <div className="flex items-start gap-3">
-          <Zap size={15} className="text-pink-400 mt-0.5 flex-shrink-0" />
-          <div className="space-y-1 text-xs text-gray-500">
-            <p>
-              <strong className="text-gray-300">Veille quotidienne automatique</strong> —
-              {dailyCount} trends Instagram sont générés chaque matin selon votre plan.
-            </p>
-            <p>
-              <strong className="text-gray-300">RUN manuel</strong> — Générez {RUN_UNITS} nouveaux trends à la demande.
-              Si votre quota est atteint : {RUN_PRICE_EUR}€ / RUN supplémentaire.
-            </p>
-            <p>
-              <strong className="text-gray-300">Feedback 👍👎</strong> — Notez les trends pour affiner vos recommandations.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── ERREUR ── */}
+      {/* ── Error ────────────────────────────────────────────────────────────── */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
           <AlertCircle size={16} className="flex-shrink-0" />
           <span>{error}</span>
-          <button onClick={() => loadTrends()} className="ml-auto text-xs text-red-400 underline hover:no-underline">Réessayer</button>
+          <button onClick={() => loadTrends()} className="ml-auto text-xs text-red-400 underline">
+            Réessayer
+          </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-        {/* ── FILTRES CATÉGORIE ── */}
-        <div className="lg:col-span-1">
-          <div className="glass rounded-2xl p-5 border border-white/5 sticky top-6 space-y-5">
-            <h2 className="text-sm font-semibold text-white">Filtres</h2>
-
-            <div>
-              <p className="text-xs text-gray-600 uppercase tracking-widest mb-2.5">Catégorie</p>
-              <div className="flex flex-col gap-1.5">
-                <button
-                  onClick={() => setCategory(null)}
-                  className={cn(
-                    'px-3 py-2 rounded-xl text-xs font-medium transition-all border text-left',
-                    category === null
-                      ? 'bg-white/10 text-white border-purple-500/40'
-                      : 'text-gray-500 border-white/5 hover:text-gray-300 hover:border-white/20'
-                  )}>
-                  ✨ Toutes les catégories
-                </button>
-                {CATEGORIES.map(c => (
-                  <button
-                    key={c}
-                    onClick={() => setCategory(category === c ? null : c)}
-                    className={cn(
-                      'px-3 py-2 rounded-xl text-xs font-medium transition-all border text-left capitalize',
-                      category === c
-                        ? 'bg-pink-500/20 text-pink-300 border-pink-500/30'
-                        : 'text-gray-500 border-white/5 hover:text-gray-300 hover:border-white/20'
-                    )}>
-                    {CATEGORY_EMOJIS[c] || '•'} {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Légende feedback */}
-            <div className="pt-3 border-t border-white/5 space-y-2">
-              <p className="text-xs text-gray-600 uppercase tracking-widest">Votre feedback</p>
-              <div className="space-y-1.5 text-xs text-gray-500">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">👍</span>
-                  <span>J'aime ce contenu → plus de ce type</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-400">👎</span>
-                  <span>Pas intéressant → moins de ce type</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ── Content grid ─────────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="glass rounded-3xl border border-white/5 p-16 text-center">
+          <Loader2 size={36} className="mx-auto mb-4 animate-spin text-pink-400" />
+          <p className="text-gray-500 text-sm">Chargement des Reels viraux…</p>
         </div>
-
-        {/* ── CONTENU ── */}
-        <div className="lg:col-span-3 space-y-8">
-          {loading ? (
-            <div className="glass rounded-2xl p-16 text-center border border-white/5">
-              <Loader2 size={36} className="mx-auto mb-4 animate-spin text-pink-400" />
-              <p className="text-gray-500 text-sm">Chargement de la veille Instagram...</p>
-            </div>
-          ) : filteredTrends.length === 0 ? (
-            <div className="glass rounded-2xl p-16 text-center border border-white/5">
-              <Eye size={36} className="mx-auto mb-4 text-gray-600" />
-              <p className="text-gray-400 font-medium mb-1">Aucun trend disponible</p>
-              <p className="text-gray-600 text-sm mb-5">
-                {category
-                  ? `Aucun trend en catégorie "${category}" — essayez une autre.`
-                  : 'Cliquez sur "Générer" pour lancer la veille Instagram.'}
-              </p>
-              <button
-                onClick={handleRun}
-                disabled={generating}
-                className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-                {generating ? 'Génération...' : `Générer ${RUN_UNITS} trends`}
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Veille quotidienne */}
-              {dailyTrends.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                      <TrendingUp size={15} className="text-yellow-400" />
-                      Veille du jour
-                    </h2>
-                    <span className="text-xs px-2 py-0.5 bg-yellow-500/15 border border-yellow-500/25 text-yellow-400 rounded-full">Auto</span>
-                    <span className="text-xs text-gray-600">{dailyTrends.length} trends</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {dailyTrends.map(trend => (
-                      <TrendCard
-                        key={trend.id}
-                        {...trend}
-                        isTopTrend
-                        onFeedback={handleFeedback}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Générations supplémentaires */}
-              {extraTrends.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Zap size={15} className="text-purple-400" />
-                      Générations manuelles
-                    </h2>
-                    <span className="text-xs px-2 py-0.5 bg-purple-500/15 border border-purple-500/25 text-purple-400 rounded-full">RUN</span>
-                    <span className="text-xs text-gray-600">{extraTrends.length} trends</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {extraTrends.map(trend => (
-                      <TrendCard
-                        key={trend.id}
-                        {...trend}
-                        isTopTrend={false}
-                        onFeedback={handleFeedback}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      ) : trends.length === 0 ? (
+        <EmptyState onGenerate={handleGenerate} generating={generating} />
+      ) : (
+        <TrendsGrid trends={trends} onFeedback={handleFeedback} />
+      )}
     </div>
 
     {showOveruse && (
       <OveruseModal
         feature="trend_run"
         onClose={() => setShowOveruse(false)}
-        onSuccess={() => { setShowOveruse(false); handleRun() }}
+        onSuccess={() => { setShowOveruse(false); handleGenerate() }}
       />
     )}
     </>
+  )
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function PageHeaderVeille({ isDemo }: { isDemo: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="w-8 h-8 rounded-xl bg-pink-500/15 border border-pink-500/20 flex items-center justify-center">
+        <TrendingUp size={17} className="text-pink-400" />
+      </div>
+      <h1 className="text-xl font-bold text-white">Veille & Tendances</h1>
+      {isDemo && (
+        <span className="text-xs px-2 py-0.5 bg-amber-500/12 border border-amber-500/20 text-amber-400 rounded-lg font-medium">
+          Mode démo
+        </span>
+      )}
+    </div>
+  )
+}
+
+function StatPill({
+  icon: Icon, label, value, color,
+}: { icon: React.ElementType; label: string; value: string | number; color: string }) {
+  return (
+    <div className="glass rounded-2xl px-4 py-3 border border-white/5 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Icon size={13} className="text-gray-600" />
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+      <span className={cn('text-sm font-bold', color)}>{value}</span>
+    </div>
+  )
+}
+
+function TrendsGrid({
+  trends, onFeedback,
+}: {
+  trends: Trend[]
+  onFeedback: (id: string, feedback: 'like' | 'dislike' | null) => void
+}) {
+  // Top 3 trends (highest engagement)
+  const sorted = [...trends].sort((a, b) => b.engagement - a.engagement)
+  const top3   = sorted.slice(0, 3)
+  const rest   = sorted.slice(3)
+
+  return (
+    <div className="space-y-8">
+      {/* Featured section — top 3 */}
+      {top3.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-white">🔥 Top performances</h2>
+            <span className="text-xs text-gray-600">{top3.length} Reels</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {top3.map(trend => (
+              <TrendCard
+                key={trend.id}
+                {...trend}
+                isTopTrend
+                onFeedback={onFeedback}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* All other trends */}
+      {rest.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Eye size={14} className="text-gray-500" />
+              Tendances détectées
+            </h2>
+            <span className="text-xs text-gray-600">{rest.length} Reels</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {rest.map(trend => (
+              <TrendCard
+                key={trend.id}
+                {...trend}
+                isTopTrend={false}
+                onFeedback={onFeedback}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+function EmptyState({
+  onGenerate, generating,
+}: { onGenerate: () => void; generating: boolean }) {
+  return (
+    <div className="glass rounded-3xl border border-white/5 p-16 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-pink-500/12 border border-pink-500/20 flex items-center justify-center mx-auto mb-5">
+        <TrendingUp size={28} className="text-pink-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-white mb-2">Aucun Reel pour le moment</h3>
+      <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+        Lancez votre première veille Instagram pour détecter les Reels viraux du moment.
+      </p>
+      <button
+        onClick={onGenerate}
+        disabled={generating}
+        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+      >
+        {generating
+          ? <><Loader2 size={15} className="animate-spin" />Génération…</>
+          : <><RefreshCw size={15} />Générer les Reels</>
+        }
+      </button>
+    </div>
   )
 }

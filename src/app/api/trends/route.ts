@@ -82,21 +82,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, trends: mockWithFeedback, total: mock.length, source: 'demo' })
     }
 
-    const trends = trendsData.map((t: any) => ({
-      id: t.id,
-      platform: 'instagram',
-      title: t.title,
-      url: t.url,
-      thumbnailUrl: t.thumbnail_url,
-      authorUsername: t.author_username,
-      authorUrl: t.author_url,
-      contentType: t.content_type || 'reel',
-      engagement: t.engagement,
-      category: t.category,
-      tags: t.tags || [],
-      capturedAt: t.captured_at,
-      userFeedback: feedbackMap[t.id] ?? null,
-    }))
+    const trends = trendsData.map((t: any) => {
+      // Force reel/video for all Instagram Reels — never show 'photo'
+      const rawType = (t.content_type || 'reel').toLowerCase()
+      const contentType = rawType === 'photo' ? 'reel' : rawType
+      return {
+        id: t.id,
+        platform: 'instagram',
+        title: t.title,
+        url: t.url,
+        thumbnailUrl: t.thumbnail_url,
+        videoUrl: t.video_url || null,
+        authorUsername: t.author_username,
+        authorUrl: t.author_url,
+        contentType,
+        engagement: t.engagement,
+        likes: t.likes || null,
+        category: t.category,
+        tags: t.tags || [],
+        capturedAt: t.captured_at,
+        userFeedback: feedbackMap[t.id] ?? null,
+      }
+    })
 
     return NextResponse.json({ success: true, trends, total: trends.length, source: 'db' })
   } catch (error) {

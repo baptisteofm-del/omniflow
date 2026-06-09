@@ -17,26 +17,27 @@ export interface Trend {
   description?: string
   url: string
   thumbnailUrl?: string
+  videoUrl?: string          // Direct video URL from Apify
   authorUsername?: string
   authorUrl?: string
-  contentType: 'video' | 'photo' | 'reel' | 'carousel'
+  contentType: 'video' | 'reel' | 'carousel' // Never 'photo' for Instagram
   engagement: number
   likes: number
   postDate?: string
   category: string
   tags: string[]
   capturedAt: Date
-  // Feedback utilisateur
   userFeedback?: 'like' | 'dislike' | null
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-function detectContentType(id: string, url: string): 'video' | 'photo' | 'reel' | 'carousel' {
-  if (url.includes('/reel/') || id.includes('reel')) return 'reel'
-  if (url.includes('e15') || id.includes('video')) return 'video'
+// All Instagram content is treated as reel/video — never 'photo'
+function detectContentType(id: string, url: string, isVideo?: boolean): 'video' | 'reel' | 'carousel' {
   if (id.includes('carousel') || url.includes('carousel')) return 'carousel'
-  return 'photo'
+  if (isVideo || url.includes('/reel/') || id.includes('reel')) return 'reel'
+  // Default to reel for Instagram (algorithm favors reels)
+  return 'reel'
 }
 
 function estimateLikes(engagement: number): number {
@@ -147,13 +148,14 @@ async function fetchInstagramTrendsFromApify(limit: number): Promise<Trend[]> {
         return {
           id: `ig-apify-${Date.now()}-${index}`,
           platform: 'instagram' as const,
-          title: (item.caption || '').substring(0, 120) || `Post Instagram @${item.ownerUsername}`,
+          title: (item.caption || '').substring(0, 120) || `Reel Instagram @${item.ownerUsername}`,
           description: item.caption,
           url: postUrl,
-          thumbnailUrl: item.displayUrl || item.thumbnail,
+          thumbnailUrl: item.displayUrl || item.thumbnailUrl || item.thumbnail,
+          videoUrl: item.videoUrl || item.videoSrc || null,  // Store direct video URL
           authorUsername: item.ownerUsername,
           authorUrl: `https://instagram.com/${item.ownerUsername}`,
-          contentType: item.isVideo ? 'reel' : detectContentType(`ig-${index}`, postUrl),
+          contentType: detectContentType(`ig-${index}`, postUrl, item.isVideo),
           engagement: engagementVal,
           likes: item.likeCount || estimateLikes(engagementVal),
           postDate: item.timestamp,

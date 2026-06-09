@@ -6,7 +6,8 @@ import {
   LayoutDashboard, Eye, Film, Sparkles, Calendar,
   Bot, BarChart3, MessageSquare, Users, Settings,
   Zap, ChevronDown, CreditCard, User, Gift, Menu, X,
-  Image as ImageIcon, Search, Lock, TrendingUp, Wallet
+  Image as ImageIcon, Search, Lock, TrendingUp, Wallet,
+  TicketIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import toast from 'react-hot-toast'
@@ -17,7 +18,9 @@ const NAV_TOP = [
   { label: 'Modèles',     href: '/accounts',   icon: Users,           tutorial: 'accounts' },
   { label: 'Finance',     href: '/finance',    icon: Wallet },
   { label: 'Parrainage',  href: '/referral',   icon: Gift, badge: '10%' },
-  { label: 'Prospection', href: '/accounts/prospection', icon: Search },
+  { label: 'Prospection', href: '/accounts/prospection', icon: Search, requiredPlan: 'agency' },
+  { label: 'Support',     href: '/support',     icon: TicketIcon },
+
 ]
 
 // Items marqués isNew affichent un badge vert "NEW" (retirer après ~4 semaines)
@@ -29,7 +32,7 @@ const NAV_COLLAPSIBLE = [
     color: 'text-blue-400',
     items: [
       { label: 'Chatting IA',  href: '/chatting/ai', icon: Sparkles,    requiredPlan: 'agency' },
-      { label: 'Rapports',     href: '/chatting',    icon: BarChart3,   requiredPlan: 'pro' },
+      { label: 'Rapports',     href: '/chatting',    icon: BarChart3 },  // Accessible à tous les plans
     ],
   },
   {
@@ -38,7 +41,7 @@ const NAV_COLLAPSIBLE = [
     icon: TrendingUp,
     color: 'text-cyan-400',
     items: [
-      { label: 'Veille Trends',   href: '/content/veille',        icon: Eye },
+      { label: 'Veille Trends',   href: '/content/veille',        icon: Eye,       requiredPlan: 'pro' },
       { label: 'Édition & Spoof', href: '/content/editor',        icon: Film },
       { label: 'Génération IA',   href: '/content/ai-generation', icon: Zap,       requiredPlan: 'pro' },
       { label: 'Auto Posting',    href: '/posting',               icon: Calendar,  tutorial: 'posting' },

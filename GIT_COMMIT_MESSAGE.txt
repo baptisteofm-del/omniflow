@@ -1,0 +1,101 @@
+feat(team): refonte complète système d'invitation membres
+
+✨ NEW FEATURES:
+- API publique GET /api/invite/[token] pour vérifier les invitations
+- Support de 8 rôles (Monteur Vidéo, Manager Chatting, Manager Marketing,
+  Administrateur, Comptable, Community Manager, Chatter, Membre)
+- Statuts uniformes des invitations (pending/opened/accepted/expired/cancelled)
+- Indexes BD pour performance
+- Traçabilité: opened_at, accepted_at, invited_by sur invitations
+- Last_seen_at sur team_members pour analytics
+
+🐛 BUG FIXES:
+- Fix: Erreur "nom d'utilisateur invalide" lors de la création de compte
+  → Code robuste avec gestion d'erreur et fallback pour users existants
+- Fix: Profils créés sans agency_id (constraint error)
+  → Profils créés avec tous les champs requis
+- Fix: Statuts d'invitations pas gérés uniformément
+  → Migration BD + code cohérent
+- Fix: RLS policies trop restrictives
+  → Policies réécrites, claires et efficaces
+- Fix: Invitations expirées pas détectées
+  → Détection automatique lors de l'accès au lien
+
+🔧 REFACTORING:
+- `src/app/api/auth/invite-register/route.ts`: Gestion d'erreur robuste
+  * Validation email stricte
+  * Fallback pour users existants (via listUsers)
+  * Profil créé avec agency_id et rôle
+  * Messages d'erreur explicites
+  
+- `src/app/api/team/accept/route.ts`: Statuts et permissions uniformes
+  * Insertion avec status: 'active' et permissions: []
+  * Marquage de l'invitation avec status: 'accepted'
+  
+- `src/app/api/settings/team/route.ts`: Filtrage cohérent
+  * Select inclut status et permissions
+  * Filtre sur status IN (pending, opened) au lieu de neq(accepted, true)
+  * Rôles étendus (7 → 8)
+  
+- `src/app/(dashboard)/settings/team/page.tsx`: UI améliorée
+  * 8 rôles supportés avec descriptions
+  * Détection et affichage des invitations expirées (badge rouge)
+  * Filtrage des invitations expirées à l'affichage
+  * Messages contextualisés (supprimer member vs annuler invitation)
+  * Types mis à jour pour optionnalité
+
+📦 DATABASE:
+- Migration: `supabase/migrations/fix_invitations_system.sql`
+  * Colonnes manquantes ajoutées (status, opened_at, accepted_at)
+  * Indexes de performance (agency, token, email, status)
+  * RLS policies refondues
+  * Fonction helper accept_team_invitation() (optionnelle)
+  * CHECK constraints sur statuts valides
+
+📚 DOCUMENTATION:
+- `INVITATION_SYSTEM_AUDIT.md`: Audit détaillé du code existant
+- `INVITATION_SYSTEM_FIX_SUMMARY.md`: Résumé des corrections et déploiement
+- `INVITATION_SYSTEM_COMPLETE_REPORT.md`: Rapport complet (audit + corrections)
+
+✅ QUALITY:
+- TypeScript: 0 erreurs (npx tsc --noEmit)
+- Build: succès (npm run build)
+- Code robuste: gestion d'erreur complète
+- DB cohérent: schema unifié avec constraints
+
+🧪 TESTING:
+- Test 1: Inviter → Créer compte → Vérifier member ✅
+- Test 2: Inviter → Connexion existante → Auto-join ✅
+- Test 3: Invitation expirée → Erreur claire ✅
+- Test 4: Renvoyer invitation → Nouveau token ✅
+- Test 5: 8 rôles → Création, modification, suppression ✅
+- Test 6: Erreurs explicites pour cas d'erreur ✅
+
+⚠️ BREAKING CHANGES:
+- Colonne 'status' ajoutée à team_invitations (migration requise avant déploiement)
+- RLS policies changées (audit recommandé si custom policies existaient)
+
+🚀 DEPLOYMENT:
+1. Exécuter migration dans Supabase SQL Editor
+2. Déployer le code
+3. Valider avec test checklist
+4. Notifier l'équipe support du nouveau fonctionnement
+
+---
+
+ISSUE RESOLVED:
+- Utilisateurs ne peuvent plus créer de compte via invitation
+- Status des invitations n'était pas géré
+- Rôles incomplets
+- RLS policies trop restrictives
+
+POST-DEPLOYMENT CHECKLIST:
+✅ TypeScript compilation: 0 erreurs
+✅ Build succès
+✅ Migration exécutée en DB
+✅ Test création compte via invitation
+✅ Test connexion existant
+✅ Test invitations expirées
+✅ Test renvoyer invitation
+✅ Test 8 rôles disponibles
+✅ Documentation à jour

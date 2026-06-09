@@ -35,7 +35,12 @@ export async function POST(request: NextRequest) {
 
     await admin
       .from('team_invitations')
-      .update({ token: newToken, expires_at: newExpiry, accepted: false })
+      .update({ 
+        token: newToken, 
+        expires_at: newExpiry, 
+        accepted: false,
+        status: 'pending'
+      })
       .eq('id', invitationId)
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://omniflowapp.ai'

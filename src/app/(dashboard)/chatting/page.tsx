@@ -233,7 +233,9 @@ export default function ChattingReportsPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const hasPro = ['pro', 'agency'].includes(planId)
+  // Rapport Chatting accessible à tous les plans (Starter, Pro, Agency)
+  // Les AI Insights avancés restent réservés au plan Agency
+  const hasPro = planId === 'starter' || planId === 'pro' || planId === 'agency'
 
   // ── Connexion requise ──────────────────────────────────────
   if (!loading && !hasIntegrations) {

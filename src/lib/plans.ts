@@ -44,22 +44,23 @@ export const PLANS: Plan[] = [
       teamMembers: 2,         // 2 membres
       telegramBots: 2,        // 2 bots Telegram
       aiGenerations: 0,       // Pas de génération IA
-      trendRuns: 30,          // 30 veilles/mois (1/jour)
-      dailyTrendsCount: 5,    // 5 trends par veille quotidienne
+      trendRuns: 0,           // Veille Trends non inclus (plan Pro minimum)
+      dailyTrendsCount: 0,    // Pas de veille quotidienne
       chattingMessages: 0,    // Pas de Chatting IA
       prospectionRuns: 0,
       contentWatches: -1,
     },
     features: [
-      { name: 'Utilisateurs illimités', included: true },
-      { name: 'Autoposting', included: true },
-      { name: 'Veille Trends quotidienne (5 trends/jour)', included: true },
-      { name: 'Génération vidéo IA', included: true },
-      { name: 'Posts & scheduling illimités', included: true },
-      { name: 'Dashboard financier', included: true },
-      { name: 'Parrainage 10%', included: true },
+      { name: 'Dashboard Financier', included: true },
+      { name: 'Rapport Chatting', included: true },
+      { name: 'Édition & Spoof', included: true },
+      { name: 'Auto-Posting', included: true },
+      { name: 'Banque de Médias', included: true },
+      { name: 'Bot Telegram', included: true },
+      { name: 'Veille Trends', included: false },
+      { name: 'Génération IA', included: false },
+      { name: 'Prospection de Modèles', included: false },
       { name: 'Chatting IA', included: false },
-      { name: 'Prospection de modèles', included: false },
     ],
   },
   // ── PRO (199€/mois) ───────────────────────────────────────────────────
@@ -68,7 +69,6 @@ export const PLANS: Plan[] = [
     name: 'Pro',
     description: 'Pour les agences en croissance',
     price: { monthly: 199, yearly: 159 },
-    highlighted: true,
     limits: {
       accounts: -1,
       models: 5,              // 5 modèles
@@ -83,15 +83,16 @@ export const PLANS: Plan[] = [
       contentWatches: -1,
     },
     features: [
-      { name: 'Utilisateurs illimités', included: true },
-      { name: 'Autoposting', included: true },
-      { name: 'Veille Trends quotidienne (10 trends/jour)', included: true },
-      { name: 'Génération vidéo IA', included: true },
-      { name: 'Crédits supplémentaires (9€ / 10 générations)', included: true },
-      { name: 'Chatting IA', included: true },
-      { name: 'Support prioritaire', included: true },
-      { name: 'Parrainage 10%', included: true },
-      { name: 'Prospection de modèles', included: false },
+      { name: 'Dashboard Financier', included: true },
+      { name: 'Rapport Chatting', included: true },
+      { name: 'Veille Trends', included: true },
+      { name: 'Édition & Spoof', included: true },
+      { name: 'Génération IA', included: true },
+      { name: 'Auto-Posting', included: true },
+      { name: 'Banque de Médias', included: true },
+      { name: 'Bot Telegram', included: true },
+      { name: 'Prospection de Modèles', included: false },
+      { name: 'Chatting IA', included: false },
     ],
   },
   // ── AGENCY (349€/mois) ────────────────────────────────────────────────
@@ -100,6 +101,7 @@ export const PLANS: Plan[] = [
     name: 'Agency',
     description: 'Pour les grandes agences',
     price: { monthly: 349, yearly: 279 },
+    highlighted: true,
     limits: {
       accounts: -1,
       models: 10,             // 10 modèles
@@ -114,21 +116,26 @@ export const PLANS: Plan[] = [
       contentWatches: -1,
     },
     features: [
-      { name: 'Utilisateurs illimités', included: true },
-      { name: 'Autoposting', included: true },
-      { name: 'Veille Trends quotidienne (20 trends/jour)', included: true },
-      { name: 'Génération vidéo IA illimitée', included: true },
-      { name: 'Chatting IA illimité', included: true },
-      { name: 'Prospection de modèles', included: true },
-      { name: 'Crédits supplémentaires (9€ / 10 générations)', included: true },
-      { name: 'Support dédié 24/7', included: true },
+      { name: 'Dashboard Financier', included: true },
+      { name: 'Rapport Chatting', included: true },
+      { name: 'Veille Trends', included: true },
+      { name: 'Édition & Spoof', included: true },
+      { name: 'Génération IA', included: true },
+      { name: 'Auto-Posting', included: true },
+      { name: 'Banque de Médias', included: true },
+      { name: 'Bot Telegram', included: true },
+      { name: 'Prospection de Modèles', included: true },
+      { name: 'Chatting IA', included: true },
     ],
   },
 ]
 
 export const PLAN_FEATURES: Record<string, string[]> = {
-  starter: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram'],
-  pro:     ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation'],
+  // Starter : fonctionnalités de base (sans Veille Trends, Génération IA, Prospection, Chatting IA)
+  starter: ['editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_reports'],
+  // Pro : + Veille Trends + Génération IA
+  pro:     ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'chatting_reports', 'ai_generation'],
+  // Agency : accès complet
   agency:  ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_ai', 'chatting_reports', 'prospection'],
 }
 

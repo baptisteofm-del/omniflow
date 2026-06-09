@@ -1,124 +1,97 @@
 'use client'
-import { useState } from 'react'
-import { Send, MessageCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { Send, Clock, CheckCircle, MessageCircle, Zap } from 'lucide-react'
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: '', subject: '', message: '' })
-  const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await fetch('/api/support', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      setSent(true)
-    } catch {
-      // fail silently
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen py-24 px-4 gradient-bg">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium mb-6">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            Support en ligne
+          </div>
           <h1 className="text-4xl sm:text-5xl font-bold mb-4">
             Besoin d'aide ?
           </h1>
-          <p className="text-gray-400 text-lg">
-            Notre équipe répond à tous les messages sous 1h
+          <p className="text-gray-400 text-lg max-w-md mx-auto">
+            Notre équipe est disponible sur Telegram pour répondre à toutes vos questions.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Telegram — Mis en avant */}
-          <div className="glass rounded-2xl p-8 border border-blue-500/30 relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30">
-                ⚡ Le plus rapide
-              </span>
+        {/* Telegram card — full width, premium */}
+        <div className="glass rounded-3xl p-10 border border-blue-500/30 relative overflow-hidden">
+          {/* Background glow */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-cyan-500/8 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-semibold mb-6">
+              <Zap size={11} />
+              Réponse garantie en moins d'1h
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-5">
-              <Send size={26} className="text-blue-400" />
+
+            <div className="flex items-start gap-5 mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/30 to-cyan-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                <Send size={28} className="text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-1">Support Telegram</h2>
+                <p className="text-gray-400 leading-relaxed">
+                  Contactez directement notre équipe via Telegram. 
+                  Nous traitons chaque demande personnellement et vous apportons 
+                  une réponse claire et rapide.
+                </p>
+              </div>
             </div>
-            <h2 className="text-xl font-bold mb-2">Support Telegram</h2>
-            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-              Parlez directement à notre équipe sur Telegram. Réponse garantie en moins d'1h pendant les heures ouvrées.
-            </p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="glass rounded-xl p-4 text-center border border-white/5">
+                <Clock size={18} className="text-blue-400 mx-auto mb-2" />
+                <p className="text-white font-semibold text-sm">{'< 1h'}</p>
+                <p className="text-gray-500 text-xs mt-0.5">Temps de réponse</p>
+              </div>
+              <div className="glass rounded-xl p-4 text-center border border-white/5">
+                <MessageCircle size={18} className="text-cyan-400 mx-auto mb-2" />
+                <p className="text-white font-semibold text-sm">24/7</p>
+                <p className="text-gray-500 text-xs mt-0.5">Disponibilité</p>
+              </div>
+              <div className="glass rounded-xl p-4 text-center border border-white/5">
+                <CheckCircle size={18} className="text-green-400 mx-auto mb-2" />
+                <p className="text-white font-semibold text-sm">100%</p>
+                <p className="text-gray-500 text-xs mt-0.5">Résolution</p>
+              </div>
+            </div>
+
+            {/* CTA */}
             <a
-              href="https://t.me/omniflowapp_bot"
+              href="https://t.me/omniflowsupport"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-xl font-medium text-blue-300 transition-all"
+              className="flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-2xl font-semibold text-white text-base transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.01]"
             >
-              <Send size={16} />
+              <Send size={18} />
               Ouvrir le support Telegram
             </a>
-          </div>
 
-          {/* Formulaire */}
-          <div className="glass rounded-2xl p-8">
-            <div className="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-5">
-              <MessageCircle size={26} className="text-purple-400" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Envoyer un message</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Préférez-vous écrire ? On vous répond sous 24h.
+            <p className="text-center text-gray-600 text-xs mt-4">
+              Vous serez redirigé vers notre canal de support dédié
             </p>
-
-            {sent ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <CheckCircle2 size={40} className="text-green-400 mb-3" />
-                <p className="font-medium text-white">Message envoyé ✅</p>
-                <p className="text-sm text-gray-400 mt-1">On revient vers vous rapidement.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <input
-                  required
-                  value={form.name}
-                  onChange={e => setForm({...form, name: e.target.value})}
-                  placeholder="Votre nom / agence"
-                  className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 text-sm"
-                />
-                <input
-                  required
-                  value={form.subject}
-                  onChange={e => setForm({...form, subject: e.target.value})}
-                  placeholder="Sujet"
-                  className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 text-sm"
-                />
-                <textarea
-                  required
-                  rows={4}
-                  value={form.message}
-                  onChange={e => setForm({...form, message: e.target.value})}
-                  placeholder="Votre message..."
-                  className="w-full px-4 py-2.5 bg-white/5 border border-purple-500/20 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 text-sm resize-none"
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  {loading && <Loader2 size={15} className="animate-spin" />}
-                  {loading ? 'Envoi...' : 'Envoyer'}
-                </button>
-              </form>
-            )}
           </div>
         </div>
 
-        <p className="text-center text-gray-600 text-sm mt-8">
-          Nous répondons à tous les messages sous 24h — souvent bien moins 🚀
-        </p>
+        {/* FAQ teaser */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            Une question courante ?{' '}
+            <a href="/faq" className="text-purple-400 hover:text-purple-300 transition-colors font-medium">
+              Consultez notre FAQ
+            </a>
+            {' '}ou utilisez le widget support en bas à droite.
+          </p>
+        </div>
       </div>
     </div>
   )

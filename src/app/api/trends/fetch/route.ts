@@ -83,14 +83,16 @@ export async function POST(request: NextRequest) {
     // Insérer les nouveaux trends
     const records = trends.map((t) => ({
       agency_id: agency.id,
-      platform: 'instagram',                          // Toujours Instagram
+      platform: 'instagram',
       title: t.title,
       url: t.url,
       thumbnail_url: t.thumbnailUrl || null,
+      video_url: (t as any).videoUrl || null,     // Store direct video URL
       author_username: t.authorUsername || null,
       author_url: t.authorUrl || null,
-      content_type: t.contentType || 'reel',
+      content_type: t.contentType || 'reel', // Always reel/video/carousel, never photo
       engagement: t.engagement,
+      likes: t.likes || 0,
       category: t.category,
       tags: t.tags,
       captured_at: new Date().toISOString(),
