@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       .eq('id', agencyId)
       .single()
     
-    const agencyPlanId = agency?.plan_id || 'trial'
+    const agencyPlanId = agency?.plan_id || 'starter'
     const chattingAllowed = hasFeature(agencyPlanId, 'chatting_ai')
     if (!chattingAllowed) {
       return NextResponse.json(

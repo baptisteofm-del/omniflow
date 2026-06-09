@@ -30,7 +30,7 @@ export function PricingSection() {
   }
 
   // Afficher uniquement les plans payants (starter, pro, agency)
-  const displayPlans = PLANS.filter(p => p.id !== 'trial')
+  const displayPlans = PLANS
 
   return (
     <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 gradient-bg">
@@ -42,7 +42,7 @@ export function PricingSection() {
             Choisissez votre <span className="gradient-text">formule</span>
           </h2>
           <p className="text-gray-400 text-lg mb-8">
-            7 jours d'essai gratuit · Résiliez quand vous voulez
+            Résiliez quand vous voulez
           </p>
 
           {/* Toggle mensuel / annuel */}
@@ -117,11 +117,7 @@ export function PricingSection() {
                     )}>
                     Choisir ce plan
                   </Link>
-                  <Link
-                    href={`/register?plan=${plan.id}&interval=${interval}&trial=true`}
-                    className="block text-center py-2 text-sm text-gray-400 hover:text-white transition-colors border border-gray-600/30 rounded-xl hover:border-gray-500/60">
-                    Essai gratuit 7 jours
-                  </Link>
+
                 </div>
 
                 {/* Crypto */}
@@ -216,7 +212,7 @@ export function PricingSection() {
         {/* Footer note */}
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            ✓ Période d'essai 7 jours · Carte bancaire requise · Pas de prélèvement · Aucun engagement
+            ✓ Paiement sécurisé · Résiliez quand vous voulez
           </p>
         </div>
 

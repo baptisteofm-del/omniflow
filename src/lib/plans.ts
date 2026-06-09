@@ -31,36 +31,6 @@ export const OMNIFLOW_COMMISSION_PERCENT = 10
 // ───────────────────────────────────────────────────────────────────────
 
 export const PLANS: Plan[] = [
-  // ── TRIAL (0€, 7 jours) ───────────────────────────────────────────────
-  {
-    id: 'trial',
-    name: 'Essai 7 jours',
-    description: 'Découvrez OmniFlow avant de vous engager',
-    price: { monthly: 0, yearly: 0 },
-    limits: {
-      accounts: 1,
-      models: 1,
-      postSchedules: -1,
-      teamMembers: 0,
-      telegramBots: 0,
-      aiGenerations: 2,
-      trendRuns: 5,           // 5 veilles total (pas /jour)
-      dailyTrendsCount: 5,    // 5 trends par veille
-      chattingMessages: 0,
-      prospectionRuns: 0,
-      contentWatches: 5,
-    },
-    features: [
-      { name: '1 modèle inclus', included: true },
-      { name: '1 compte géré', included: true },
-      { name: 'Veille Trends quotidienne', included: true },
-      { name: '2 générations IA', included: true },
-      { name: 'Éditeur de contenu', included: true },
-      { name: 'Membres équipe', included: false },
-      { name: 'Bot Telegram', included: false },
-      { name: 'Chatting IA', included: false },
-    ],
-  },
   // ── STARTER (99€/mois) ────────────────────────────────────────────────
   {
     id: 'starter',
@@ -157,7 +127,6 @@ export const PLANS: Plan[] = [
 ]
 
 export const PLAN_FEATURES: Record<string, string[]> = {
-  trial:   ['veille', 'editor', 'posting', 'finance', 'media', 'ai_generation'],
   starter: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram'],
   pro:     ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation'],
   agency:  ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_ai', 'chatting_reports', 'prospection'],
@@ -177,14 +146,10 @@ export function hasFeature(planId: string, feature: string): boolean {
 }
 
 export function getUpgradePlan(currentPlanId: string): Plan | null {
-  const order = ['trial', 'starter', 'pro', 'agency']
+  const order = ['starter', 'pro', 'agency']
   const idx = order.indexOf(currentPlanId)
   if (idx === -1 || idx >= order.length - 1) return null
   return getPlanById(order[idx + 1]) || null
-}
-
-export function isTrialPlan(planId: string): boolean {
-  return planId === 'trial'
 }
 
 /**

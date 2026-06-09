@@ -22,14 +22,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return
       }
 
+      // Vérifier si l'utilisateur est propriétaire d'une agence
       const { data: agency } = await supabase
         .from('agencies')
         .select('id, onboarding_completed')
         .eq('owner_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (agency && !agency.onboarding_completed) {
+        // Seulement rediriger vers onboarding si c'est un owner avec agence non configurée
         router.push('/onboarding')
+        return
+      }
+
+      // Si pas d'agence propre, vérifier si c'est un membre d'équipe
+      if (!agency) {
+        const { data: membership } = await supabase
+          .from('team_members')
+          .select('id, agency_id, status')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        if (!membership) {
+          // Ni owner ni membre actif → rediriger vers login
+          router.push('/login')
+        }
+        // Si membre actif → laisser accéder au dashboard normalement
       }
     }
 

@@ -4,8 +4,12 @@ import { sendWelcomeEmail } from '@/lib/email/resend'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const error = searchParams.get('error')
+  const code        = searchParams.get('code')
+  const error       = searchParams.get('error')
+  // Paramètres d'invitation préservés dans l'URL de callback
+  const invitation  = searchParams.get('invitation') || searchParams.get('token') || ''
+  const inviteEmail = searchParams.get('email') || ''
+  const agencyId    = searchParams.get('agency') || ''
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=${error}`)
@@ -14,8 +18,18 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient()
     const { error: exchangeError, data } = await supabase.auth.exchangeCodeForSession(code)
+
     if (!exchangeError && data.user) {
-      // After successful email confirmation, send welcome email
+      // Si l'utilisateur venait d'une invitation → l'accepter et rediriger vers /join
+      if (invitation && agencyId) {
+        const joinUrl = new URL('/join', origin)
+        joinUrl.searchParams.set('invitation', invitation)
+        if (inviteEmail) joinUrl.searchParams.set('email', inviteEmail)
+        joinUrl.searchParams.set('agency', agencyId)
+        return NextResponse.redirect(joinUrl.toString())
+      }
+
+      // Sinon : flux standard owner → email de bienvenue + dashboard
       try {
         const { data: agency } = await supabase
           .from('agencies')
@@ -28,9 +42,8 @@ export async function GET(request: Request) {
         }
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError)
-        // Don't block auth callback if email fails
       }
-      
+
       return NextResponse.redirect(`${origin}/dashboard`)
     }
   }

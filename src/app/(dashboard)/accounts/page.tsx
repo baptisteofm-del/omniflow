@@ -17,12 +17,7 @@ interface Model {
   social_networks?: string[]
 }
 
-const SOCIAL_NETWORKS = [
-  { id: 'instagram', label: 'Instagram', color: 'bg-pink-500/20 border-pink-500/40 text-pink-300',     emoji: '📸' },
-  { id: 'tiktok',   label: 'TikTok',    color: 'bg-white/10  border-white/20  text-gray-200',           emoji: '🎵' },
-  { id: 'twitter',  label: 'X',         color: 'bg-gray-500/20 border-gray-500/40 text-gray-300',       emoji: '🐦' },
-  { id: 'reddit',   label: 'Reddit',    color: 'bg-orange-500/20 border-orange-500/40 text-orange-300', emoji: '🤖' },
-]
+// Réseaux sociaux gérés directement via AdsPower / Dolphin Anty — section supprimée
 
 const TOOLS = [
   {
@@ -59,15 +54,15 @@ const TOOLS = [
     href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=adspower`,
   },
   {
-    id: 'geelark',
-    label: 'GeeLark',
-    bg: 'bg-[#059669]',
+    id: 'dolphin',
+    label: 'Dolphin Anty',
+    bg: 'bg-[#1e40af]',
     logo: (
       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="white">
-        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-3a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
       </svg>
     ),
-    href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=geelark`,
+    href: (modelId: string) => `/settings/integrations?model=${modelId}&tool=dolphin`,
   },
 ]
 
@@ -252,33 +247,7 @@ export default function AccountsPage() {
                 </Link>
               </div>
 
-              {/* Réseaux sociaux */}
-              <div className="mb-4">
-                <p className="text-xs text-gray-600 uppercase tracking-widest font-medium mb-2.5">Réseaux sociaux</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {SOCIAL_NETWORKS.map(net => {
-                    const active = (model.social_networks || []).includes(net.id)
-                    return (
-                      <button
-                        key={net.id}
-                        onClick={() => toggleSocialNetwork(model.id, net.id)}
-                        title={active ? `Retirer ${net.label}` : `Ajouter ${net.label}`}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                          active
-                            ? net.color + ' shadow-sm'
-                            : 'border-white/8 text-gray-600 hover:border-white/20 hover:text-gray-400'
-                        }`}
-                      >
-                        <span>{net.emoji}</span>
-                        <span>{net.label}</span>
-                        {active && <span className="ml-0.5 text-[10px] opacity-70">✓</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* 4 boutons de connexion */}
+              {/* Connexions */}
               <div>
                 <p className="text-xs text-gray-600 uppercase tracking-widest font-medium mb-2.5">Connexions</p>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -334,7 +303,7 @@ export default function AccountsPage() {
                 />
               </div>
               <p className="text-xs text-gray-600 bg-white/5 rounded-xl px-4 py-3 border border-white/5 leading-relaxed">
-                Après la création, connectez les outils (OnlyFans, MYM, AdsPower, GeeLark) depuis la carte du modèle.
+                Après la création, connectez les outils (OnlyFans, MYM, AdsPower, Dolphin Anty) depuis la carte du modèle.
               </p>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setShowForm(false); setEditingModel(null) }}

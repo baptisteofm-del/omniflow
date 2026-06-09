@@ -44,7 +44,7 @@ export async function getTrialStatus(agencyId?: string): Promise<TrialStatus | n
     isExpired,
     daysRemaining,
     endsAt: agency.trial_ends_at || null,
-    planId: agency.plan_id || 'trial',
+    planId: agency.plan_id || 'starter',
     subscriptionStatus: agency.subscription_status || 'trialing',
   }
 }

@@ -11,16 +11,27 @@ export async function GET(request: NextRequest) {
       .from('agencies')
       .select('id, referral_code')
       .eq('owner_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!agency?.id) return NextResponse.json({ error: 'No agency found' }, { status: 404 })
+    if (!agency?.id) {
+      return NextResponse.json({ error: 'No agency found' }, { status: 404 })
+    }
 
-    // Use stored referral_code if available, otherwise generate from agency ID
-    const referralCode = agency.referral_code || agency.id.substring(0, 8).toUpperCase()
-
-    // If no stored code, persist it
-    if (!agency.referral_code) {
-      await supabase.from('agencies').update({ referral_code: referralCode }).eq('id', agency.id)
+    // Générer le code de parrainage s'il n'existe pas
+    let referralCode = agency.referral_code
+    if (!referralCode) {
+      // Générer un code unique à partir de l'ID + timestamp
+      referralCode = agency.id.substring(0, 6).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase()
+      // Tenter de persister le code (ne pas bloquer si la colonne n'existe pas)
+      try {
+        await supabase
+          .from('agencies')
+          .update({ referral_code: referralCode })
+          .eq('id', agency.id)
+      } catch (e) {
+        // La colonne referral_code peut ne pas exister encore — utiliser le code en mémoire
+        console.warn('Could not persist referral_code (column may not exist yet):', e)
+      }
     }
 
     const agencyId = agency.id

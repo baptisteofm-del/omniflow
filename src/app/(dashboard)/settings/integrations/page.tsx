@@ -54,9 +54,11 @@ const LogoAdsPower = () => (
   </div>
 )
 
-const LogoGeeLark = () => (
-  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#059669' }}>
-    <img src="/logo-geelark.png" alt="GeeLark" className="w-full h-full object-contain" />
+const LogoDolphinAnty = () => (
+  <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1e40af' }}>
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="white">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1zM10 18h4v1h-4z"/>
+    </svg>
   </div>
 )
 
@@ -118,11 +120,12 @@ const integrations = [
     category: 'posting',
   },
   {
-    id: 'geelark',
-    name: 'GeeLark',
-    description: 'Navigateur Android cloud pour TikTok/Instagram posting',
-    logo: LogoGeeLark,
-    requiresUrl: false,
+    id: 'dolphin',
+    name: 'Dolphin Anty',
+    description: 'Navigateur anti-détection multi-profils pour le posting automatisé',
+    logo: LogoDolphinAnty,
+    requiresUrl: true,
+    defaultUrl: 'http://localhost:3001',
     category: 'posting',
   },
   // FINANCE & CRYPTO
@@ -454,9 +457,9 @@ export default function IntegrationsPage() {
                               💡 URL locale : l'agent AdsPower doit tourner sur votre PC. Port par défaut: 50325
                             </p>
                           )}
-                          {integration.id === 'geelark' && (
+                          {integration.id === 'dolphin' && (
                             <p className="text-xs text-gray-500 p-3 bg-white/5 rounded-lg">
-                              💡 Obtenez votre clé API dans le panneau GeeLark
+                              💡 URL locale de l'API Dolphin Anty. Port par défaut : 3001. L'agent Dolphin doit être ouvert sur votre machine.
                             </p>
                           )}
                           {integration.id === 'onlyfans' && (
@@ -535,7 +538,7 @@ export default function IntegrationsPage() {
           <li>• Les clés API sont chiffrées et stockées de façon sécurisée</li>
           <li>• Utilisez des clés API read-only quand possible (Binance, Coinbase)</li>
           <li>• Vérifiez que chaque service est accessible avant de sauvegarder</li>
-          <li>• Les intégrations de chatting (OnlyFans, MYM) sont séparées du posting (AdsPower, GeeLark)</li>
+          <li>• Les intégrations de chatting (OnlyFans, MYM) sont séparées du posting (AdsPower, Dolphin Anty)</li>
           <li>• Vous pouvez mettre à jour les clés à tout moment</li>
         </ul>
       </div>

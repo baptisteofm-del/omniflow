@@ -3,7 +3,7 @@
 // ================================
 
 // --- Plans & Abonnements ---
-export type PlanId = 'trial' | 'starter' | 'pro' | 'agency'
+export type PlanId = 'starter' | 'pro' | 'agency'
 export type BillingInterval = 'monthly' | 'yearly'
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
 

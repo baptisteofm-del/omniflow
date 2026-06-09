@@ -43,7 +43,7 @@ export function Hero() {
             href="/register"
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-semibold text-base sm:text-lg hover:opacity-90 transition-all glow"
           >
-            Démarrer l'essai gratuit 7 jours
+            Commencer maintenant
             <ArrowRight size={18} className="hidden sm:inline" />
           </Link>
           <a href="#demos" className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 glass rounded-xl font-medium text-gray-300 hover:text-white transition-all">

@@ -5,14 +5,6 @@ import { Zap, Loader2, CheckCircle2, AlertTriangle, LogIn, UserPlus } from 'luci
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-const ROLE_LABELS: Record<string, string> = {
-  video_editor: 'Monteur Vidéo',
-  chatting_manager: 'Manager Chatting',
-  marketing_manager: 'Manager Marketing',
-  admin: 'Administrateur',
-  member: 'Membre',
-}
-
 function JoinContent() {
   const router = useRouter()
   const params = useSearchParams()
@@ -25,10 +17,12 @@ function JoinContent() {
   const [agencyName, setAgencyName] = useState('')
   const supabase = createClient()
 
-  // Construire les URLs de redirection correctement encodées
-  const joinPath = `/join?invitation=${token}&email=${encodeURIComponent(email)}&agency=${agencyId}`
-  const loginUrl = `/login?redirect=${encodeURIComponent(joinPath)}`
+  // URLs de redirection
+  // Pour un invité sans compte → inscription directe (parcours principal)
   const registerUrl = `/register?invitation=${token}&email=${encodeURIComponent(email)}&agency=${agencyId}`
+  // Pour un invité avec compte existant → connexion avec retour vers /join
+  const joinPath    = `/join?invitation=${token}&email=${encodeURIComponent(email)}&agency=${agencyId}`
+  const loginUrl    = `/login?redirect=${encodeURIComponent(joinPath)}`
 
   useEffect(() => {
     const check = async () => {
@@ -55,7 +49,7 @@ function JoinContent() {
       if (!res.ok) throw new Error(data.error)
       setAgencyName(data.agencyName || 'OmniFlow')
       setStatus('success')
-      setTimeout(() => router.push('/dashboard'), 2500)
+      setTimeout(() => router.push('/dashboard'), 2000)
     } catch (e: any) {
       setErrorMessage(e.message || "Erreur lors de l'acceptation")
       setStatus('error')
@@ -85,7 +79,7 @@ function JoinContent() {
           </div>
           <h1 className="text-xl font-bold text-white mb-2">Invitation OmniFlow</h1>
           <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-            Pour rejoindre l'agence, connectez-vous ou créez votre compte OmniFlow.
+            Vous avez été invité(e) à rejoindre une agence OmniFlow.
           </p>
 
           {email && (
@@ -94,22 +88,29 @@ function JoinContent() {
             </div>
           )}
 
+          {/* Bouton principal : Créer un compte (parcours le plus fréquent) */}
           <div className="flex flex-col gap-3">
             <Link
-              href={loginUrl}
+              href={registerUrl}
               className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all"
             >
-              <LogIn size={16} />
-              Se connecter pour accepter
+              <UserPlus size={16} />
+              Créer mon compte
             </Link>
+
+            {/* Bouton secondaire : connexion si compte existant */}
             <Link
-              href={registerUrl}
+              href={loginUrl}
               className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm hover:bg-white/10 transition-all"
             >
-              <UserPlus size={16} />
-              Créer un compte
+              <LogIn size={16} />
+              J'ai déjà un compte — Se connecter
             </Link>
           </div>
+
+          <p className="text-xs text-gray-600 mt-5">
+            Après connexion, vous serez automatiquement ajouté(e) à l'agence.
+          </p>
         </div>
       </div>
     )
@@ -128,9 +129,7 @@ function JoinContent() {
             Vous avez rejoint <strong className="text-white">{agencyName}</strong> avec succès.
             Redirection vers le dashboard...
           </p>
-          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-green-500 to-cyan-500 rounded-full animate-[grow_2.5s_ease-in-out_forwards]" style={{ width: '100%', transformOrigin: 'left', animation: 'none', transition: 'width 2.5s ease-in-out', }} />
-          </div>
+          <Loader2 size={20} className="animate-spin text-green-400 mx-auto" />
         </div>
       </div>
     )

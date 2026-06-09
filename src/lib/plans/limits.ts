@@ -39,7 +39,7 @@ export async function checkLimit(agencyId: string, key: LimitKey): Promise<Limit
     .eq('id', agencyId)
     .single()
 
-  const planId = agency?.plan_id || 'trial'
+  const planId = agency?.plan_id || 'starter'
   const isTrial = agency?.subscription_status === 'trialing' || planId === 'trial'
 
   // Essai expiré → bloquer tout
@@ -96,7 +96,7 @@ export async function checkLimit(agencyId: string, key: LimitKey): Promise<Limit
   }
 
   const allowed = current < limit
-  const upgradeOrder = ['trial', 'starter', 'pro', 'agency']
+  const upgradeOrder = ['starter', 'pro', 'agency']
   const currentIdx = upgradeOrder.indexOf(planId)
   const upgradeRequired = !allowed && currentIdx < upgradeOrder.length - 1
     ? upgradeOrder[currentIdx + 1]
