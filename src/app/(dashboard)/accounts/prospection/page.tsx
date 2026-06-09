@@ -24,8 +24,7 @@ interface Prospect {
   avatar_url?: string
   followers_estimate: number
   engagement_rate: number
-  niche: string
-  bio?: string
+bio?: string
   potential_score: number
   status: ProspectStatus
   outreach_count: number
@@ -51,7 +50,6 @@ interface OutreachMessage {
     username: string
     platform: string
     followers_estimate: number
-    niche: string
     avatar_url?: string
     profile_url?: string
   }
@@ -67,45 +65,68 @@ const STATUS_CONFIG: Record<ProspectStatus, { label: string; color: string; dot:
   discovered: { label: 'Découverts', color: 'border-blue-500/40 bg-blue-500/5', dot: 'bg-blue-400' },
   contacted: { label: 'Contactés', color: 'border-amber-500/40 bg-amber-500/5', dot: 'bg-amber-400' },
   discussing: { label: 'En discussion', color: 'border-violet-500/40 bg-violet-500/5', dot: 'bg-violet-400' },
-  signed: { label: '✅ Signés', color: 'border-green-500/40 bg-green-500/5', dot: 'bg-green-400' },
+  signed: { label: 'Signés', color: 'border-green-500/40 bg-green-500/5', dot: 'bg-green-400' },
 }
 
 const PLATFORM_ICON: Record<string, string> = {
-  Instagram: '📷',
-  TikTok: '🎵',
-  Twitter: '𝕏',
+  Instagram: 'IG',
+  TikTok: 'TT',
+  Twitter: 'X',
 }
 
-const NICHES = ['fitness', 'lifestyle', 'glamour', 'beauty', 'health', 'gaming', 'fashion', 'travel', 'food', 'music']
 const SIZES = [
-  { id: 'micro', label: 'Micro (1K–10K)' },
-  { id: 'mid', label: 'Mid (10K–100K)' },
+  { id: 'micro', label: 'Micro (1K-10K)' },
+  { id: 'mid', label: 'Mid (10K-100K)' },
   { id: 'macro', label: 'Macro (100K+)' },
 ]
 
 export default function ProspectionPage() {
   const { planId } = useUsage()
+
+  if (planId !== 'agency') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#12111a] to-[#0a0a0f] p-6 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle size={48} className="mx-auto mb-4 text-amber-500" />
+          <h1 className="text-2xl font-bold text-white mb-2">Fonctionnalité réservée</h1>
+          <p className="text-gray-400 mb-6">La prospection Apify est disponible uniquement avec le plan <strong>Agency</strong>.</p>
+          <a
+            href="/settings/billing"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold hover:shadow-lg hover:shadow-violet-500/30 transition-all"
+          >
+            Passer au plan Agency
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   const supabase = createClient()
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [outreach, setOutreach] = useState<OutreachMessage[]>([])
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState<'kanban' | 'outreach' | 'stats' | 'followup' | 'setup'>('kanban')
+  const [view, setView] = useState<'kanban' | 'outreach' | 'stats' | 'followup'>('kanban')
 
   // Search modal
   const [showSearch, setShowSearch] = useState(false)
+  const [searchMode, setSearchMode] = useState<'hashtags' | 'similar'>('hashtags')
   const [searchParams, setSearchParams] = useState({
+    mode: 'hashtags' as 'hashtags' | 'similar',
     platform: 'instagram' as 'instagram' | 'tiktok' | 'both',
     hashtags: [] as string[],
+    sourceAccount: '',
     country: 'FR',
     language: 'fr',
     followersMin: 1000,
     followersMax: 30000,
     engagementMin: 2,
     keywords: [] as string[],
-    limit: 50,
+    limit: 10,
     hashtagInput: '',
     keywordInput: '',
   })
+  const [quotaUsed, setQuotaUsed] = useState(0)
+  const [quotaMax] = useState(100)
   const [searchResult, setSearchResult] = useState<string | null>(null)
 
   // CSV import
@@ -142,7 +163,18 @@ export default function ProspectionPage() {
   const [sendingOutreach, setSendingOutreach] = useState(false)
   const [outreachStep, setOutreachStep] = useState<'generate' | 'edit' | 'confirm'>('generate')
 
-  useEffect(() => { loadProspects() }, [])
+  useEffect(() => { 
+    loadProspects()
+    loadQuota()
+  }, [])
+
+  const loadQuota = async () => {
+    const res = await fetch('/api/prospection/quota')
+    if (res.ok) {
+      const { used } = await res.json()
+      setQuotaUsed(used || 0)
+    }
+  }
 
   const loadProspects = async () => {
     setLoading(true)
@@ -197,7 +229,7 @@ export default function ProspectionPage() {
       }
 
       const data = await res.json()
-      
+
       if (data.profiles && data.profiles.length > 0) {
         // Convert API response to Prospect format
         const newProspects: Prospect[] = data.profiles.map((p: any) => ({
@@ -209,13 +241,13 @@ export default function ProspectionPage() {
           avatar_url: p.avatar,
           followers_estimate: p.followers,
           engagement_rate: p.engagementRate,
-          niche: p.tags?.[0] || 'lifestyle',
+
           bio: p.bio,
           potential_score: Math.ceil(p.score / 20), // Convert 0-100 to 1-5 stars
           status: 'discovered' as ProspectStatus,
           outreach_count: 0,
           geo_country: p.country,
-          scrape_mode: 'keyword' as const,
+          scrape_mode: searchMode === 'similar' ? 'similar' : 'keyword' as const,
         }))
 
         // Store in Supabase
@@ -239,14 +271,23 @@ export default function ProspectionPage() {
           }
         }
 
-        setSearchResult(`✅ ${data.profiles.length} profils trouvés et importés`)
+        setSearchResult(`${data.profiles.length} profils trouvés et importés`)
+        // Refresh quota after successful import
+        await loadQuota()
         setTimeout(() => setShowSearch(false), 2000)
       } else {
-        setSearchResult('❌ Aucun profil trouvé avec ces critères')
+        setSearchResult('Aucun profil trouvé avec ces critères')
       }
     } catch (error) {
       console.error('Search error:', error)
-      setSearchResult(`❌ Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
+      const errorMsg = error instanceof Error ? error.message : 'Erreur inconnue'
+      if (errorMsg.includes('429')) {
+        setSearchResult('Quota mensuel atteint')
+      } else {
+        setSearchResult(`Erreur: ${errorMsg}`)
+      }
+      // Refresh quota to show updated status
+      await loadQuota()
     } finally {
       setLoading(false)
     }
@@ -259,13 +300,12 @@ export default function ProspectionPage() {
     const text = await file.text()
     const lines = text.trim().split('\n').slice(1) // skip header
     const parsed = lines.map((line) => {
-      const [username, platform, followers, engagement, niche, bio] = line.split(',').map((s) => s.trim().replace(/"/g, ''))
+      const [username, platform, followers, engagement, bio] = line.split(',').map((s) => s.trim().replace(/"/g, ''))
       return {
         username: username.startsWith('@') ? username : '@' + username,
         platform: (['Instagram', 'TikTok', 'Twitter'].includes(platform) ? platform : 'Instagram') as Prospect['platform'],
         followers_estimate: parseInt(followers) || 5000,
         engagement_rate: parseFloat(engagement) || 0.04,
-        niche: niche || 'lifestyle',
         bio: bio || '',
         potential_score: 3,
         status: 'discovered' as ProspectStatus,
@@ -490,7 +530,7 @@ export default function ProspectionPage() {
               Prospection de modèles
             </h1>
             <p className="text-gray-400">
-              Notre IA scrape Instagram, TikTok & Twitter — puis contacte les modèles automatiquement
+              Notre IA scrape Instagram, TikTok & Twitter - puis contacte les modèles automatiquement
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -498,9 +538,7 @@ export default function ProspectionPage() {
               ['kanban', 'Kanban', null],
               ['outreach', 'Outreach IA', null],
               ['stats', 'Stats', null],
-              ['followup', 'Relances', overdueProspects.length > 0 ? overdueProspects.length : null],
-              ['setup', 'Guide n8n', null],
-            ] as [string, string, number | null][]).map(([v, label, badge]) => (
+              ['followup', 'Relances', overdueProspects.length > 0 ? overdueProspects.length : null],            ] as [string, string, number | null][]).map(([v, label, badge]) => (
               <button
                 key={v}
                 onClick={() => {
@@ -628,7 +666,7 @@ export default function ProspectionPage() {
             {outreach.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
                 <Bot size={40} className="mx-auto mb-3 opacity-30" />
-                <p>Aucun message en file — cliquez sur <strong className="text-gray-400">Contacter par IA</strong> sur une carte</p>
+                <p>Aucun message en file - cliquez sur <strong className="text-gray-400">Contacter par IA</strong> sur une carte</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -662,12 +700,6 @@ export default function ProspectionPage() {
             total: prospects.filter(p => p.platform === pl).length,
             signed: prospects.filter(p => p.platform === pl && p.status === 'signed').length,
           }))
-          const byNiche = Array.from(new Set(prospects.map(p => p.niche))).map(n => ({
-            niche: n,
-            count: prospects.filter(p => p.niche === n).length,
-            signed: prospects.filter(p => p.niche === n && p.status === 'signed').length,
-          })).sort((a, b) => b.count - a.count).slice(0, 6)
-
           return (
             <div className="space-y-6">
               {/* Funnel */}
@@ -704,7 +736,7 @@ export default function ProspectionPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
                 {/* By platform */}
                 <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
                   <h4 className="font-semibold text-white mb-4 text-sm">Par plateforme</h4>
@@ -719,23 +751,6 @@ export default function ProspectionPage() {
                         {p.signed > 0 && <span className="text-xs text-green-400">{p.signed} signées</span>}
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* By niche */}
-                <div className="rounded-2xl border border-white/10 bg-white/3 p-5">
-                  <h4 className="font-semibold text-white mb-4 text-sm">Par niche</h4>
-                  <div className="space-y-2">
-                    {byNiche.map(n => (
-                      <div key={n.niche} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400 capitalize">{n.niche}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">{n.count} profils</span>
-                          {n.signed > 0 && <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">{n.signed} signées</span>}
-                        </div>
-                      </div>
-                    ))}
-                    {byNiche.length === 0 && <p className="text-gray-600 text-sm">Pas encore de données</p>}
                   </div>
                 </div>
               </div>
@@ -790,7 +805,7 @@ export default function ProspectionPage() {
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-white text-sm">{p?.username || '—'}</span>
+                          <span className="font-semibold text-white text-sm">{p?.username || '-'}</span>
                           <span className="text-xs text-gray-500">{p?.platform && PLATFORM_ICON[p.platform as keyof typeof PLATFORM_ICON]}</span>
                         </div>
                         <p className="text-gray-500 text-xs line-clamp-1">{o.message}</p>
@@ -808,96 +823,9 @@ export default function ProspectionPage() {
         )}
 
         {/* ── Setup / n8n guide ── */}
-        {view === 'setup' && (
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/3 p-6">
-              <h3 className="font-bold text-white text-lg mb-1 flex items-center gap-2"><BookOpen size={20} className="text-violet-400" /> Guide de configuration</h3>
-              <p className="text-gray-500 text-sm mb-6">Pour un scraping réel et un envoi DM automatique, suivez ces 3 étapes.</p>
 
-              <div className="space-y-5">
-                {[{
-                  step: '1', title: 'Base de données Supabase', color: 'border-blue-500/30 bg-blue-500/5',
-                  content: (
-                    <div>
-                      <p className="text-gray-400 text-sm mb-3">Exécutez cette migration dans <strong className="text-white">Supabase → SQL Editor</strong> :</p>
-                      <div className="bg-black/40 rounded-lg p-3 font-mono text-xs text-green-400 mb-3">
-                        -- Fichier : supabase/add_prospection_v2.sql<br />
-                        -- Ajoute les colonnes manquantes + table outreach_messages
-                      </div>
-                      <a href="https://supabase.com/dashboard/project/jbtljjximpsqasfylrce/sql" target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm hover:bg-blue-500/30 transition-colors">
-                        Ouvrir Supabase SQL Editor <ExternalLink size={13} />
-                      </a>
-                    </div>
-                  )
-                }, {
-                  step: '2', title: 'Scraping automatique (n8n + RapidAPI)', color: 'border-cyan-500/30 bg-cyan-500/5',
-                  content: (
-                    <div className="space-y-3">
-                      <p className="text-gray-400 text-sm">2 options :</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="p-3 rounded-lg bg-black/20 border border-white/5">
-                          <p className="text-white font-medium mb-1">Option A — RapidAPI (recommandé)</p>
-                          <p className="text-gray-500 text-xs">1. Créez un compte sur <strong>rapidapi.com</strong> (gratuit)</p>
-                          <p className="text-gray-500 text-xs">2. Ajoutez <code className="text-cyan-400">RAPIDAPI_KEY=votre_clé</code> dans Vercel → Settings → Environment Variables</p>
-                          <p className="text-gray-500 text-xs">3. Le bouton "Scraper des profils" utilisera la vraie API Instagram/TikTok</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-black/20 border border-white/5">
-                          <p className="text-white font-medium mb-1">Option B — n8n workflow</p>
-                          <p className="text-gray-500 text-xs mb-2">Importez le workflow dans n8n et configurez les variables :</p>
-                          <div className="flex gap-2">
-                            <a href="/accounts/prospection/n8n-templates/scraping.json" download
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs hover:bg-cyan-500/30">
-                              <Download size={12} /> Télécharger workflow scraping
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                }, {
-                  step: '3', title: 'Envoi DM automatique (AdsPower + n8n)', color: 'border-violet-500/30 bg-violet-500/5',
-                  content: (
-                    <div className="space-y-3">
-                      <p className="text-gray-400 text-sm">Configuration de l'envoi automatique des DMs :</p>
-                      <div className="space-y-2 text-xs text-gray-500">
-                        <p>1. Importez le workflow n8n d’outreach dans votre n8n</p>
-                        <p>2. Copiez l’URL du webhook n8n généré</p>
-                        <p>3. Ajoutez <code className="text-violet-400">N8N_OUTREACH_WEBHOOK_URL=https://n8n.srv1610420.hstgr.cloud/webhook/omniflow-outreach</code> dans Vercel</p>
-                        <p>4. Ajoutez aussi <code className="text-violet-400">PROSPECTION_WEBHOOK_SECRET=un_secret_fort</code></p>
-                        <p>5. Les DMs seront envoyés via AdsPower automatiquement quand vous cliquez "Mettre en file"</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <a href="/accounts/prospection/n8n-templates/outreach-dm.json" download
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs hover:bg-violet-500/30">
-                          <Download size={12} /> Télécharger workflow DM
-                        </a>
-                        <a href="https://n8n.srv1610420.hstgr.cloud" target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-xs hover:border-white/20">
-                          Ouvrir n8n <ExternalLink size={11} />
-                        </a>
-                      </div>
-                    </div>
-                  )
-                }].map(s => (
-                  <div key={s.step} className={`rounded-xl border ${s.color} p-5`}>
-                    <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">{s.step}</span>
-                      {s.title}
-                    </h4>
-                    {s.content}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* ── CSV template helper ── */}
-        <div className="text-xs text-gray-600 border-t border-white/5 pt-4">
-          Format CSV: <code className="text-gray-400">username,platform,followers,engagement_rate,niche,bio</code>
-          {' '}— ex: <code className="text-gray-400">@sofia_fit,Instagram,25000,0.065,fitness,"Coach perso 💪"</code>
-        </div>
+
       </div>
 
       {/* ════════════════════════════ SEARCH MODAL ════════════════════════════ */}
@@ -915,6 +843,34 @@ export default function ProspectionPage() {
             </div>
 
             <div className="space-y-4 mb-6">
+              {/* Search Mode Toggle */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Mode de recherche</label>
+                <div className="flex gap-2">
+                  {(['hashtags', 'similar'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setSearchMode(mode)
+                        setSearchParams((prev) => ({
+                          ...prev,
+                          mode,
+                          hashtags: [],
+                          sourceAccount: '',
+                        }))
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                        searchMode === mode
+                          ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
+                          : 'border-white/10 text-gray-500 hover:border-white/20'
+                      }`}
+                    >
+                      {mode === 'hashtags' ? 'Par hashtags' : 'Compte similaire'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Platform */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Plateforme</label>
@@ -929,65 +885,78 @@ export default function ProspectionPage() {
                           : 'border-white/10 text-gray-500 hover:border-white/20'
                       }`}
                     >
-                      {p === 'instagram' ? '📷 Instagram' : p === 'tiktok' ? '🎵 TikTok' : '🔄 Les deux'}
+                      {p === 'instagram' ? 'Instagram' : p === 'tiktok' ? 'TikTok' : 'Les deux'}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Hashtags */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hashtags</label>
-                <div className="flex gap-2 mb-2 flex-wrap">
-                  {searchParams.hashtags.map((tag) => (
-                    <div key={tag} className="px-2.5 py-1 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-medium flex items-center gap-1.5">
-                      #{tag}
-                      <button
-                        onClick={() => setSearchParams((p) => ({
-                          ...p,
-                          hashtags: p.hashtags.filter((t) => t !== tag),
-                        }))}
-                        className="text-violet-400 hover:text-white"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
+              {/* Hashtags or Similar Account */}
+              {searchMode === 'hashtags' ? (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hashtags</label>
+                  <div className="flex gap-2 mb-2 flex-wrap">
+                    {searchParams.hashtags.map((tag) => (
+                      <div key={tag} className="px-2.5 py-1 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-medium flex items-center gap-1.5">
+                        #{tag}
+                        <button
+                          onClick={() => setSearchParams((p) => ({
+                            ...p,
+                            hashtags: p.hashtags.filter((t) => t !== tag),
+                          }))}
+                          className="text-violet-400 hover:text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="ex: lifestyle, fitness"
+                      value={searchParams.hashtagInput}
+                      onChange={(e) => setSearchParams((p) => ({ ...p, hashtagInput: e.target.value }))}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && searchParams.hashtagInput.trim()) {
+                          setSearchParams((p) => ({
+                            ...p,
+                            hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
+                            hashtagInput: '',
+                          }))
+                          e.preventDefault()
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        if (searchParams.hashtagInput.trim()) {
+                          setSearchParams((p) => ({
+                            ...p,
+                            hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
+                            hashtagInput: '',
+                          }))
+                        }
+                      }}
+                      className="px-3 py-2 bg-violet-500/20 border border-violet-500/40 rounded-lg text-violet-300 text-xs hover:bg-violet-500/30"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Compte cible (@username)</label>
                   <input
                     type="text"
-                    placeholder="ex: lifestyle, fitness"
-                    value={searchParams.hashtagInput}
-                    onChange={(e) => setSearchParams((p) => ({ ...p, hashtagInput: e.target.value }))}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && searchParams.hashtagInput.trim()) {
-                        setSearchParams((p) => ({
-                          ...p,
-                          hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
-                          hashtagInput: '',
-                        }))
-                        e.preventDefault()
-                      }
-                    }}
-                    className="flex-1 px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
+                    placeholder="ex: @fitgirl_paris"
+                    value={searchParams.sourceAccount}
+                    onChange={(e) => setSearchParams((p) => ({ ...p, sourceAccount: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-violet-500 focus:outline-none text-sm"
                   />
-                  <button
-                    onClick={() => {
-                      if (searchParams.hashtagInput.trim()) {
-                        setSearchParams((p) => ({
-                          ...p,
-                          hashtags: [...p.hashtags, p.hashtagInput.trim().toLowerCase()],
-                          hashtagInput: '',
-                        }))
-                      }
-                    }}
-                    className="px-3 py-2 bg-violet-500/20 border border-violet-500/40 rounded-lg text-violet-300 text-xs hover:bg-violet-500/30"
-                  >
-                    Ajouter
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Followers Range */}
               <div className="grid grid-cols-2 gap-3">
@@ -1023,6 +992,19 @@ export default function ProspectionPage() {
                 />
               </div>
 
+              {/* Nombre de profils */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Nombre de profils max</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="200"
+                  value={searchParams.limit}
+                  onChange={(e) => setSearchParams((p) => ({ ...p, limit: Math.max(5, Math.min(100, parseInt(e.target.value) || 10)) }))}
+                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+                />
+              </div>
+
               {/* Country & Language */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1034,7 +1016,7 @@ export default function ProspectionPage() {
                   >
                     {['FR', 'BE', 'CH', 'MA', 'TN', 'DZ', 'CA', 'BR', 'INTL'].map((c) => (
                       <option key={c} value={c}>
-                        {c === 'FR' ? '🇫🇷 France' : c === 'BE' ? '🇧🇪 Belgique' : c === 'CH' ? '🇨🇭 Suisse' : c === 'MA' ? '🇲🇦 Maroc' : c === 'TN' ? '🇹🇳 Tunisie' : c === 'DZ' ? '🇩🇿 Algérie' : c === 'CA' ? '🇨🇦 Canada' : c === 'BR' ? '🇧🇷 Brésil' : '🌍 Tous'}
+                        {c === 'FR' ? 'France' : c === 'BE' ? 'Belgique' : c === 'CH' ? 'Suisse' : c === 'MA' ? 'Maroc' : c === 'TN' ? 'Tunisie' : c === 'DZ' ? 'Algérie' : c === 'CA' ? 'Canada' : c === 'BR' ? 'Brésil' : 'Tous'}
                       </option>
                     ))}
                   </select>
@@ -1048,14 +1030,15 @@ export default function ProspectionPage() {
                   >
                     {['fr', 'en', 'es', 'ar', 'pt', 'multi'].map((l) => (
                       <option key={l} value={l}>
-                        {l === 'fr' ? '🇫🇷 Français' : l === 'en' ? '🇬🇧 Anglais' : l === 'es' ? '🇪🇸 Espagnol' : l === 'ar' ? '🇸🇦 Arabe' : l === 'pt' ? '🇧🇷 Portugais' : '🌍 Multi'}
+                        {l === 'fr' ? 'Français' : l === 'en' ? 'Anglais' : l === 'es' ? 'Espagnol' : l === 'ar' ? 'Arabe' : l === 'pt' ? 'Portugais' : 'Multi'}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Keywords in Bio */}
+              {/* Keywords in Bio (hidden for now) */}
+              {false && (
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Mots-clés Bio</label>
                 <div className="flex gap-2 mb-2 flex-wrap">
@@ -1108,22 +1091,29 @@ export default function ProspectionPage() {
                   </button>
                 </div>
               </div>
+              )}
+            </div>
 
-              {/* Limit */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Max résultats</label>
-                <input
-                  type="number"
-                  value={searchParams.limit}
-                  onChange={(e) => setSearchParams((p) => ({ ...p, limit: parseInt(e.target.value) || 50 }))}
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/10 rounded-lg text-white focus:border-violet-500 focus:outline-none text-sm"
+            {/* Quota display */}
+            <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Quota mensuel</span>
+                <span className="text-xs text-gray-400">{quotaUsed} / {quotaMax}</span>
+              </div>
+              <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full transition-all" 
+                  style={{ width: `${Math.min(100, (quotaUsed / quotaMax) * 100)}%` }} 
                 />
               </div>
+              {quotaUsed >= quotaMax && (
+                <p className="text-xs text-red-400 mt-2">Quota mensuel atteint. Revenez le mois prochain.</p>
+              )}
             </div>
 
             {searchResult && (
               <div className={`mb-4 p-3 rounded-lg border text-sm ${
-                searchResult.includes('✅')
+                searchResult.includes('trouvés')
                   ? 'bg-green-500/10 border-green-500/30 text-green-400'
                   : 'bg-red-500/10 border-red-500/30 text-red-400'
               }`}>
@@ -1140,11 +1130,12 @@ export default function ProspectionPage() {
               </button>
               <button
                 onClick={handleSearch}
-                disabled={loading || searchParams.hashtags.length === 0}
+                disabled={loading || searchParams.hashtags.length === 0 || quotaUsed >= quotaMax || (searchMode === 'similar' && !searchParams.sourceAccount.trim())}
+                title={quotaUsed >= quotaMax ? 'Quota mensuel atteint' : undefined}
                 className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-violet-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                {loading ? 'Scraping en cours...' : 'Lancer la prospection'}
+                {loading ? 'Scraping en cours...' : quotaUsed >= quotaMax ? 'Quota atteint' : 'Lancer la prospection'}
               </button>
             </div>
           </div>
@@ -1157,7 +1148,7 @@ export default function ProspectionPage() {
           <div className="bg-[#12111a] border border-violet-500/20 rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                <Bot size={20} className="text-violet-400" /> Campagne IA — {selectedIds.size} prospect{selectedIds.size > 1 ? 's' : ''}
+                <Bot size={20} className="text-violet-400" /> Campagne IA - {selectedIds.size} prospect{selectedIds.size > 1 ? 's' : ''}
               </h3>
               <button onClick={() => { setShowCampaignModal(false); setCampaignStep('config') }} className="text-gray-500 hover:text-white"><X size={20} /></button>
             </div>
@@ -1335,7 +1326,7 @@ export default function ProspectionPage() {
                 {/* Editable message */}
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Message — modifier si besoin
+                    Message - modifier si besoin
                   </p>
                   <textarea
                     value={editedMsg}
@@ -1466,7 +1457,7 @@ function ProspectCard({
 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">{prospect.niche}</span>
+
           {/* Platform status badge */}
           {(prospect as any).platform_status && (
             <span
@@ -1532,12 +1523,12 @@ function ProspectCard({
 
 // ── Outreach Row ──
 const OUTREACH_STATUS_LABELS: Record<OutreachStatus, { label: string; color: string }> = {
-  pending: { label: '⏳ En attente', color: 'text-gray-400' },
-  sent: { label: '✉️ Envoyé', color: 'text-blue-400' },
-  replied: { label: '💬 A répondu', color: 'text-green-400' },
-  no_response: { label: '🔇 Pas de réponse', color: 'text-gray-500' },
-  signed: { label: '✅ Signée', color: 'text-emerald-400' },
-  rejected: { label: '❌ Refus', color: 'text-red-400' },
+  pending: { label: 'En attente', color: 'text-gray-400' },
+  sent: { label: 'Envoyé', color: 'text-blue-400' },
+  replied: { label: 'A répondu', color: 'text-green-400' },
+  no_response: { label: 'Pas de réponse', color: 'text-gray-500' },
+  signed: { label: 'Signée', color: 'text-emerald-400' },
+  rejected: { label: 'Refus', color: 'text-red-400' },
 }
 
 function OutreachRow({
@@ -1553,7 +1544,7 @@ function OutreachRow({
     <div className="rounded-xl border border-white/8 bg-white/3 hover:bg-white/5 transition-colors p-4 flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-white text-sm">{msg.prospects?.username || '—'}</span>
+          <span className="font-semibold text-white text-sm">{msg.prospects?.username || '-'}</span>
           <span className="text-gray-600 text-xs">{msg.prospects?.platform && PLATFORM_ICON[msg.prospects.platform]}</span>
           {msg.ai_generated && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30">IA</span>

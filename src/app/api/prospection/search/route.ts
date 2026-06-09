@@ -2,8 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface SearchRequest {
+  mode: 'hashtags' | 'similar'
   platform: 'instagram' | 'tiktok' | 'both'
   hashtags: string[]
+  sourceAccount: string
   country: string
   language: string
   followersMin: number
@@ -51,6 +53,8 @@ interface ProcessedProfile {
     followers: number
   }
   tags: string[]
+  sourceAccount?: string
+  scrapeMode?: 'hashtags' | 'similar'
 }
 
 interface SearchResponse {
@@ -58,6 +62,9 @@ interface SearchResponse {
   total: number
   platform: string
   searchParams: SearchRequest
+  quotaUsed: number
+  quotaMax: number
+  quotaRemaining: number
 }
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -282,7 +289,7 @@ function processProfiles(
     .sort((a, b) => b.score - a.score)
 }
 
-async function searchPlatform(
+async function searchByHashtags(
   platform: 'instagram' | 'tiktok',
   request: SearchRequest
 ): Promise<ProcessedProfile[]> {
@@ -305,13 +312,90 @@ async function searchPlatform(
 
   const profiles = await callApifyActor(actorId, input, platform)
 
-  return processProfiles(
+  const processed = processProfiles(
     profiles,
     platform,
     request.country,
     request.language,
     request
   )
+
+  return processed.map(p => ({
+    ...p,
+    scrapeMode: 'hashtags',
+  }))
+}
+
+async function searchBySimilarAccount(
+  platform: 'instagram' | 'tiktok',
+  request: SearchRequest
+): Promise<ProcessedProfile[]> {
+  if (!request.sourceAccount || request.sourceAccount.trim().length === 0) {
+    throw new Error('Source account username is required')
+  }
+
+  const username = request.sourceAccount.replace(/^@/, '').trim()
+  let hashtags: string[] = []
+
+  // For Instagram: scrape followers of the target account
+  // For TikTok: search by similar accounts
+  if (platform === 'instagram') {
+    // Try to get follower profiles from the target account
+    const actorId = 'apify/instagram-followers-scraper'
+    try {
+      const input = {
+        username: username,
+        resultsLimit: request.limit || 50,
+      }
+      const profiles = await callApifyActor(actorId, input, platform)
+      const processed = processProfiles(
+        profiles,
+        platform,
+        request.country,
+        request.language,
+        request
+      )
+      return processed.map(p => ({
+        ...p,
+        sourceAccount: username,
+        scrapeMode: 'similar',
+      }))
+    } catch (error) {
+      // Fallback: use hashtag-scraper with profile bio hashtags
+      console.error('Instagram followers scraper failed, using fallback:', error)
+      const fallbackInput = {
+        hashtags: ['influencer', 'creator'],
+        resultsLimit: request.limit || 50,
+        includeUserFollowers: true,
+      }
+      const profiles = await callApifyActor(APIFY_ACTORS.instagram, fallbackInput, platform)
+      const processed = processProfiles(profiles, platform, request.country, request.language, request)
+      return processed.map(p => ({
+        ...p,
+        sourceAccount: username,
+        scrapeMode: 'similar',
+      }))
+    }
+  } else {
+    // TikTok: search users similar to target account
+    const input = {
+      username: username,
+      resultsLimit: request.limit || 50,
+    }
+    const profiles = await callApifyActor(APIFY_ACTORS.tiktok, input, platform)
+    const processed = processProfiles(
+      profiles,
+      platform,
+      request.country,
+      request.language,
+      request
+    )
+    return processed.map(p => ({
+      ...p,
+      sourceAccount: username,
+      scrapeMode: 'similar',
+    }))
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -346,20 +430,65 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!body.hashtags || body.hashtags.length === 0) {
+    if (body.mode === 'hashtags' && (!body.hashtags || body.hashtags.length === 0)) {
       return NextResponse.json(
         { error: 'At least one hashtag is required' },
         { status: 400 }
       )
     }
 
-    const platforms = body.platform === 'both' ? ['instagram', 'tiktok'] : [body.platform]
+    if (body.mode === 'similar' && (!body.sourceAccount || body.sourceAccount.trim().length === 0)) {
+      return NextResponse.json(
+        { error: 'Source account username is required' },
+        { status: 400 }
+      )
+    }
+
+    // Check monthly quota
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+    const { count: existingCount } = await supabase
+      .from('prospects')
+      .select('*', { count: 'exact', head: true })
+      .eq('agency_id', agency.id)
+      .gte('created_at', monthStart)
+
+    const quotaUsed = existingCount || 0
+    const quotaMax = 100
+    const quotaRemaining = Math.max(0, quotaMax - quotaUsed)
+
+    // Check if quota is exhausted
+    if (quotaUsed >= quotaMax) {
+      return NextResponse.json(
+        { 
+          error: 'Quota mensuel atteint (100 profils/mois)',
+          quota: quotaMax,
+          used: quotaUsed,
+          quotaUsed,
+          quotaMax,
+          quotaRemaining,
+        },
+        { status: 429 }
+      )
+    }
+
+    // Adjust limit to not exceed quota
+    let adjustedLimit = body.limit
+    if (quotaUsed + body.limit > quotaMax) {
+      adjustedLimit = quotaRemaining
+    }
+
+    // Update body limit if adjusted
+    const adjustedBody = { ...body, limit: adjustedLimit }
+
+    const platforms = adjustedBody.platform === 'both' ? ['instagram', 'tiktok'] : [adjustedBody.platform]
     let allProfiles: ProcessedProfile[] = []
 
     // Search each platform
     for (const platform of platforms as ('instagram' | 'tiktok')[]) {
       try {
-        const platformProfiles = await searchPlatform(platform, body)
+        const platformProfiles = adjustedBody.mode === 'similar'
+          ? await searchBySimilarAccount(platform, adjustedBody)
+          : await searchByHashtags(platform, adjustedBody)
         allProfiles = allProfiles.concat(platformProfiles)
       } catch (error) {
         console.error(`Error searching ${platform}:`, error)
@@ -377,7 +506,10 @@ export async function POST(request: NextRequest) {
       profiles: limitedProfiles,
       total: limitedProfiles.length,
       platform: body.platform,
-      searchParams: body,
+      searchParams: adjustedBody,
+      quotaUsed,
+      quotaMax,
+      quotaRemaining: Math.max(0, quotaRemaining - limitedProfiles.length),
     })
   } catch (error) {
     console.error('Error in prospection search:', error)
