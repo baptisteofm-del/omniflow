@@ -74,6 +74,23 @@ function isVideoContent(contentType: string): boolean {
   return ['reel', 'video'].includes(contentType?.toLowerCase())
 }
 
+// ─── Viral factors ────────────────────────────────────────────────────────────────────
+
+const VIRAL_FACTORS = [
+  { label: 'Hook efficace',  icon: '🎯' },
+  { label: 'Montage rapide', icon: '⚡' },
+  { label: 'Bonne lumière',  icon: '💡' },
+  { label: 'Format viral',   icon: '📱' },
+  { label: 'CTA pertinent',  icon: '👆' },
+]
+
+function getViralFactors(score: number): Array<{ label: string; icon: string }> {
+  if (score >= 80) return [VIRAL_FACTORS[0], VIRAL_FACTORS[1], VIRAL_FACTORS[3]]
+  if (score >= 60) return [VIRAL_FACTORS[0], VIRAL_FACTORS[2], VIRAL_FACTORS[3]]
+  if (score >= 40) return [VIRAL_FACTORS[3], VIRAL_FACTORS[4]]
+  return [VIRAL_FACTORS[3]]
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function TrendCard({
@@ -320,9 +337,21 @@ export function TrendCard({
           </div>
 
           {/* Viral insight */}
-          <div className="flex items-start gap-1.5 p-2.5 rounded-xl bg-white/4 border border-white/6">
-            <AlertCircle size={11} className="text-purple-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-400 leading-relaxed">{insight}</p>
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {getViralFactors(score).map(f => (
+                <span
+                  key={f.label}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 border border-white/8 text-xs text-gray-300"
+                >
+                  <span>{f.icon}</span>{f.label}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-start gap-1.5 p-2.5 rounded-xl bg-white/4 border border-white/6">
+              <AlertCircle size={11} className="text-purple-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-gray-400 leading-relaxed">{insight}</p>
+            </div>
           </div>
         </div>
 

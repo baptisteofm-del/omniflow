@@ -43,24 +43,12 @@ interface QuotaInfo {
   resetAt: string
 }
 
-// ─── Plan config ──────────────────────────────────────────────────────────────
-
-const PLAN_CONFIG: Record<string, {
-  label: string; color: string; bg: string; border: string;
-  trendsPerDay: number; runsPerMonth: number
-}> = {
-  starter: { label: 'Starter', color: 'text-gray-300', bg: 'bg-gray-500/15', border: 'border-gray-500/20', trendsPerDay: 0, runsPerMonth: 0 },
-  pro:     { label: 'Pro',     color: 'text-blue-300',  bg: 'bg-blue-500/15',  border: 'border-blue-500/20',  trendsPerDay: 10, runsPerMonth: 30 },
-  agency:  { label: 'Agency',  color: 'text-purple-300', bg: 'bg-purple-500/15', border: 'border-purple-500/20', trendsPerDay: 20, runsPerMonth: 30 },
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function VeillePage() {
   const [trends, setTrends]               = useState<Trend[]>([])
   const [loading, setLoading]             = useState(true)
   const [generating, setGenerating]       = useState(false)
-  const [isDemo, setIsDemo]               = useState(false)
   const [error, setError]                 = useState<string | null>(null)
   const [quota, setQuota]                 = useState<QuotaInfo | null>(null)
   const [showOveruse, setShowOveruse]     = useState(false)
@@ -87,7 +75,6 @@ export default function VeillePage() {
           capturedAt: t.capturedAt ? new Date(t.capturedAt) : new Date(),
           engagement: typeof t.engagement === 'number' ? t.engagement : 0,
         })))
-        setIsDemo(data.source === 'demo')
       } else throw new Error(data.error || 'Erreur API')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -112,9 +99,7 @@ export default function VeillePage() {
       if (data.success) {
         const count = data.trendsCount || 0
         toast.success(
-          data.warning
-            ? `${count} trend${count > 1 ? 's' : ''} chargé${count > 1 ? 's' : ''} (mode démo)`
-            : `${count} nouveau${count > 1 ? 'x' : ''} Reel${count > 1 ? 's' : ''} Instagram récupéré${count > 1 ? 's' : ''} ✓`,
+          `${count} nouveau${count > 1 ? 'x' : ''} Reel${count > 1 ? 's' : ''} Instagram récupéré${count > 1 ? 's' : ''} ✓`,
           { duration: 4000 }
         )
         await loadTrends(true)
@@ -134,21 +119,20 @@ export default function VeillePage() {
     setTrends(prev => prev.map(t => t.id === trendId ? { ...t, userFeedback: newFeedback } : t))
   }, [])
 
-  const planCfg = PLAN_CONFIG[quota?.planId || 'starter'] ?? PLAN_CONFIG.starter
   const noAccess = quota && quota.dailyTrendsCount === 0
 
   // ─── LOCKED STATE ────────────────────────────────────────────────────────────
   if (!loading && noAccess) {
     return (
       <div className="p-6 lg:p-8 max-w-screen-xl mx-auto">
-        <PageHeaderVeille isDemo={false} />
+        <PageHeaderVeille />
         <div className="mt-8 glass rounded-3xl border border-amber-500/20 p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center mx-auto mb-5">
             <Lock size={28} className="text-amber-400" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Fonctionnalité Pro & Agency</h2>
           <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">
-            La Veille Trends Instagram est incluse à partir du plan <strong className="text-white">Pro</strong>.
+            La Veille Instagram est incluse à partir du plan <strong className="text-white">Pro</strong>.
             Détectez les Reels viraux et gardez une longueur d'avance.
           </p>
           <a href="/settings/billing"
@@ -173,12 +157,7 @@ export default function VeillePage() {
             <div className="w-8 h-8 rounded-xl bg-pink-500/15 border border-pink-500/20 flex items-center justify-center">
               <TrendingUp size={17} className="text-pink-400" />
             </div>
-            <h1 className="text-xl font-bold text-white">Veille & Tendances</h1>
-            {isDemo && (
-              <span className="text-xs px-2 py-0.5 bg-amber-500/12 border border-amber-500/20 text-amber-400 rounded-lg font-medium">
-                Mode démo
-              </span>
-            )}
+            <h1 className="text-xl font-bold text-white">Veille Instagram</h1>
           </div>
           <p className="text-gray-500 text-sm">
             Reels Instagram viraux — mis à jour automatiquement chaque matin
@@ -231,12 +210,6 @@ export default function VeillePage() {
           label="Reels détectés"
           value={trends.length}
           color="text-pink-400"
-        />
-        <StatPill
-          icon={TrendingUp}
-          label="Plan actif"
-          value={planCfg.label}
-          color={planCfg.color}
         />
         <StatPill
           icon={BarChart3}
@@ -306,18 +279,13 @@ export default function VeillePage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function PageHeaderVeille({ isDemo }: { isDemo: boolean }) {
+function PageHeaderVeille() {
   return (
     <div className="flex items-center gap-2.5">
       <div className="w-8 h-8 rounded-xl bg-pink-500/15 border border-pink-500/20 flex items-center justify-center">
         <TrendingUp size={17} className="text-pink-400" />
       </div>
-      <h1 className="text-xl font-bold text-white">Veille & Tendances</h1>
-      {isDemo && (
-        <span className="text-xs px-2 py-0.5 bg-amber-500/12 border border-amber-500/20 text-amber-400 rounded-lg font-medium">
-          Mode démo
-        </span>
-      )}
+      <h1 className="text-xl font-bold text-white">Veille Instagram</h1>
     </div>
   )
 }
