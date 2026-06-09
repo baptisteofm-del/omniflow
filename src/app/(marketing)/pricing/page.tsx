@@ -4,7 +4,7 @@ import { Footer } from '@/components/marketing/footer/Footer'
 
 export const metadata = {
   title: 'Tarifs — OmniFlow',
-  description: 'Choisissez la formule adaptée à votre agence OnlyFans. 7 jours d\'essai gratuit.',
+  description: 'Choisissez la formule adaptée à votre agence OnlyFans. Starter 99€ • Pro 199€ • Agency 349€',
 }
 
 export default function PricingPage() {

@@ -4,16 +4,18 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 const faqs = [
-  { q: "OmniFlow fonctionne avec quels outils anti-detect ?", a: "OmniFlow s'intègre nativement avec AdsPower et GeeLark. Chaque agence connecte ses propres profils depuis la page Paramètres → Intégrations." },
-  { q: "Faut-il des compétences techniques ?", a: "Non. Si vous savez utiliser Instagram, vous saurez utiliser OmniFlow. Setup en quelques minutes, aucune ligne de code requise." },
-  { q: "Combien de comptes puis-je gérer ?", a: "Ça dépend de votre plan. Starter : 3 modèles, Pro : 10 modèles, Agency : illimité. Chaque modèle peut avoir plusieurs profils AdsPower/GeeLark associés." },
-  { q: "Le contenu IA est-il détecté comme artificiel ?", a: "Non. Kling AI génère des vidéos photo-réalistes indiscernables du contenu naturel. Les plateformes ne font pas la différence." },
-  { q: "Comment fonctionne le spoof vidéo ?", a: "OmniFlow ré-encode vos vidéos en modifiant les métadonnées et le hash du fichier, rendant chaque vidéo unique aux yeux des algorithmes. Zéro shadowban." },
-  { q: "Puis-je annuler à tout moment ?", a: "Oui, sans engagement, en un clic depuis Paramètres → Abonnement. Aucun frais d'annulation." },
-  { q: "L'essai gratuit nécessite-t-il une carte bancaire ?", a: "Non, l'essai 7 jours est 100% gratuit. Vous renseignez vos informations de paiement uniquement à la fin si vous souhaitez continuer." },
-  { q: "Le chatting IA parle vraiment comme un humain ?", a: "Notre IA est entraînée sur le style de communication propre à chaque modèle. Les fans ne font pas la différence — et les statistiques de conversion le prouvent." },
-  { q: "Est-ce légal ?", a: "OmniFlow est un outil d'automatisation légal. L'utilisateur est responsable du respect des CGU des plateformes sur lesquelles il publie. Nous ne stockons aucun contenu protégé." },
-  { q: "Y a-t-il un programme d'affiliation ?", a: "Oui, 10% de commission récurrente à vie pour chaque agence référée. Gérez tout depuis votre dashboard → Parrainage." },
+  { q: "Quels sont les prix des plans OmniFlow ?", a: "Nous proposons 3 plans : Starter à 99€/mois, Pro à 199€/mois, et Agency à 349€/mois. Tous incluent un essai gratuit de 7 jours. Vous pouvez aussi choisir une facturation annuelle pour économiser 20%." },
+  { q: "Comment fonctionne l'essai gratuit ?", a: "L'essai dure 7 jours. Carte bancaire requise pour l'enregistrement, mais aucun prélèvement automatique n'aura lieu pendant la période d'essai. Après 7 jours, vous serez facturé pour le plan choisi. Vous pouvez annuler à tout moment sans engagement." },
+  { q: "Puis-je m'abonner directement sans essai ?", a: "Oui, vous pouvez choisir de vous abonner directement sans passer par l'essai gratuit. Vous serez facturé immédiatement." },
+  { q: "Qu'est-ce que la Veille Trends ?", a: "La Veille Trends analyse les contenus performants sur Instagram et vous suggère les tendances les plus adaptées à votre audience. Notre système apprend de vos likes/dislikes pour affiner les recommandations. Starter : 5 trends/jour, Pro : 10 trends/jour, Agency : 20 trends/jour." },
+  { q: "Comment fonctionne la Génération vidéo IA ?", a: "OmniFlow utilise Kling pour générer des vidéos IA photo-réalistes en quelques secondes. Automatisez votre production de contenu sans effort. Starter inclut les crédits à la demande, Pro et Agency proposent des quotas inclus ou illimités." },
+  { q: "Qu'est-ce que l'Autoposting ?", a: "L'Autoposting permet une publication automatisée sur plusieurs comptes via ADS Power et GitArk. Gagnez du temps en automatisant votre workflow sans intervention manuelle." },
+  { q: "Qu'est-ce que le Chatting IA ?", a: "Le Chatting IA automatise vos conversations avec vos fans. Notre système augmente vos ventes et maximise l'engagement — c'est un véritable outil de conversion pour vos comptes OnlyFans. Disponible en Pro et Agency." },
+  { q: "Qu'est-ce que la Prospection de modèles ?", a: "La Prospection de modèles est exclusivement disponible en plan Agency. Notre agent IA scrape les réseaux sociaux, identifie des créatrices à fort potentiel, et initie le contact en votre nom — un pipeline de recrutement automatique." },
+  { q: "Qu'est-ce que le système de Crédits ?", a: "Dépassez votre quota mensuel avec des crédits supplémentaires. Chaque RUN ajoute 10 crédits pour 9€, utilisables pour générations IA ou nouvelles tendances Instagram. Les crédits sont valides 30 jours." },
+  { q: "Tous les plans incluent des 'Utilisateurs illimités' ?", a: "Oui, tous les plans (Starter, Pro, Agency) offrent des utilisateurs illimités. Vous n'avez plus à vous soucier des limites de membres équipe ou de comptes associés." },
+  { q: "Comment fonctionne le programme d'affiliation ?", a: "Partagez votre lien de parrainage unique avec d'autres agences OnlyFans. Vous gagnez 10% de commission récurrente à vie pour chaque agence qui s'inscrit via votre lien. Commission versée mensuellement." },
+  { q: "Puis-je annuler mon abonnement ?", a: "Bien sûr, sans engagement. Vous pouvez annuler à tout moment depuis Paramètres → Abonnement. Aucun frais d'annulation, accès jusqu'à la fin de votre période de facturation actuelle." },
 ]
 
 function FaqItem({ q, a }: { q: string; a: string }) {

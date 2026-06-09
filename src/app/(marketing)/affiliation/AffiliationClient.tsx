@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { Users, TrendingUp, DollarSign, ArrowRight, Zap, Link2, CheckCircle2 } from 'lucide-react'
 
 const plans = [
-  { name: 'Starter', price: 49, commission: 4.90 },
-  { name: 'Pro', price: 99, commission: 9.90 },
-  { name: 'Agency', price: 249, commission: 24.90 },
+  { name: 'Starter', price: 99, commission: 9.90 },
+  { name: 'Pro', price: 199, commission: 19.90 },
+  { name: 'Agency', price: 349, commission: 34.90 },
 ]
 
 const steps = [
@@ -65,7 +65,7 @@ export function AffiliationClient() {
           <div className="glass rounded-2xl p-8 text-center">
             <TrendingUp size={32} className="text-purple-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Calculez vos revenus</h2>
-            <p className="text-gray-400 mb-8">Basé sur le plan Pro à 99€/mois</p>
+            <p className="text-gray-400 mb-8">Basé sur le plan Pro à 199€/mois</p>
             <div className="mb-6">
               <label className="text-sm text-gray-400 mb-3 block">Nombre d'agences référées : <strong className="text-white">{referrals}</strong></label>
               <input type="range" min={1} max={50} value={referrals} onChange={e => setReferrals(Number(e.target.value))}

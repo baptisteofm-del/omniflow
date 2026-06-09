@@ -98,7 +98,7 @@ function RegisterForm() {
           <>
             <h1 className="text-2xl font-bold mb-1">Créer votre compte</h1>
             <p className="text-gray-400 text-sm mb-6">
-              7 jours d'essai gratuit • Sans carte bancaire
+              7 jours d'essai gratuit • Carte bancaire requise • Pas de prélèvement
             </p>
           </>
         )}

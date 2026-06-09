@@ -105,39 +105,24 @@ export function PricingSection() {
                   )}
                 </div>
 
-                {/* ── Key specs ── */}
-                <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-white/5 rounded-xl">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-white">{plan.limits.models}</div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
-                      <Sparkles size={9} />modèles
-                    </div>
-                  </div>
-                  <div className="text-center border-x border-white/10">
-                    <div className="text-lg font-bold text-white">{plan.limits.telegramBots}</div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
-                      <Bot size={9} />bots
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-white">{plan.limits.teamMembers}</div>
-                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
-                      <Users size={9} />membres
-                    </div>
-                  </div>
+                {/* CTA Principal & Secondaire */}
+                <div className="space-y-2 mb-6">
+                  <Link
+                    href={`/register?plan=${plan.id}&interval=${interval}`}
+                    className={cn(
+                      'block text-center py-3 rounded-xl font-semibold transition-all',
+                      plan.highlighted
+                        ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 glow-sm'
+                        : 'glass border border-purple-500/30 hover:border-purple-500/60 hover:text-white'
+                    )}>
+                    Choisir ce plan
+                  </Link>
+                  <Link
+                    href={`/register?plan=${plan.id}&interval=${interval}&trial=true`}
+                    className="block text-center py-2 text-sm text-gray-400 hover:text-white transition-colors border border-gray-600/30 rounded-xl hover:border-gray-500/60">
+                    Essai gratuit 7 jours
+                  </Link>
                 </div>
-
-                {/* CTA */}
-                <Link
-                  href={`/register?plan=${plan.id}&interval=${interval}`}
-                  className={cn(
-                    'block text-center py-3 rounded-xl font-semibold transition-all mb-2',
-                    plan.highlighted
-                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 hover:opacity-90 glow-sm'
-                      : 'glass border border-purple-500/30 hover:border-purple-500/60 hover:text-white'
-                  )}>
-                  Essai gratuit 7 jours
-                </Link>
 
                 {/* Crypto */}
                 <button
@@ -148,16 +133,12 @@ export function PricingSection() {
                   {loadingPlan === plan.id ? 'Chargement...' : 'Payer en crypto (USDT/BTC)'}
                 </button>
 
-                {/* Features list */}
+                {/* Features list - Only included features */}
                 <ul className="space-y-3 flex-1">
-                  {plan.features.map((f) => (
+                  {plan.features.filter(f => f.included).map((f) => (
                     <li key={f.name} className="flex items-center gap-3 text-sm">
-                      {f.included
-                        ? <Check size={16} className="text-green-400 flex-shrink-0" />
-                        : <X size={16} className="text-gray-600 flex-shrink-0" />}
-                      <span className={f.included ? 'text-gray-200' : 'text-gray-500'}>
-                        {f.name}
-                      </span>
+                      <Check size={16} className="text-green-400 flex-shrink-0" />
+                      <span className="text-gray-200">{f.name}</span>
                     </li>
                   ))}
                 </ul>
@@ -166,20 +147,20 @@ export function PricingSection() {
           })}
         </div>
 
-        {/* ── Veille Instagram ── */}
+        {/* ── Veille Trends Instagram ── */}
         <div className="glass rounded-2xl p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <TrendingUp size={20} className="text-pink-400" />
-                <h3 className="text-xl font-bold">Veille Instagram quotidienne</h3>
+                <h3 className="text-xl font-bold">Veille Trends Instagram</h3>
               </div>
               <p className="text-gray-400 text-sm mb-3">
-                Chaque matin, Omniflow analyse automatiquement les meilleurs contenus Instagram
-                et vous propose les trends les plus performantes — adaptées à votre niche.
+                Analysez les contenus performants sur Instagram. Notre système apprend de vos likes/dislikes 
+                pour vous suggérer les tendances les plus adaptées à votre audience.
               </p>
               <p className="text-gray-500 text-xs">
-                Système de recommandation évolutif : aimez ou ignorez les trends pour affiner vos suggestions.
+                Chaque matin, recevez une sélection personnalisée de trends qui fonctionnent dans votre niche.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-4 text-center flex-shrink-0">
@@ -202,31 +183,31 @@ export function PricingSection() {
           </div>
         </div>
 
-        {/* ── Système RUN ── */}
+        {/* ── Crédits supplémentaires ── */}
         <div className="glass rounded-2xl p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <RefreshCw size={20} className="text-cyan-400" />
-                <h3 className="text-xl font-bold">Système RUN</h3>
+                <h3 className="text-xl font-bold">Crédits supplémentaires</h3>
               </div>
               <p className="text-gray-400 text-sm mb-2">
                 Dépassez votre quota mensuel à la demande, sans engagement.
-                Chaque RUN génère <strong className="text-white">{RUN_UNITS} unités</strong> au choix :
-                générations IA ou nouvelles trends Instagram.
+                Chaque RUN ajoute <strong className="text-white">{RUN_UNITS} crédits</strong> utilisables pour :
+                générations IA ou nouvelles tendances Instagram.
               </p>
               <ul className="text-sm text-gray-500 space-y-1 mt-3">
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />10 générations IA supplémentaires</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />10 nouvelles trends Instagram</li>
-                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Valable 30 jours</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Générations vidéo IA</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Nouvelles tendances Instagram</li>
+                <li className="flex items-center gap-2"><Check size={12} className="text-green-400" />Crédits valides 30 jours</li>
               </ul>
             </div>
             <div className="text-center flex-shrink-0">
               <div className="glass rounded-2xl px-10 py-6 border border-cyan-500/20">
                 <div className="text-5xl font-bold gradient-text mb-1">{RUN_PRICE_EUR}€</div>
                 <div className="text-gray-400 text-sm">par RUN</div>
-                <div className="text-gray-500 text-xs mt-2">{RUN_UNITS} générations incluses</div>
-                <div className="text-xs text-cyan-400 mt-1">{(RUN_PRICE_EUR / RUN_UNITS).toFixed(2)}€ / génération</div>
+                <div className="text-gray-500 text-xs mt-2">{RUN_UNITS} crédits / RUN</div>
+                <div className="text-xs text-cyan-400 mt-1">{(RUN_PRICE_EUR / RUN_UNITS).toFixed(2)}€ par crédit</div>
               </div>
             </div>
           </div>
@@ -235,7 +216,7 @@ export function PricingSection() {
         {/* Footer note */}
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            ✓ Période d'essai 7 jours · Aucun engagement · Annulation en 1 clic
+            ✓ Période d'essai 7 jours · Carte bancaire requise · Pas de prélèvement · Aucun engagement
           </p>
         </div>
 

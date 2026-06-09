@@ -47,6 +47,15 @@ const testimonials = [
     color: 'from-green-500 to-emerald-600',
     rating: 5,
   },
+  {
+    id: 6,
+    text: 'Prospection automatisée = 2 nouveaux modèles recrés en 1 mois grâce à OmniFlow. L\'IA score et contact sans qu\'on ait besoin de toucher à rien.',
+    author: 'Nicolas B.',
+    company: 'TalentPro Recruitement',
+    initials: 'NB',
+    color: 'from-indigo-500 to-blue-600',
+    rating: 5,
+  },
 ]
 
 export function Testimonials() {

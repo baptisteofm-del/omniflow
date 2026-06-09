@@ -63,7 +63,7 @@ export function Hero() {
         <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-500 px-4">
           <div className="flex items-center gap-2">
             <Shield size={14} className="text-green-400" />
-            Essai 7j sans engagement
+            Essai 7j - Carte requise
           </div>
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-purple-400" />

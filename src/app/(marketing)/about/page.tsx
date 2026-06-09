@@ -114,7 +114,7 @@ export default function AboutPage() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Prêt à transformer votre agence ?</h2>
           <p className="text-gray-400 text-lg mb-8">
-            7 jours d'essai gratuit. Aucun engagement. Annulation en 1 clic.
+            7 jours d'essai gratuit. Carte bancaire requise. Pas de prélèvement pendant l'essai.
           </p>
           <Link
             href="/register"
