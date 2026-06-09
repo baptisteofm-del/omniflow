@@ -3,7 +3,7 @@
 // ================================
 
 // --- Plans & Abonnements ---
-export type PlanId = 'starter' | 'pro' | 'agency'
+export type PlanId = 'trial' | 'starter' | 'pro' | 'agency'
 export type BillingInterval = 'monthly' | 'yearly'
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
 
@@ -27,16 +27,17 @@ export interface PlanFeature {
 }
 
 export interface PlanLimits {
-  accounts: number          // Nombre de comptes OF gérés
+  accounts: number          // Nombre de comptes gérés
   models: number            // Nombre de modèles
   postSchedules: number     // Posts schedulés/mois
   teamMembers: number       // Membres d'équipe
   telegramBots: number      // Bots Telegram
-  aiGenerations: number     // Générations vidéo Kling/mois (coût ~0.25$/vidéo)
+  aiGenerations: number     // Générations IA/mois
   contentWatches: number    // Alertes veille contenu
-  trendRuns?: number        // Générations trends Apify/jour
-  chattingMessages?: number // Messages Chatting IA/mois (coût ~0.002$/msg)
-  prospectionRuns?: number  // Runs scraping recrutement/mois (coût Apify)
+  trendRuns?: number        // Veilles Instagram/mois (1/jour)
+  dailyTrendsCount?: number // Nombre de trends par veille quotidienne
+  chattingMessages?: number // Messages Chatting IA/mois (Claude Haiku — Agency only)
+  prospectionRuns?: number  // Runs prospection/mois
 }
 
 // --- Utilisateur & Agence ---

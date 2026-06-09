@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Prix d'overuse par feature (coût × marge 3x)
+// Système RUN uniforme : 9€ = 10 unités (générations IA OU trends)
 export const OVERUSE_PRICING: Record<string, { price: number; unit: string; pack: number; label: string }> = {
-  ai_generation:  { price: 2.50,  unit: '/ vidéo',   pack: 5,   label: '5 générations IA' },
-  trend_run:      { price: 0.99,  unit: '/ session', pack: 10,  label: '10 sessions Veille' },
-  chatting_ai:    { price: 4.90,  unit: '/ pack',    pack: 500, label: '500 messages Chatting IA' },
-  prospection_run:{ price: 3.90,  unit: '/ run',     pack: 3,   label: '3 runs Recrutement' },
+  ai_generation:  { price: 9, unit: '/ RUN', pack: 10, label: '10 générations IA' },
+  trend_run:      { price: 9, unit: '/ RUN', pack: 10, label: '10 trends Instagram' },
+  chatting_ai:    { price: 9, unit: '/ RUN', pack: 10, label: '10 générations' },
+  prospection_run:{ price: 9, unit: '/ RUN', pack: 10, label: '10 runs' },
 }
 
 // GET: informations sur le pricing d'overuse

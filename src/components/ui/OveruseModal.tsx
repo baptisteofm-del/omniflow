@@ -1,12 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Zap, CreditCard, ChevronRight, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { RUN_UNITS, RUN_PRICE_EUR } from '@/lib/plans'
 
 interface OveruseModalProps {
   feature: 'ai_generation' | 'trend_run' | 'chatting_ai' | 'prospection_run'
   onClose: () => void
   onSuccess?: () => void
+}
+
+interface CreditsData {
+  balance: number
+  autoTopup: {
+    enabled: boolean
+    threshold: number
+    amount: number
+  }
 }
 
 const FEATURE_INFO = {
@@ -16,23 +26,34 @@ const FEATURE_INFO = {
   prospection_run: { label: 'Recrutement IA',      icon: '🔍', desc: 'Vous avez atteint votre quota mensuel de runs Recrutement.' },
 }
 
-const PACK_PRICING = {
-  ai_generation:   { price: 2.50, pack: 5,   unit: '5 générations supplémentaires' },
-  trend_run:       { price: 0.99, pack: 10,  unit: '10 sessions Veille supplémentaires' },
-  chatting_ai:     { price: 4.90, pack: 500, unit: '500 messages supplémentaires' },
-  prospection_run: { price: 3.90, pack: 3,   unit: '3 runs Recrutement supplémentaires' },
-}
-
 export function OveruseModal({ feature, onClose, onSuccess }: OveruseModalProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [credits, setCredits] = useState<CreditsData | null>(null)
+  const [creditsLoading, setCreditsLoading] = useState(true)
   const info = FEATURE_INFO[feature]
-  const pack = PACK_PRICING[feature]
 
-  const handleBuy = async () => {
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const res = await fetch('/api/credits/balance')
+        if (res.ok) {
+          const data = await res.json()
+          setCredits(data)
+        }
+      } catch (error) {
+        console.error('Error fetching credits:', error)
+      } finally {
+        setCreditsLoading(false)
+      }
+    }
+
+    fetchCredits()
+  }, [])
+
+  const handleBuyRun = async () => {
     setLoading(true)
-    // Redirige vers la page de billing avec le paramètre overuse
-    router.push(`/settings/billing?overuse=${feature}&pack=${pack.pack}&price=${pack.price}`)
+    router.push('/settings/billing?tab=credits')
     onClose()
   }
 
@@ -58,26 +79,35 @@ export function OveruseModal({ feature, onClose, onSuccess }: OveruseModalProps)
         <div className="p-5 space-y-4">
           <p className="text-sm text-gray-400">{info.desc}</p>
 
-          {/* Option 1: Acheter un pack */}
+          {/* Current Credits Display */}
+          {!creditsLoading && credits && (
+            <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+              <p className="text-xs text-gray-400 mb-1">Vos crédits actuels</p>
+              <p className="text-2xl font-bold text-white">{credits.balance} crédits</p>
+            </div>
+          )}
+
+          {/* Option 1: Buy Credits */}
           <div className="p-4 bg-gradient-to-r from-purple-900/30 to-cyan-900/20 border border-purple-500/30 rounded-xl">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-sm font-semibold text-white">Pack supplémentaire</p>
-                <p className="text-xs text-gray-400 mt-0.5">{pack.unit}</p>
+                <p className="text-sm font-semibold text-white">Système de crédits unifié</p>
+                <p className="text-xs text-gray-400 mt-0.5">1 RUN = {RUN_UNITS} crédits = {RUN_PRICE_EUR}€</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-white">{pack.price.toFixed(2)}€</p>
-                <p className="text-xs text-gray-500">paiement unique</p>
+                <p className="text-lg font-bold text-white">{RUN_PRICE_EUR}€</p>
+                <p className="text-xs text-gray-500">par RUN</p>
               </div>
             </div>
             <ul className="text-xs text-gray-500 space-y-1 mb-3">
-              <li className="flex items-center gap-1.5"><Zap size={10} className="text-purple-400" />Débloqué immédiatement après paiement</li>
-              <li className="flex items-center gap-1.5"><Zap size={10} className="text-purple-400" />Valide 30 jours</li>
+              <li className="flex items-center gap-1.5"><Zap size={10} className="text-purple-400" />{RUN_UNITS} générations IA ou {RUN_UNITS} trends</li>
+              <li className="flex items-center gap-1.5"><Zap size={10} className="text-purple-400" />Crédits valides indéfiniment</li>
+              <li className="flex items-center gap-1.5"><Zap size={10} className="text-purple-400" />Configurez l'auto top-up dans les paramètres</li>
             </ul>
-            <button onClick={handleBuy} disabled={loading}
+            <button onClick={handleBuyRun} disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
               {loading ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-              Acheter ce pack
+              Acheter des crédits
             </button>
           </div>
 

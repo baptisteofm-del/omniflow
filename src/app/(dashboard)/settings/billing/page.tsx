@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { CreditCard, Check, ArrowUpRight, X, Calendar, AlertCircle, BarChart3, Clock, Zap, Download } from 'lucide-react'
 import { SkeletonBillingPage } from '@/components/ui/Skeleton'
 import { getPlanById, PLANS } from '@/lib/plans'
+import { CreditsSection } from '@/components/billing/CreditsSection'
 import type { PlanId } from '@/types'
 
 interface BillingData {
@@ -454,6 +455,9 @@ function BillingContent() {
           )}
         </div>
       </div>
+
+      {/* Credits Section */}
+      <CreditsSection />
 
       {/* Invoices section */}
       <div className="glass rounded-2xl p-6">

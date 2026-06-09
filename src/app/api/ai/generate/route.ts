@@ -14,6 +14,16 @@ export async function POST(req: NextRequest) {
   if (!prompt) return NextResponse.json({ error: 'Prompt requis' }, { status: 400 })
 
   try {
+    // Vérifier quota générations IA
+    const { data: agencyForLimit } = await supabase.from('agencies').select('id').eq('owner_id', user.id).single()
+    if (agencyForLimit) {
+      const { checkLimit, limitReachedResponse } = await import('@/lib/plans/limits')
+      const quotaCheck = await checkLimit(agencyForLimit.id, 'aiGenerations')
+      if (!quotaCheck.allowed) {
+        return NextResponse.json(limitReachedResponse(quotaCheck, 'Génération Kling'), { status: 429 })
+      }
+    }
+
     const taskId = await generateVideo({ prompt, negativePrompt, model, duration, aspectRatio, imageUrl })
 
     // Sauvegarder en base

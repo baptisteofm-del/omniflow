@@ -1,0 +1,240 @@
+================================================================================
+OMNIFLOW PRICING V2 IMPLEMENTATION - CHANGE LOG
+Date: 2026-06-09
+Status: COMPLETE ✓
+================================================================================
+
+FILES MODIFIED (6 total)
+================================================================================
+
+1. src/lib/plans.ts [MAJOR REWRITE]
+   Location: /data/.openclaw/workspace/omniflow/src/lib/plans.ts
+   Changes:
+     + Added EXTRA_MODEL_PRICE_MONTHLY = 99 constant
+     + Added INCLUDED_MODELS_ALL_PLANS = 10 constant  
+     + Added KLING_PACKS array with 4 pack options
+     + Added TREND_PACKS array with 3 pack options
+     + Added OMNIFLOW_COMMISSION_PERCENT = 10 constant
+     
+     ~ TRIAL plan restructured:
+       - models: 1 model (unchanged)
+       - aiGenerations: 2 (unchanged)
+       - trendRuns: 5 (changed from 2/day to 5 total)
+       - chattingMessages: 50 (unchanged)
+       
+     ~ STARTER plan restructured:
+       - models: 10 (changed from 3)
+       - aiGenerations: 0 (changed from 10)
+       - trendRuns: 30/mois (unchanged)
+       - chattingMessages: 0 (unchanged)
+       
+     ~ PRO plan restructured:
+       - models: 10 (changed from 8)
+       - aiGenerations: 100 (changed from 50)
+       - trendRuns: 100 (changed from 30)
+       - chattingMessages: 0 (REMOVED - was 500)
+       
+     ~ AGENCY plan restructured:
+       - models: 10 (changed from 20)
+       - aiGenerations: 250 (changed from 100)
+       - trendRuns: -1 (unchanged, unlimited)
+       - chattingMessages: -1 (changed from 5000)
+       - prospectionRuns: 10 (unchanged)
+     
+     + Added calculateExtraModelCost(totalModels) function
+     + Added calculateMonthlyBill(planId, totalModels) function
+     ~ Updated PLAN_FEATURES map: 'chatting_ai' only in agency, removed from pro
+
+2. src/lib/plans/limits.ts [MINOR UPDATE]
+   Location: /data/.openclaw/workspace/omniflow/src/lib/plans/limits.ts
+   Changes:
+     ~ Updated cost comments:
+       - Claude Haiku: ~0.004€/msg (was Sonnet ~0.012€/msg)
+       - Kling: ~0.20€/génération (unchanged)
+       - Veille run: ~0.03€/run (new)
+
+3. src/app/api/chatting/ai/generate/route.ts [NEW GUARD]
+   Location: /data/.openclaw/workspace/omniflow/src/app/api/chatting/ai/generate/route.ts
+   Changes:
+     + Added plan feature check before fan profile lookup
+     + Import hasFeature from @/lib/plans
+     + Fetch agency.plan_id from database
+     + Return 403 if !hasFeature(planId, 'chatting_ai')
+     + Error message: "Le Chatting IA est inclus uniquement dans le plan Agency."
+
+4. supabase/update_plans_pricing.sql [MAJOR REWRITE]
+   Location: /data/.openclaw/workspace/omniflow/supabase/update_plans_pricing.sql
+   Changes:
+     ✓ Retained existing trial tables/indexes/views
+     
+     + NEW TABLE: agency_sales
+       - id (uuid, primary key)
+       - agency_id (uuid, FK to agencies)
+       - period_month (date, 'YYYY-MM-01')
+       - gross_revenue (numeric)
+       - commission_amount (generated, 10% of gross_revenue)
+       - commission_status (pending/invoiced/paid/disputed)
+       - data_source (manual/api/webhook)
+       - notes (text)
+       - created_at, updated_at (timestamps)
+       - UNIQUE(agency_id, period_month)
+     
+     + NEW TABLE: credit_purchases
+       - id (uuid, primary key)
+       - agency_id (uuid, FK)
+       - pack_id (text: 'kling_50', 'trend_500', etc.)
+       - pack_type (text: 'kling' or 'trend')
+       - credits_purchased (int)
+       - credits_remaining (int)
+       - amount_paid (numeric)
+       - purchased_at, expires_at (timestamps)
+     
+     + NEW TABLE: agency_extra_models
+       - id (uuid, primary key)
+       - agency_id (uuid, FK)
+       - extra_model_count (int, models beyond 10)
+       - monthly_surcharge (generated, extra_count * 99)
+       - updated_at (timestamp)
+     
+     + NEW INDEXES (5):
+       - idx_agency_sales_period (agency_id, period_month)
+       - idx_agency_sales_status (commission_status)
+       - idx_credit_purchases_agency (agency_id, pack_type)
+       - idx_credit_purchases_remaining (agency_id WHERE credits > 0)
+       - idx_extra_models_agency (agency_id)
+     
+     + NEW VIEW: commission_overview
+       - Lists all agency commissions with status
+       - Shows total_gross and total_commission by agency
+       - Filtered to plan_id = 'agency' only
+     
+     + NEW FUNCTIONS (3):
+       - get_model_surcharge(agency_id) → numeric
+       - get_available_credits(agency_id, pack_type) → int
+       - consume_credit(agency_id, pack_type, qty) → boolean
+
+5. src/components/marketing/pricing/PricingSection.tsx [ENHANCED]
+   Location: /data/.openclaw/workspace/omniflow/src/components/marketing/pricing/PricingSection.tsx
+   Changes:
+     + NEW SECTION: "Modèles supplémentaires"
+       - Shows +99€/mois formula
+       - Examples: 12 models → +198€/mois
+       - Examples: 15 models → +495€/mois  
+       - Examples: 20 models → +990€/mois
+     
+     + NEW SECTION: "Packs de crédits supplémentaires"
+       - LEFT COLUMN: Kling packs (🎬)
+         * 50 générations @ 19€
+         * 100 générations @ 34€
+         * 250 générations @ 75€
+         * 500 générations @ 139€
+       - RIGHT COLUMN: Trend packs (📊)
+         * 100 runs @ 9€
+         * 500 runs @ 29€
+         * 2 000 runs @ 89€
+     
+     ~ Positioned between plan grid and crypto payment note
+
+6. src/lib/commission/tracker.ts [NEW FILE]
+   Location: /data/.openclaw/workspace/omniflow/src/lib/commission/tracker.ts
+   Created: 185 lines of TypeScript
+   Exports:
+     + COMMISSION_RATE = 0.10
+     + SaleRecord interface
+     + recordSales(record) → upsert with 10% calc
+     + getCommissionSummary(agencyId) → last 12 months
+     + getPendingCommissions() → all pending
+     + markCommissionInvoiced(agencyId, period, invoiceId)
+     + markCommissionPaid(agencyId, period, date)
+     + disputeCommission(agencyId, period, reason)
+     + getCommissionStats() → admin overview
+
+DOCUMENTATION CREATED
+================================================================================
+
+7. PRICING_V2_MIGRATION.md [NEW FILE]
+   Complete migration guide with:
+   - Overview of changes
+   - Detailed file descriptions
+   - Feature matrix by plan
+   - Commission system explanation
+   - Test checklist
+   - Migration notes
+
+8. CHANGELOG_V2.txt [THIS FILE]
+   Complete list of all changes made
+
+================================================================================
+SUMMARY OF PRICING CHANGES
+================================================================================
+
+PLAN PRICING (unchanged):
+  TRIAL:   0€ (7 days free)
+  STARTER: 99€/mois or 79€/anno
+  PRO:     199€/mois or 159€/anno ⭐ Most Popular
+  AGENCY:  349€/mois or 279€/anno
+
+PLAN LIMITS CHANGED:
+  Feature         TRIAL    STARTER   PRO      AGENCY
+  ─────────────────────────────────────────────────────
+  Models          1        10        10       10 (+99€ extra)
+  Posts           ∞        ∞         ∞        ∞
+  Team Members    0        2         5        10
+  Telegram Bots   0        2         5        10
+  Kling Gen/mo    2        0         100      250
+  Trend Runs/mo   5        30        100      ∞
+  Chatting Msgs   50       0         0        ∞ (Haiku)
+  Prospection     0        0         0        10
+
+NEW FEATURES:
+  ✓ Extra model surcharges (+99€/mois per model)
+  ✓ Kling credit packs (50/100/250/500)
+  ✓ Trend credit packs (100/500/2000)
+  ✓ Commission tracking (10% for Agency resellers)
+  ✓ Chatting IA restricted to Agency only
+  ✓ Haiku (cheaper) instead of Sonnet for chatting
+
+REMOVED FEATURES:
+  ✗ Chatting IA from Pro plan
+  ✗ Varying model counts per plan (now 10 base + extras)
+  ✗ Complex pricing tiers (simplified to +99€ per model)
+
+================================================================================
+DEPLOYMENT CHECKLIST
+================================================================================
+
+Before deploying:
+  [ ] Review SQL for Supabase compatibility
+  [ ] Test plan limits enforcement in API
+  [ ] Test chatting API gate (should 403 non-Agency)
+  [ ] Verify pricing page renders correctly
+  [ ] Check commission tracking data flow
+  [ ] Review RLS policies (if changes needed)
+  [ ] Test extra model surcharge calculation
+  [ ] Test credit pack consumption functions
+
+After deploying:
+  [ ] Monitor trial plan upgrades
+  [ ] Check that Pro users without chatting are unaffected
+  [ ] Verify commission calculations in database
+  [ ] Test credit pack purchases and consumption
+  [ ] Validate pricing page on all breakpoints
+
+================================================================================
+ROLLBACK NOTES
+================================================================================
+
+If rollback needed:
+  1. Revert src/lib/plans.ts (restore from git)
+  2. Revert src/lib/plans/limits.ts (restore from git)
+  3. Revert src/app/api/chatting/ai/generate/route.ts
+  4. Revert src/components/marketing/pricing/PricingSection.tsx
+  5. Delete src/lib/commission/tracker.ts
+  6. Do NOT run supabase/update_plans_pricing.sql if not deployed
+  7. If deployed, use Supabase migrations rollback for SQL changes
+
+No user data is modified by these changes — safe to roll back any time.
+
+================================================================================
+END OF CHANGELOG
+================================================================================

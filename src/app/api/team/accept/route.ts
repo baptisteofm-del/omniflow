@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Vérifier l'authentification avec le client normal (respecte les cookies)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Vous devez être connecté pour accepter une invitation' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Vous devez être connecté pour accepter une invitation' },
+        { status: 401 }
+      )
+    }
 
     const body = await request.json()
     const { token, agencyId } = body
@@ -14,11 +20,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token ou agencyId requis' }, { status: 400 })
     }
 
-    // Chercher l'invitation par token OU par email + agencyId
+    // 2. Utiliser le client admin (service role) pour bypasser les RLS
+    //    L'auth est déjà vérifiée ci-dessus — on agit au nom du serveur
+    const admin = await createAdminClient()
+
+    // 3. Chercher l'invitation par token
     let invitation: any = null
 
     if (token) {
-      const { data } = await supabase
+      const { data } = await admin
         .from('team_invitations')
         .select('*')
         .eq('token', token)
@@ -26,30 +36,45 @@ export async function POST(request: NextRequest) {
       invitation = data
     }
 
-    if (!invitation && agencyId) {
-      // Fallback: chercher par email + agencyId
-      const { data } = await supabase
+    // Fallback : chercher par email + agencyId si le token ne matche pas
+    if (!invitation && agencyId && user.email) {
+      const { data } = await admin
         .from('team_invitations')
         .select('*')
         .eq('agency_id', agencyId)
-        .eq('email', user.email?.toLowerCase() || '')
+        .eq('email', user.email.toLowerCase())
         .maybeSingle()
       invitation = data
     }
 
     if (!invitation) {
-      return NextResponse.json({ error: 'Invitation introuvable ou expirée' }, { status: 404 })
+      return NextResponse.json(
+        { error: "Invitation introuvable. Le lien est peut-être expiré ou invalide." },
+        { status: 404 }
+      )
     }
 
-    // Vérifier expiration si le champ existe
+    // 4. Vérifier expiration
     if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Ce lien d\'invitation a expiré' }, { status: 410 })
+      return NextResponse.json(
+        { error: "Ce lien d'invitation a expiré (7 jours). Demandez un nouveau lien." },
+        { status: 410 }
+      )
+    }
+
+    // 5. Vérifier que l'email de l'invitation correspond à celui de l'utilisateur
+    if (invitation.email && user.email &&
+        invitation.email.toLowerCase() !== user.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: `Cette invitation est destinée à ${invitation.email}. Connectez-vous avec ce compte.` },
+        { status: 403 }
+      )
     }
 
     const targetAgencyId = invitation.agency_id
 
-    // Vérifier si déjà membre
-    const { data: existingMember } = await supabase
+    // 6. Vérifier si déjà membre
+    const { data: existingMember } = await admin
       .from('team_members')
       .select('id')
       .eq('agency_id', targetAgencyId)
@@ -57,12 +82,15 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingMember) {
-      // Déjà membre → juste rediriger
-      return NextResponse.json({ success: true, alreadyMember: true, agencyId: targetAgencyId })
+      return NextResponse.json({
+        success: true,
+        alreadyMember: true,
+        agencyId: targetAgencyId,
+      })
     }
 
-    // Créer le membre
-    const { error: memberError } = await supabase
+    // 7. Insérer le membre (admin bypasse la RLS)
+    const { error: memberError } = await admin
       .from('team_members')
       .insert({
         agency_id: targetAgencyId,
@@ -75,19 +103,26 @@ export async function POST(request: NextRequest) {
       })
 
     if (memberError && memberError.code !== '23505') {
-      // Ignorer les doublons, sinon erreur
+      // 23505 = unique violation (already exists) → ignore
+      console.error('Insert team member error:', memberError)
       throw memberError
     }
 
-    // Marquer l'invitation comme acceptée
-    try {
-      await supabase.from('team_invitations').update({ accepted: true, accepted_at: new Date().toISOString() }).eq('id', invitation.id)
-    } catch {
-      // Non bloquant si la colonne n'existe pas
-    }
+    // 8. Marquer l'invitation comme acceptée
+    await admin
+      .from('team_invitations')
+      .update({
+        accepted: true,
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', invitation.id)
 
-    // Récupérer le nom de l'agence pour le retour
-    const { data: agency } = await supabase.from('agencies').select('name').eq('id', targetAgencyId).single()
+    // 9. Récupérer le nom de l'agence
+    const { data: agency } = await admin
+      .from('agencies')
+      .select('name')
+      .eq('id', targetAgencyId)
+      .single()
 
     return NextResponse.json({
       success: true,
@@ -97,6 +132,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Accept invitation error:', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Erreur serveur' },
+      { status: 500 }
+    )
   }
 }

@@ -279,10 +279,11 @@ export default function TeamPage() {
   const handleDelete = async (id: string, type: 'member' | 'invitation') => {
     if (!confirm('Supprimer ce membre/invitation ?')) return
     try {
-      await fetch(`/api/settings/team?id=${id}&type=${type}`, { method: 'DELETE' })
+      const res = await fetch(`/api/settings/team?id=${id}&type=${type}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erreur de suppression')
       toast.success('Supprimé')
       await loadTeam()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) { toast.error(e.message || 'Erreur') }
   }
 
   const handleSavePermissions = async (id: string, role: string, permissions: string[]) => {
@@ -444,9 +445,24 @@ export default function TeamPage() {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button
                       onClick={async () => {
-                        const url = `${window.location.origin}/join?email=${encodeURIComponent(inv.email)}&agency=${typeof window !== 'undefined' ? '' : ''}`
-                        await navigator.clipboard.writeText(url).catch(() => {})
-                        toast.success('Lien copié')
+                        try {
+                          const res = await fetch('/api/team/resend', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ invitationId: inv.id }),
+                          })
+                          const data = await res.json()
+                          if (!res.ok) throw new Error(data.error)
+                          if (data.inviteUrl && data.message?.includes('Lien renouvelé')) {
+                            await navigator.clipboard.writeText(data.inviteUrl).catch(() => {})
+                            toast.success('Lien renouvelé et copié')
+                          } else {
+                            toast.success(data.message || 'Invitation renvoyée')
+                          }
+                          loadTeam()
+                        } catch (e: any) {
+                          toast.error(e.message || 'Erreur lors du renvoi')
+                        }
                       }}
                       className="flex items-center gap-1 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
                       <Mail size={10} />Renvoyer

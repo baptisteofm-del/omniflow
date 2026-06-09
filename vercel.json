@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/admin/kling-balance-check",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/posting/execute",
       "schedule": "0 12 * * *"
     },

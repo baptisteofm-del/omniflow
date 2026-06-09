@@ -4,7 +4,13 @@ import { getPlanById } from '@/lib/plans'
 
 export const dynamic = 'force-dynamic'
 
-// Retourne l'utilisation trends du jour + quota du plan
+/**
+ * GET /api/usage/trends
+ * 
+ * Retourne le quota de veille du plan + utilisation du jour.
+ * - dailyLimit : nombre de RUNs manuels autorisés par mois
+ * - dailyTrendsCount : nombre de trends par veille automatique (5/10/20 selon plan)
+ */
 export async function GET(_req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -19,37 +25,38 @@ export async function GET(_req: NextRequest) {
     if (!agency) return NextResponse.json({ error: 'No agency' }, { status: 404 })
 
     const plan = getPlanById(agency.plan_id || 'starter')
-    const dailyLimit = plan?.limits?.trendRuns ?? 5
+    const dailyLimit        = plan?.limits?.trendRuns ?? 30       // RUNs manuels/mois
+    const dailyTrendsCount  = plan?.limits?.dailyTrendsCount ?? 5 // trends par veille auto
 
-    // Compte les générations trends d'aujourd'hui
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
+    // Compte les RUNs manuels du mois
+    const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
 
-    // On compte les trends créés aujourd'hui (si la table existe)
-    let usedToday = 0
+    let usedThisMonth = 0
     try {
       const { count } = await supabase
-        .from('trends')
+        .from('trend_runs')
         .select('id', { count: 'exact', head: true })
         .eq('agency_id', agency.id)
-        .gte('captured_at', todayStart.toISOString())
+        .gte('created_at', monthStart.toISOString())
 
-      usedToday = count || 0
+      usedThisMonth = count || 0
     } catch {
-      // Table doesn't exist yet → no usage
-      usedToday = 0
+      usedThisMonth = 0
     }
 
-    const remaining = Math.max(dailyLimit - usedToday, 0)
+    const remaining   = Math.max(dailyLimit - usedThisMonth, 0)
     const canGenerate = remaining > 0
 
     return NextResponse.json({
       planId: agency.plan_id || 'starter',
       dailyLimit,
-      usedToday,
+      dailyTrendsCount,
+      usedToday: usedThisMonth,
       remaining,
       canGenerate,
-      resetAt: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+      resetAt: new Date(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)).toISOString(),
     })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to check usage' }, { status: 500 })

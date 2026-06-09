@@ -2,104 +2,164 @@ import type { Plan } from '@/types'
 
 export const AI_CHATTING_COMMISSION_PERCENT = 10
 
+// ─── Coûts réels estimés ──────────────────────────────────────────────
+// Claude Haiku : ~0.004€/msg (Chatting IA — Agency uniquement)
+// Génération IA: ~0.15€/génération (coût infra)
+// Veille Instagram : ~0.03€/run Apify
+// ─────────────────────────────────────────────────────────────────────
+
+// ── Système RUN uniforme ──────────────────────────────────────────────
+// 1 RUN = 10 unités (générations IA OU trends OU contenus)
+// Prix : 9€ / RUN
+// Marge : ~3x sur les coûts réels
+// ─────────────────────────────────────────────────────────────────────
+export const RUN_UNITS = 10        // unités par RUN
+export const RUN_PRICE_EUR = 9     // €/RUN
+
+export const RUN_PACK = {
+  id: 'run_pack',
+  units: RUN_UNITS,
+  price: RUN_PRICE_EUR,
+  pricePerUnit: RUN_PRICE_EUR / RUN_UNITS,
+  label: '10 générations',
+  description: '10 générations IA ou 10 trends supplémentaires',
+}
+
+// Commission Omniflow (10% sur les ventes d'agences)
+export const OMNIFLOW_COMMISSION_PERCENT = 10
+
+// ───────────────────────────────────────────────────────────────────────
+
 export const PLANS: Plan[] = [
+  // ── TRIAL (0€, 7 jours) ───────────────────────────────────────────────
+  {
+    id: 'trial',
+    name: 'Essai 7 jours',
+    description: 'Découvrez OmniFlow avant de vous engager',
+    price: { monthly: 0, yearly: 0 },
+    limits: {
+      accounts: 1,
+      models: 1,
+      postSchedules: -1,
+      teamMembers: 0,
+      telegramBots: 0,
+      aiGenerations: 2,
+      trendRuns: 5,           // 5 veilles total (pas /jour)
+      dailyTrendsCount: 5,    // 5 trends par veille
+      chattingMessages: 0,
+      prospectionRuns: 0,
+      contentWatches: 5,
+    },
+    features: [
+      { name: '1 modèle inclus', included: true },
+      { name: '1 compte géré', included: true },
+      { name: 'Veille Instagram quotidienne', included: true },
+      { name: '2 générations IA', included: true },
+      { name: 'Éditeur de contenu', included: true },
+      { name: 'Membres équipe', included: false },
+      { name: 'Bot Telegram', included: false },
+      { name: 'Chatting IA', included: false },
+    ],
+  },
+  // ── STARTER (99€/mois) ────────────────────────────────────────────────
   {
     id: 'starter',
     name: 'Starter',
     description: 'Pour les agences qui démarrent',
-    price: { monthly: 49, yearly: 39 },
-    limits: {
-      accounts: 2,
-      models: 2,
-      postSchedules: 1000,
-      teamMembers: 2,
-      telegramBots: 2,
-      aiGenerations: 0,       // Pas de génération IA (coût Kling ~0.25$/vidéo)
-      trendRuns: 5,           // 5 générations trends/jour (seed data = gratuit)
-      chattingMessages: 0,    // Pas de Chatting IA
-      prospectionRuns: 0,     // Pas de recrutement IA
-      contentWatches: -1,
-    },
-    features: [
-      { name: 'Veille de contenu (5 gén/jour)', included: true },
-      { name: 'Éditeur & Spoof illimité', included: true },
-      { name: 'Scheduling (1 000 posts/mois)', included: true },
-      { name: 'Dashboard financier', included: true },
-      { name: 'Parrainage 10%', included: true },
-      { name: 'Génération IA Kling', included: false },
-      { name: 'Chatting IA', included: false },
-      { name: 'Rapports chatting', included: false },
-      { name: 'Prospection modèles IA', included: false },
-      { name: 'Support prioritaire', included: false },
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Pour les agences en croissance',
     price: { monthly: 99, yearly: 79 },
-    highlighted: true,
     limits: {
-      accounts: 5,
-      models: 5,
-      postSchedules: 10000,
-      teamMembers: 5,
-      telegramBots: 5,
-      aiGenerations: 30,      // 30 vidéos/mois Kling (coût ~7.50$) — RENTABLE sur 99€
-      trendRuns: 20,          // 20 générations trends/jour
-      chattingMessages: 0,    // Chatting IA non inclus en Pro
+      accounts: -1,
+      models: 2,              // 2 modèles
+      postSchedules: -1,
+      teamMembers: 2,         // 2 membres
+      telegramBots: 2,        // 2 bots Telegram
+      aiGenerations: 0,       // Pas de génération IA
+      trendRuns: 30,          // 30 veilles/mois (1/jour)
+      dailyTrendsCount: 5,    // 5 trends par veille quotidienne
+      chattingMessages: 0,    // Pas de Chatting IA
       prospectionRuns: 0,
       contentWatches: -1,
     },
     features: [
-      { name: 'Veille de contenu (20 gén/jour)', included: true },
-      { name: 'Éditeur & Spoof illimité', included: true },
-      { name: 'Scheduling (10 000 posts/mois)', included: true },
+      { name: '2 modèles inclus', included: true },
+      { name: '2 bots Telegram', included: true },
+      { name: 'Veille Instagram quotidienne (5 trends/jour)', included: true },
+      { name: '2 membres d\'équipe', included: true },
+      { name: 'Posts & scheduling illimités', included: true },
       { name: 'Dashboard financier', included: true },
       { name: 'Parrainage 10%', included: true },
-      { name: 'Génération IA Kling (30/mois)', included: true },
-      { name: 'Rapports chatting', included: true },
+      { name: 'Génération IA', included: false },
       { name: 'Chatting IA', included: false },
-      { name: 'Prospection modèles IA', included: false },
-      { name: 'Support prioritaire', included: true },
     ],
   },
+  // ── PRO (199€/mois) ───────────────────────────────────────────────────
+  {
+    id: 'pro',
+    name: 'Pro',
+    description: 'Pour les agences en croissance',
+    price: { monthly: 199, yearly: 159 },
+    highlighted: true,
+    limits: {
+      accounts: -1,
+      models: 5,              // 5 modèles
+      postSchedules: -1,
+      teamMembers: 3,         // 3 membres
+      telegramBots: 5,        // 5 bots Telegram
+      aiGenerations: 100,     // 100 générations IA/mois
+      trendRuns: 30,          // 30 veilles/mois (1/jour)
+      dailyTrendsCount: 10,   // 10 trends par veille quotidienne
+      chattingMessages: 0,    // Pas de Chatting IA
+      prospectionRuns: 0,
+      contentWatches: -1,
+    },
+    features: [
+      { name: '5 modèles inclus', included: true },
+      { name: '5 bots Telegram', included: true },
+      { name: 'Veille Instagram quotidienne (10 trends/jour)', included: true },
+      { name: '100 générations IA / mois', included: true },
+      { name: 'Crédits supplémentaires (9€ / 10 générations)', included: true },
+      { name: '3 membres d\'équipe', included: true },
+      { name: 'Support prioritaire', included: true },
+      { name: 'Chatting IA', included: false },
+    ],
+  },
+  // ── AGENCY (349€/mois) ────────────────────────────────────────────────
   {
     id: 'agency',
     name: 'Agency',
     description: 'Pour les grandes agences',
-    price: { monthly: 249, yearly: 199 },
+    price: { monthly: 349, yearly: 279 },
     limits: {
       accounts: -1,
-      models: -1,
+      models: 10,             // 10 modèles
       postSchedules: -1,
-      teamMembers: -1,
-      telegramBots: -1,
-      aiGenerations: 150,     // 150 vidéos/mois Kling (coût ~37$) — rentable sur 249€
-      trendRuns: 50,          // 50 générations trends/jour
-      chattingMessages: 50000, // ~50k messages IA/mois (coût ~10€ en Haiku)
-      prospectionRuns: 20,    // 20 runs de scraping recrutement/mois
+      teamMembers: 5,         // 5 membres
+      telegramBots: 5,        // 5 bots Telegram
+      aiGenerations: 250,     // 250 générations IA/mois
+      trendRuns: 30,          // 30 veilles/mois (1/jour)
+      dailyTrendsCount: 20,   // 20 trends par veille quotidienne
+      chattingMessages: -1,   // Illimité (Claude Haiku)
+      prospectionRuns: 10,
       contentWatches: -1,
     },
     features: [
-      { name: 'Veille de contenu (50 gén/jour)', included: true },
-      { name: 'Éditeur & Spoof illimité', included: true },
-      { name: 'Scheduling illimité', included: true },
-      { name: 'Dashboard financier avancé', included: true },
-      { name: 'Parrainage 10%', included: true },
-      { name: 'Génération IA Kling (150/mois)', included: true },
-      { name: 'Chatting IA (50 000 msg/mois)', included: true },
-      { name: 'Rapports chatting', included: true },
-      { name: 'Prospection modèles IA (20 runs/mois)', included: true },
+      { name: '10 modèles inclus', included: true },
+      { name: '5 bots Telegram', included: true },
+      { name: 'Veille Instagram quotidienne (20 trends/jour)', included: true },
+      { name: '250 générations IA / mois', included: true },
+      { name: 'Chatting IA illimité (Claude Haiku)', included: true },
+      { name: '5 membres d\'équipe', included: true },
+      { name: 'Crédits supplémentaires (9€ / 10 générations)', included: true },
       { name: 'Support dédié 24/7', included: true },
     ],
   },
 ]
 
 export const PLAN_FEATURES: Record<string, string[]> = {
+  trial:   ['veille', 'editor', 'posting', 'finance', 'media', 'ai_generation'],
   starter: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram'],
-  pro: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_reports'],
-  agency: ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_reports', 'chatting_ai', 'prospection'],
+  pro:     ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation'],
+  agency:  ['veille', 'editor', 'posting', 'finance', 'referral', 'media', 'telegram', 'ai_generation', 'chatting_ai', 'chatting_reports', 'prospection'],
 }
 
 export function getPlanById(id: string): Plan | undefined {
@@ -116,8 +176,35 @@ export function hasFeature(planId: string, feature: string): boolean {
 }
 
 export function getUpgradePlan(currentPlanId: string): Plan | null {
-  const order = ['starter', 'pro', 'agency']
+  const order = ['trial', 'starter', 'pro', 'agency']
   const idx = order.indexOf(currentPlanId)
   if (idx === -1 || idx >= order.length - 1) return null
   return getPlanById(order[idx + 1]) || null
+}
+
+export function isTrialPlan(planId: string): boolean {
+  return planId === 'trial'
+}
+
+/**
+ * Calcul du nombre de RUNs supplémentaires disponibles selon les crédits achetés
+ */
+export function getRunsFromCredits(extraCredits: number): number {
+  return Math.floor(extraCredits / RUN_UNITS)
+}
+
+/**
+ * Calcul du coût total pour un nombre de RUNs
+ */
+export function calculateRunsCost(runs: number): number {
+  return runs * RUN_PRICE_EUR
+}
+
+/**
+ * Calcul de la facture mensuelle totale
+ */
+export function calculateMonthlyBill(planId: string): number {
+  const plan = getPlanById(planId)
+  if (!plan) return 0
+  return plan.price.monthly
 }

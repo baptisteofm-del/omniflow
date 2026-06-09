@@ -35,6 +35,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Fan profile not found' }, { status: 404 })
     }
 
+    // ── Vérifier que le Chatting IA est inclus dans le plan (Agency uniquement) ────────────────
+    const { hasFeature } = await import('@/lib/plans')
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('plan_id')
+      .eq('id', agencyId)
+      .single()
+    
+    const agencyPlanId = agency?.plan_id || 'trial'
+    const chattingAllowed = hasFeature(agencyPlanId, 'chatting_ai')
+    if (!chattingAllowed) {
+      return NextResponse.json(
+        {
+          error: 'feature_not_available',
+          feature: 'chatting_ai',
+          message: 'Le Chatting IA est inclus uniquement dans le plan Agency.',
+        },
+        { status: 403 }
+      )
+    }
+    // ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    // ── Vérifier le quota de messages chatting ────────────────
+    const { checkLimit, limitReachedResponse } = await import('@/lib/plans/limits')
+    const quotaCheck = await checkLimit(agencyId, 'chattingMessages')
+    if (!quotaCheck.allowed) {
+      return NextResponse.json(limitReachedResponse(quotaCheck, 'Chatting IA'), { status: 429 })
+    }
+    // ─────────────────────────────────────────────────────────
+
     // Get model personality
     const { data: personality, error: perError } = await supabase
       .from('model_personalities')
