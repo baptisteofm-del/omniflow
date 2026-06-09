@@ -198,7 +198,7 @@ export default function ProspectionPage() {
     try {
       // Validate
       if (searchParams.hashtags.length === 0) {
-        setSearchResult('❌ Veuillez ajouter au moins un hashtag')
+        setSearchResult('Veuillez ajouter au moins un hashtag')
         setLoading(false)
         return
       }
@@ -223,7 +223,7 @@ export default function ProspectionPage() {
 
       if (!res.ok) {
         const error = await res.json()
-        setSearchResult(`❌ ${error.error || 'Erreur lors de la recherche'}`)
+        setSearchResult(`${error.error || 'Erreur lors de la recherche'}`)
         setLoading(false)
         return
       }
