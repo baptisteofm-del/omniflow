@@ -1,5 +1,6 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export interface TutorialStep {
@@ -256,10 +257,24 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     } catch { /* non-bloquant */ }
   }, [completedTutorials, supabase])
 
+  const router = useRouter()
+
   const startTutorial = useCallback((tutorialId: string) => {
     const t = tutorials.find(x => x.id === tutorialId)
-    if (t) { setActiveTutorial(t); setCurrentStep(0) }
-  }, [])
+    if (!t) return
+    // Navigate to the tutorial page first if specified
+    if (t.page && typeof window !== 'undefined' && window.location.pathname !== t.page) {
+      router.push(t.page)
+      // Wait for navigation before starting tutorial
+      setTimeout(() => {
+        setActiveTutorial(t)
+        setCurrentStep(0)
+      }, 800)
+    } else {
+      setActiveTutorial(t)
+      setCurrentStep(0)
+    }
+  }, [router])
 
   const nextStep = useCallback(() => {
     if (!activeTutorial) return

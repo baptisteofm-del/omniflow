@@ -14,8 +14,22 @@ export function TutorialTooltip() {
   const [rect, setRect]     = useState<DOMRect | null>(null)
   const [mounted, setMounted] = useState(false)
   const rafRef = useRef<number>(0)
+  // ⚠️ MUST be at top level — hooks cannot be after conditional returns
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
+
+  // Portal container — created once, never destroyed
+  useEffect(() => {
+    let el = document.getElementById('__omniflow_tutorial_portal__')
+    if (!el) {
+      el = document.createElement('div')
+      el.id = '__omniflow_tutorial_portal__'
+      el.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;'
+      document.body.appendChild(el)
+    }
+    setPortalEl(el)
+  }, [])
 
   const step = activeTutorial?.steps[currentStep]
 
@@ -80,7 +94,7 @@ export function TutorialTooltip() {
     }
   }, [step])
 
-  if (!activeTutorial || !step || !mounted) return null
+  if (!activeTutorial || !step || !mounted || !portalEl) return null
 
   const total = activeTutorial.steps.length
   const isFirst = currentStep === 0
@@ -89,14 +103,15 @@ export function TutorialTooltip() {
   // Pas de wrapper — fragment direct dans le portal pour éviter tout stacking context
   const overlay = (
     <>
-      {/* ── OVERLAY OPAQUE — couvre TOUT ── */}
+      {/* ── OVERLAY — couvre TOUT, cliquable pour fermer ── */}
       <div
         onClick={skipTutorial}
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
           zIndex: Z_OVERLAY,
+          pointerEvents: 'auto',
         }}
       />
 
@@ -244,21 +259,5 @@ export function TutorialTooltip() {
     </>
   )
 
-  // Creer un div dedie a la fin du body pour eviter tout conflit de stacking context
-  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
-
-  useEffect(() => {
-    let el = document.getElementById('__omniflow_tutorial_portal__')
-    if (!el) {
-      el = document.createElement('div')
-      el.id = '__omniflow_tutorial_portal__'
-      el.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483647;'
-      document.body.appendChild(el)
-    }
-    setPortalEl(el)
-    return () => {}
-  }, [])
-
-  if (!portalEl) return null
   return createPortal(overlay, portalEl)
 }
