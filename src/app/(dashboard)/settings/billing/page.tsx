@@ -335,7 +335,7 @@ function BillingContent() {
       <div>
         <h3 className="text-lg font-semibold mb-4">Explorer les plans</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {PLANS.map((plan) => (
+          {PLANS.filter(p => p.id !== 'trial').map((plan) => (
             <div
               key={plan.id}
               className={`glass rounded-2xl p-6 flex flex-col transition-all duration-200 ${
