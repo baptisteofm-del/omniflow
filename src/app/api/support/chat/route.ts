@@ -13,7 +13,7 @@ const SYSTEM_PROMPT = `Tu es l'assistant IA OmniFlow. Tu aides les agences OnlyF
 **Intelligence Artificielle**  
 - Chatting IA: répond automatiquement aux DMs des fans pour maximiser la conversion
 - Génération vidéo IA (Kling): création de vidéos professionnelles par IA
-- Veille Trends: analyse des tendances Instagram et contenu viral
+- Veille Instagram: analyse des tendances Instagram et contenu viral
 
 **Gestion & Analytics**
 - Dashboard financier: suivi en temps réel des revenus, fans, et performances

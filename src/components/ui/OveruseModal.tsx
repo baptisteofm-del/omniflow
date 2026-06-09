@@ -21,7 +21,7 @@ interface CreditsData {
 
 const FEATURE_INFO = {
   ai_generation:   { label: 'Génération IA',      icon: '🎬', desc: 'Vous avez atteint votre quota mensuel de générations vidéo.' },
-  trend_run:       { label: 'Veille Trends',       icon: '📊', desc: 'Vous avez atteint votre quota journalier de scraping Trends.' },
+  trend_run:       { label: 'Veille Instagram',       icon: '📊', desc: 'Vous avez atteint votre quota journalier de scraping Instagram.' },
   chatting_ai:     { label: 'Chatting IA',         icon: '🤖', desc: 'Vous avez atteint votre quota mensuel de messages Chatting IA.' },
   prospection_run: { label: 'Recrutement IA',      icon: '🔍', desc: 'Vous avez atteint votre quota mensuel de runs Recrutement.' },
 }

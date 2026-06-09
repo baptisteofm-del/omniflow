@@ -116,10 +116,10 @@ export const tutorials: Tutorial[] = [
     ],
   },
 
-  // ── Veille Trends
+  // ── Veille Instagram
   {
     id: 'veille',
-    name: 'Veille Trends',
+    name: 'Veille Instagram',
     page: '/content/veille',
     steps: [
       { id: 'v-1', target: '[data-tutorial="trends-refresh"]', title: 'Générer des trends', content: 'Choisissez la plateforme (TikTok, Instagram, Reddit), le volume (1-10) puis cliquez Générer pour scraper les dernières tendances.', position: 'bottom', action: 'none' },
