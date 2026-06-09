@@ -246,12 +246,12 @@ export function Sidebar() {
         {/* Sections collapsibles */}
         {NAV_COLLAPSIBLE.map(sec => <SectionToggle key={sec.id} sec={sec} />)}
 
-        {/* Séparateur */}
-        <div className="my-1.5 border-t border-white/5 mx-1" />
-
-        {/* Paramètres — collapsible */}
-        <SectionToggle sec={NAV_SETTINGS} />
       </nav>
+
+      {/* Paramètres — épinglé au-dessus du footer, toujours visible */}
+      <div className="px-2 py-1 border-t border-white/5">
+        <SectionToggle sec={NAV_SETTINGS} />
+      </div>
 
       {/* Credits Widget */}
       {isExpanded && (
