@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -41,29 +41,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch team members' }, { status: 500 })
     }
 
-    // Get pending invitations — gestion souple des colonnes
+    // Get pending invitations — utilise le client admin pour bypasser tout problème RLS
     let invitations: any[] = []
     try {
-      // Tentative 1 : avec colonne accepted
-      const { data: inv1, error: err1 } = await supabase
+      const admin = await createAdminClient()
+      const { data: inv, error: invErr } = await admin
         .from('team_invitations')
         .select('id, email, role, created_at')
         .eq('agency_id', agency.id)
-        .eq('accepted', false)
+        .neq('accepted', true)   // retourne false ET null (invitations non encore acceptées)
         .order('created_at', { ascending: false })
 
-      if (!err1 && inv1) {
-        invitations = inv1
-      } else {
-        // Tentative 2 : sans filtre accepted (colonne peut-être absente)
-        const { data: inv2 } = await supabase
-          .from('team_invitations')
-          .select('id, email, role, created_at')
-          .eq('agency_id', agency.id)
-          .order('created_at', { ascending: false })
-        invitations = inv2 || []
+      if (invErr) {
+        console.error('team_invitations query error:', invErr)
       }
-    } catch {
+      invitations = inv || []
+    } catch (e) {
+      console.error('team_invitations fetch failed:', e)
       invitations = []
     }
 
@@ -137,24 +131,28 @@ export async function POST(req: NextRequest) {
     const token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 jours
 
-    // Essayer d'insérer dans team_invitations (gestion souple des colonnes)
-    let invitation: any = null
-    // Schéma réel : pas de expires_at ni permissions dans team_invitations
-    const insertData: any = { agency_id: agency.id, email: email.toLowerCase(), role, token }
+    // Insérer dans team_invitations via client admin (bypasse RLS pour garantir l'écriture)
+    const admin = await createAdminClient()
+    const insertData: any = {
+      agency_id: agency.id,
+      email: email.toLowerCase(),
+      role,
+      token,
+      accepted: false,
+      expires_at: expiresAt,
+    }
+    const { data: invitation, error: insertError } = await admin
+      .from('team_invitations')
+      .insert(insertData)
+      .select('id, email, role, created_at')
+      .single()
 
-    // Tentative 1 : avec accepted column
-    const { data: inv1, error: err1 } = await supabase.from('team_invitations').insert({ ...insertData, accepted: false }).select().single()
-    if (!err1) {
-      invitation = inv1
-    } else {
-      // Tentative 2 : sans accepted (colonne peut-être absente)
-      const { data: inv2, error: err2 } = await supabase.from('team_invitations').insert(insertData).select().single()
-      if (!err2) {
-        invitation = inv2
-      } else {
-        // Fallback : créer une invitation minimale en mémoire
-        invitation = { id: token, email, role, created_at: new Date().toISOString() }
-      }
+    if (insertError) {
+      console.error('team_invitations insert error:', insertError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la création de l\'invitation : ' + insertError.message },
+        { status: 500 }
+      )
     }
 
     // Envoyer l'email d'invitation via Resend
