@@ -94,13 +94,8 @@ export function Sidebar() {
   }
 
   const NavLink = ({ item }: { item: any }) => {
-    // Exact match OU sous-chemin (ex: /accounts/prospection active pour /accounts)
-    // Mais /chatting ne doit PAS matcher /chatting/ai — on exige que le chemin soit exactement item.href ou commence par item.href+'/'
-    const active = pathname === item.href || (
-      item.href.length > 1 &&
-      item.href !== '/chatting' && // exception : /chatting ne matche pas /chatting/ai
-      pathname.startsWith(item.href + '/')
-    )
+    // Exact match only — prevent false positives like /accounts matching /accounts/prospection
+    const active = pathname === item.href
     const locked = item.requiredPlan && !hasAccess(item.requiredPlan)
     return (
       <Link
