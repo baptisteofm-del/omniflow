@@ -15,13 +15,13 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-    { icon: Users, label: 'Recrutement', href: '/recrutement' },
-    { icon: Megaphone, label: 'Marketing', href: '/marketing' },
-    { icon: MessageSquare, label: 'Chatting IA', href: '/chatting-ia' },
-    { icon: Library, label: 'Banque de ressources', href: '/banque-ressources' },
-    { icon: Sliders, label: 'Pilotage', href: '/pilotage' },
-    { icon: Settings, label: 'Mon compte', href: '/mon-compte' },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard-app/dashboard' },
+    { icon: Users, label: 'Recrutement', href: '/dashboard-app/recrutement' },
+    { icon: Megaphone, label: 'Marketing', href: '/dashboard-app/marketing' },
+    { icon: MessageSquare, label: 'Chatting IA', href: '/dashboard-app/chatting-ia' },
+    { icon: Library, label: 'Banque de ressources', href: '/dashboard-app/banque-ressources' },
+    { icon: Sliders, label: 'Pilotage', href: '/dashboard-app/pilotage' },
+    { icon: Settings, label: 'Mon compte', href: '/dashboard-app/mon-compte' },
   ]
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
