@@ -1,13 +1,11 @@
 'use client'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-export default function DashboardRedirect() {
+export default function Redirect() {
   const router = useRouter()
-
   useEffect(() => {
-    router.push('/dashboard-app/dashboard')
+    router.push('/app/pages/dashboard')
   }, [router])
-
   return null
 }
