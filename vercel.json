@@ -1,9 +1,0 @@
-{
-  "env": {
-    "FORCE_REBUILD": "true",
-    "BUILD_TIMESTAMP": "$(date +%s)"
-  },
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next"
-}
-// Cache purge 1785511605
