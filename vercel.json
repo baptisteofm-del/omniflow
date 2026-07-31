@@ -1,20 +1,8 @@
 {
-  "crons": [
-    {
-      "path": "/api/admin/kling-balance-check",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/posting/execute",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/chatting/cron",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/email/scheduled",
-      "schedule": "0 10 * * *"
-    }
-  ]
+  "env": {
+    "FORCE_REBUILD": "true",
+    "BUILD_TIMESTAMP": "$(date +%s)"
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next"
 }
