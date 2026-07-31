@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendWelcomeEmail, sendOnboardingEmail } from '@/lib/email/resend'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email was already sent for this day (prevent duplicates)
     if (day) {
-      const { data: existing } = await supabase
+      const { data: existing } = await getSupabase()
         .from('email_drip_log')
         .select('*')
         .eq('email', email)
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the email send
-    await supabase.from('email_drip_log').insert({
+    await getSupabase().from('email_drip_log').insert({
       email,
       day_number: day || 0,
     })

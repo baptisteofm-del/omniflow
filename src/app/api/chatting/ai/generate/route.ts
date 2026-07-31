@@ -6,10 +6,12 @@ import { isAIActiveNow } from '@/lib/chatting/schedule'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     // Get fan profile
-    const { data: fanProfile, error: fanError } = await supabase
+    const { data: fanProfile, error: fanError } = await getSupabase()
       .from('fan_profiles')
       .select('*')
       .eq('agency_id', agencyId)
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // ── Vérifier que le Chatting IA est inclus dans le plan (Agency uniquement) ────────────────
     const { hasFeature } = await import('@/lib/plans')
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('plan_id')
       .eq('id', agencyId)
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
     // ─────────────────────────────────────────────────────────
 
     // Get model personality
-    const { data: personality, error: perError } = await supabase
+    const { data: personality, error: perError } = await getSupabase()
       .from('model_personalities')
       .select('*')
       .eq('model_id', modelId)
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get recent messages
-    const { data: recentMessages } = await supabase
+    const { data: recentMessages } = await getSupabase()
       .from('ai_messages')
       .select('direction, content')
       .eq('fan_profile_id', fanProfile.id)
@@ -99,14 +101,14 @@ export async function POST(request: NextRequest) {
       .limit(10)
 
     // Get available scripts
-    const { data: scripts } = await supabase
+    const { data: scripts } = await getSupabase()
       .from('chat_scripts')
       .select('name, content, category')
       .eq('agency_id', agencyId)
       .eq('is_active', true)
 
     // Get recent agency feedbacks for this model
-    const { data: feedbacks } = await supabase
+    const { data: feedbacks } = await getSupabase()
       .from('chatting_feedback')
       .select('original_message, corrected_message, reason')
       .eq('agency_id', agencyId)
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
       .limit(15)
 
     // Get list config for this platform
-    const { data: listConfig } = await supabase
+    const { data: listConfig } = await getSupabase()
       .from('chatting_list_config')
       .select('*')
       .eq('agency_id', agencyId)
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     // Get fan notes
-    const { data: fanNotes } = await supabase
+    const { data: fanNotes } = await getSupabase()
       .from('fan_notes')
       .select('note, category')
       .eq('fan_profile_id', fanProfile.id)
@@ -187,7 +189,7 @@ export async function POST(request: NextRequest) {
     const delaySeconds = listConfig?.response_delay_seconds || (personality as Record<string, unknown> | null)?.response_delay_seconds as number || 60
     const sendAfter = new Date(Date.now() + delaySeconds * 1000).toISOString()
 
-    const { data: messages, error: msgError } = await supabase.from('ai_messages').insert({
+    const { data: messages, error: msgError } = await getSupabase().from('ai_messages').insert({
       agency_id: agencyId,
       model_id: modelId,
       fan_profile_id: fanProfile.id,

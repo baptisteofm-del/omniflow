@@ -5,10 +5,12 @@ import { getAuth } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
     // action: 'approve', 'reject', or 'modify'
 
     if (action === 'approve') {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('ai_messages')
         .update({ approved: true })
         .eq('id', messageId)
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'reject') {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('ai_messages')
         .update({ approved: false })
         .eq('id', messageId)
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'modify') {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('ai_messages')
         .update({ content: modifiedContent, approved: true })
         .eq('id', messageId)

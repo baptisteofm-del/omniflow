@@ -5,10 +5,12 @@ import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -164,7 +166,7 @@ Retourne un JSON valide (sans markdown) avec la structure suivante:
     // Save feedback examples to chatting_feedback table
     if (analysis.feedbackExamples && analysis.feedbackExamples.length > 0) {
       for (const example of analysis.feedbackExamples) {
-        await supabase
+        await getSupabase()
           .from('chatting_feedback')
           .insert({
             model_id: modelId,

@@ -8,10 +8,12 @@ import { isAIActiveNow } from '@/lib/chatting/schedule'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * Cron job that runs every 5 minutes to:
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // 1. Get all models with auto_mode enabled
-    const { data: personalities } = await supabase
+    const { data: personalities } = await getSupabase()
       .from('model_personalities')
       .select('model_id, agency_id, auto_mode, personality_type, communication_style, example_messages, languages, topics_to_avoid, tips_strategy, response_delay_seconds, schedule_enabled, schedule')
       .eq('auto_mode', true)
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         if (!scheduleActive) continue
 
         // Get MYM credentials for this model
-        const { data: integration } = await supabase
+        const { data: integration } = await getSupabase()
           .from('agency_integrations')
           .select('api_key')
           .eq('agency_id', personality.agency_id)
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
             if (!msg.message?.trim()) continue
 
             // Check if already responded recently (avoid duplicates)
-            const { data: recent } = await supabase
+            const { data: recent } = await getSupabase()
               .from('ai_messages')
               .select('id')
               .eq('agency_id', personality.agency_id)
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
             const sent = await sendMessage({ bearerToken }, msg.conversationId, response)
 
             // Save to ai_messages
-            await supabase.from('ai_messages').insert({
+            await getSupabase().from('ai_messages').insert({
               agency_id: personality.agency_id,
               model_id: personality.model_id,
               platform: 'mym',
