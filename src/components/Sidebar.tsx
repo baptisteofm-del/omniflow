@@ -16,8 +16,6 @@ export default function Sidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard-app/dashboard' },
-    { icon: Users, label: 'Recrutement', href: '/dashboard-app/recrutement' },
-    { icon: Megaphone, label: 'Marketing', href: '/dashboard-app/marketing' },
     { icon: MessageSquare, label: 'Chatting IA', href: '/dashboard-app/chatting-ia' },
     { icon: Library, label: 'Banque de ressources', href: '/dashboard-app/banque-ressources' },
     { icon: Sliders, label: 'Pilotage', href: '/dashboard-app/pilotage' },
