@@ -1,52 +1,24 @@
-import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendWelcomeEmail } from '@/lib/email/resend'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code        = searchParams.get('code')
-  const error       = searchParams.get('error')
-  // Paramètres d'invitation préservés dans l'URL de callback
-  const invitation  = searchParams.get('invitation') || searchParams.get('token') || ''
-  const inviteEmail = searchParams.get('email') || ''
-  const agencyId    = searchParams.get('agency') || ''
-
-  if (error) {
-    return NextResponse.redirect(`${origin}/login?error=${error}`)
-  }
+/**
+ * Callback pour la réinitialisation du mot de passe
+ * Supabase envoie un lien avec un code, cet endpoint l'échange contre une session
+ */
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') || '/dashboard'
 
   if (code) {
-    const supabase = await createClient()
-    const { error: exchangeError, data } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = createClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!exchangeError && data.user) {
-      // Si l'utilisateur venait d'une invitation → l'accepter et rediriger vers /join
-      if (invitation && agencyId) {
-        const joinUrl = new URL('/join', origin)
-        joinUrl.searchParams.set('invitation', invitation)
-        if (inviteEmail) joinUrl.searchParams.set('email', inviteEmail)
-        joinUrl.searchParams.set('agency', agencyId)
-        return NextResponse.redirect(joinUrl.toString())
-      }
-
-      // Sinon : flux standard owner → email de bienvenue + dashboard
-      try {
-        const { data: agency } = await supabase
-          .from('agencies')
-          .select('name')
-          .eq('owner_id', data.user.id)
-          .single()
-
-        if (agency && data.user.email) {
-          await sendWelcomeEmail(data.user.email, agency.name || 'votre agence')
-        }
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError)
-      }
-
-      return NextResponse.redirect(`${origin}/dashboard`)
+    if (!error) {
+      return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  // Retour à la page de réinitialisation en cas d'erreur
+  return NextResponse.redirect(new URL('/reset-password?error=invalid_code', requestUrl.origin))
 }
