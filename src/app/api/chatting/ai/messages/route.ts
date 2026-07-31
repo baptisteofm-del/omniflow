@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
     }
 
-    let query = supabase
+    let query = getSupabase()
       .from('ai_messages')
       .select(
         `
