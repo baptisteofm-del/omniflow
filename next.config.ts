@@ -1,22 +1,29 @@
-import type { NextConfig } from "next";
-
-const securityHeaders = [
-  { key: 'X-DNS-Prefetch-Control', value: 'on' },
-  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-]
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: securityHeaders,
-      },
-    ]
+  reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    // Force compilation
+    optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
   },
-};
+  // Disable caching
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000,
+    pagesBufferLength: 5,
+  },
+  // Force headers to not cache
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'no-store, must-revalidate',
+        },
+      ],
+    },
+  ],
+}
 
-export default nextConfig;
+export default nextConfig
