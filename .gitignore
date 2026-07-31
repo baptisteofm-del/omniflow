@@ -42,3 +42,4 @@ next-env.d.ts
 .env.local
 node_modules
 .next
+# Force rebuild Fri Jul 31 14:39:17 UTC 2026
