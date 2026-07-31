@@ -5,10 +5,12 @@ import { getAuth } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
     const approved = searchParams.get('approved')
 
     // Get user's agency
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('id')
       .eq('owner_id', auth.user.id)

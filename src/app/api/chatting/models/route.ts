@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getAuth } from '@/lib/supabase/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's agency
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('id')
       .eq('owner_id', auth.user.id)
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get models
-    const { data: models, error } = await supabase
+    const { data: models, error } = await getSupabase()
       .from('models')
       .select('id, name')
       .eq('agency_id', agency.id)

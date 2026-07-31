@@ -5,10 +5,12 @@ import { getAuth } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'modelId required' }, { status: 400 })
     }
 
-    const { data: personality, error } = await supabase
+    const { data: personality, error } = await getSupabase()
       .from('model_personalities')
       .select('*')
       .eq('model_id', modelId)
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('id')
       .eq('owner_id', auth.user.id)
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     // Check if personality exists
-    const { data: existing } = await supabase
+    const { data: existing } = await getSupabase()
       .from('model_personalities')
       .select('id')
       .eq('model_id', modelId)
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // Update
-      const { data: updated, error } = await supabase
+      const { data: updated, error } = await getSupabase()
         .from('model_personalities')
         .update({
           display_name: displayName,
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ personality: updated?.[0] })
     } else {
       // Create
-      const { data: created, error } = await supabase
+      const { data: created, error } = await getSupabase()
         .from('model_personalities')
         .insert({
           model_id: modelId,

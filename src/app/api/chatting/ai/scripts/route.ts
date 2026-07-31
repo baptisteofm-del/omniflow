@@ -5,10 +5,12 @@ import { getAuth } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's agency
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('id')
       .eq('owner_id', auth.user.id)
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get scripts
-    const { data: scripts, error } = await supabase
+    const { data: scripts, error } = await getSupabase()
       .from('chat_scripts')
       .select('*')
       .eq('agency_id', agency.id)
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { name, category, content, variables } = await request.json()
 
     // Get user's agency
-    const { data: agency } = await supabase
+    const { data: agency } = await getSupabase()
       .from('agencies')
       .select('id')
       .eq('owner_id', auth.user.id)
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create script
-    const { data: script, error } = await supabase
+    const { data: script, error } = await getSupabase()
       .from('chat_scripts')
       .insert({
         agency_id: agency.id,
@@ -98,7 +100,7 @@ export async function DELETE(request: NextRequest) {
 
     const { scriptId } = await request.json()
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('chat_scripts')
       .delete()
       .eq('id', scriptId)

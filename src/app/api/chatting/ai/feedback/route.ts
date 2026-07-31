@@ -4,10 +4,12 @@ import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * POST /api/chatting/ai/feedback
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the message with its context
-    const { data: message, error: msgError } = await supabase
+    const { data: message, error: msgError } = await getSupabase()
       .from('ai_messages')
       .select('id, agency_id, model_id, fan_profile_id, content, direction')
       .eq('id', messageId)
@@ -46,14 +48,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get fan profile for context
-    const { data: fanProfile } = await supabase
+    const { data: fanProfile } = await getSupabase()
       .from('fan_profiles')
       .select('fan_name')
       .eq('id', message.fan_profile_id)
       .single()
 
     // Save feedback
-    const { data: feedback, error: feedbackError } = await supabase
+    const { data: feedback, error: feedbackError } = await getSupabase()
       .from('chatting_feedback')
       .insert({
         agency_id: message.agency_id,
@@ -73,12 +75,12 @@ export async function POST(request: NextRequest) {
 
     // Update message approval status
     if (action === 'validate' || action === 'correct') {
-      await supabase
+      await getSupabase()
         .from('ai_messages')
         .update({ approved: true })
         .eq('id', messageId)
     } else if (action === 'reject') {
-      await supabase
+      await getSupabase()
         .from('ai_messages')
         .update({ approved: false })
         .eq('id', messageId)
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch recent feedback for this model
     // Limited to 'correct' actions (successful corrections)
-    const { data: feedbacks, error } = await supabase
+    const { data: feedbacks, error } = await getSupabase()
       .from('chatting_feedback')
       .select('*')
       .eq('model_id', modelId)

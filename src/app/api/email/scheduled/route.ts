@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendOnboardingEmail } from '@/lib/email/resend'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // This endpoint is called by Vercel Cron (GET) or externally via POST with Bearer token
 export async function GET(request: NextRequest) {
@@ -43,7 +45,7 @@ async function runDrip() {
       endOfDay.setHours(23, 59, 59, 999)
 
       // Get agencies created on that day
-      const { data: agencies, error } = await supabase
+      const { data: agencies, error } = await getSupabase()
         .from('agencies')
         .select('id, email, name')
         .gte('created_at', startOfDay.toISOString())
@@ -57,7 +59,7 @@ async function runDrip() {
       // Send email to each agency if not already sent
       for (const agency of agencies || []) {
         // Check if email was already sent
-        const { data: existingLog } = await supabase
+        const { data: existingLog } = await getSupabase()
           .from('email_drip_log')
           .select('*')
           .eq('email', agency.email)
@@ -73,7 +75,7 @@ async function runDrip() {
           await sendOnboardingEmail(agency.email, agency.name, day)
 
           // Log the send
-          await supabase.from('email_drip_log').insert({
+          await getSupabase().from('email_drip_log').insert({
             email: agency.email,
             day_number: day,
           })
