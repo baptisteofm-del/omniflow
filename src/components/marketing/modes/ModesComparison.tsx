@@ -3,23 +3,26 @@ import { Check } from 'lucide-react'
 const MODES = [
   {
     name: 'Copilot',
-    tagline: 'Humain + intelligence OmniFlow',
+    tagline: 'Transformez chaque chatter en meilleur vendeur.',
     points: [
-      "L'IA analyse, recommande et rédige",
-      'Le chatter garde le contrôle de l\'envoi',
-      'Suggestions de scripts, médias et prix',
-      'Mesure de la performance de chaque suggestion',
+      'La meilleure réponse',
+      'Le bon script',
+      'Le bon média',
+      'Le bon prix, dans les règles',
+      'Le bon moment pour vendre',
     ],
+    footer: 'Le chatter conserve la validation finale.',
   },
   {
     name: 'Full AI',
-    tagline: 'Automatisation + intelligence OmniFlow',
+    tagline: 'Automatisez votre chatting de A à Z.',
     points: [
-      'Répond, négocie et vend dans les limites que vous fixez',
-      'Reprise humaine possible à tout instant',
-      'Validateur de règles avant chaque action',
-      'Kill switch global, par agence ou par créatrice',
+      'Comprend, répond et vend',
+      'Négocie dans les limites autorisées',
+      'Relance et suit les scripts',
+      'Adapte ses décisions selon vos règles',
     ],
+    footer: "L'humain peut reprendre la main à tout moment.",
     highlight: true,
   },
 ]
@@ -29,11 +32,11 @@ export function ModesComparison() {
     <section id="how-it-works" className="mx-auto max-w-7xl px-6 py-24">
       <div className="mx-auto mb-14 max-w-2xl text-center">
         <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-          Deux modes, un seul niveau d&apos;exigence
+          Vous choisissez jusqu&apos;où l&apos;IA travaille pour vous.
         </h2>
         <p className="mt-4 text-[color:var(--foreground-muted)]">
-          Vous choisissez le niveau d&apos;autonomie. OmniFlow apporte l&apos;intelligence, votre agence
-          définit les règles.
+          Gardez votre équipe et démultipliez ses performances avec Copilot, ou automatisez votre
+          chatting avec Full AI.
         </p>
       </div>
 
@@ -53,6 +56,9 @@ export function ModesComparison() {
                 </li>
               ))}
             </ul>
+            <p className="mt-6 border-t border-[color:var(--border)] pt-4 text-xs text-[color:var(--foreground-muted)]">
+              {mode.footer}
+            </p>
           </div>
         ))}
       </div>
