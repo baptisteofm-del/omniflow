@@ -46,11 +46,10 @@ Format per spec 47.155: Question / Why it matters / Blocking? / Recommended opti
 - **Status**: OPEN
 
 ### Q7 — Current Vercel/Supabase project state (staging environment)
-- **Why it matters**: spec 3.25/47.17 requires LOCAL/STAGING/PRODUCTION separation. It's unclear from the repo alone whether a staging Supabase project or Vercel preview environment already exists distinct from the production-configured one referenced in `vercel.json`/old cron commits.
-- **Blocking?**: Blocks the exact shape of Phase 1's environment setup task, not Phase 0.
-- **Recommended option**: owner to confirm current Vercel project(s) and Supabase project(s) in use.
+- **RESOLVED (2026-08-07)**: single Vercel project (`omniflow`), production deploys from `main` (live at `www.omniflowapp.ai` — the old product, untouched by this work). Vercel auto-generates a Preview deployment for every pushed branch, including `docs/omniflow-v1-audit` — this is used as the staging environment, no second Vercel project needed. New Supabase project (created 2026-08-07) will be wired to Preview-scoped env vars when the app starts calling it (~Phase 3).
+- Side note: a `clean-main` branch appears in Vercel's "Active Branches" list (stale — referenced in the old `AGENTS.md`) but no longer exists on GitHub (`git branch -a` confirms only `main` + `docs/omniflow-v1-audit`). No action needed, just a leftover Vercel deployment record.
 - **Owner**: Baptiste
-- **Status**: OPEN
+- **Status**: RESOLVED
 
 ### Q8 — Legal entity / commercial terms review
 - **Why it matters**: spec Part 42/45 makes legal/privacy/commission-disclosure review a hard pre-production gate (not pre-Phase-1).

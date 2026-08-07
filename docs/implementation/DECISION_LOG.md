@@ -31,6 +31,18 @@ Records decisions so they aren't silently re-debated later (spec 47.14, 47.153, 
 - **Alternatives considered**: run `0001_init.sql` first, then migrate again later (rejected — pure waste, no data to protect in the interim).
 - **Impact**: `supabase/migrations/0001_init.sql` is kept in the repo as a reference for RLS-writing patterns and as a record of security issues found in the old schema, but is explicitly marked "not applicable to the new schema" (see `CURRENT_STATE_AUDIT.md` §3).
 
+### 2026-08-07 — Staging environment = Vercel's automatic Preview Deployments, no second Vercel project
+- **Context**: spec 3.25/47.17 requires LOCAL/STAGING/PRODUCTION separation. Only one Vercel project exists for `omniflow`, deploying `main` to production (`www.omniflowapp.ai`, the old product).
+- **Decision**: use Vercel's built-in per-branch Preview Deployments as the staging environment, rather than provisioning a second Vercel project. `docs/omniflow-v1-audit` (and its successor branches) get their own preview URL automatically on every push.
+- **Reason**: free, zero extra setup, and Vercel-idiomatic; production stays untouched (still deploys only from `main`) until an explicit decision to cut over.
+- **Impact**: when the new app starts calling Supabase (~Phase 3), its env vars get set at the Preview scope in Vercel, pointing at the new Supabase project — not touching Production's env vars.
+
+### 2026-08-07 — New, separate Supabase project for the rebuild; old project paused, not deleted
+- **Context**: owner is on Supabase's free tier, capped on concurrent active projects.
+- **Decision**: old project paused (Project Settings → General → Pause), new project created for the V1 rebuild, `0001_foundation.sql` applied successfully (verified: 9 permission rows).
+- **Reason**: avoids the schema-collision risk of reusing the old project (old `agencies` table has an incompatible shape; `create table if not exists` would silently skip creating the new one). Pausing (not deleting) keeps the old project as a reference/safety net.
+- **Impact**: none blocking — Phase 1 database work proceeds on the new project.
+
 ### 2026-08-07 — No production client data exists; this is a greenfield technical rebuild, not a live migration
 - **Context**: needed to know whether Phase 0/1 database work must preserve existing rows.
 - **Decision**: treat the rebuild as greenfield. No backup/dry-run/rollback machinery is needed for data preservation (though it's still needed for schema correctness before Phase 1 ships).
