@@ -4,8 +4,8 @@ Per spec 47.194. Updated at the end of every phase.
 
 ---
 
-**Current Phase**: Phase 1 — Technical Foundations (in progress)
-**Current Milestone**: Milestone A — FOUNDATION READY (spec 47.173)
+**Current Phase**: Phase 2 — Design System + Landing Page (in progress; started in parallel with Phase 1's remaining lightweight items, which are deferred to when Phase 3 actually needs them — see note below)
+**Current Milestone**: Milestone A — FOUNDATION READY (database done; app-side auth/RBAC deferred to Phase 3) → moving toward Milestone B
 
 **Completed**:
 - Read all 46 available spec parts (`/docs/specification/`)
@@ -20,17 +20,21 @@ Per spec 47.194. Updated at the end of every phase.
 - Old schema reference (`0001_init.sql`) relocated to `docs/_legacy/0001_init_OLD_SCHEMA_DO_NOT_RUN.sql`, clearly marked, freeing `supabase/migrations/` for the real sequence.
 - First real migration written: `supabase/migrations/0001_foundation.sql` — `agencies`, `users`, `roles`, `permissions`, `role_permissions`, `agency_memberships`, `creators`, `creator_access`; `is_agency_member()` / `has_permission()` RLS helpers; seeded system roles (Owner/Admin/Manager/Chatter/Viewer) and permission catalog; `handle_new_user()` signup trigger rebuilt against the new tables. **Not yet run against any Supabase project.**
 
-**In Progress**: Phase 1 — remaining tasks: environment separation (staging Supabase project + Vercel staging), `.env.example` for the new (smaller) var set, centralized env var validation, tenant-isolation smoke test, `authorize()` middleware in application code, structured logging foundation.
+- `.env.example` added (Phase 1).
+- Owner created a new Supabase project, applied `0001_foundation.sql` successfully (verified: 9 permission rows, no errors).
+- Staging environment resolved (Vercel Preview Deployments, see Decision Log).
+- **First landing page pass shipped** (Phase 2): new design tokens (violet→blue→cyan gradient from the brand logo), rebuilt Navbar/Hero/Footer, new ProductValue + ModesComparison (Copilot vs Full AI) + PricingSection (99€ Copilot / 199€+2.5% Full AI). Old-product JSON-LD claims and fabricated review numbers removed from the marketing layout. `next build` verified clean. Not yet visually reviewed by the owner — first pass, expect iteration.
 
-**Blocked**: None for Phase 1. Phase 14 (real platform integrations) remains pre-emptively flagged blocked pending Q1/Q2 in `OPEN_QUESTIONS.md`.
+**In Progress**: Phase 2 continuing (remaining landing sections per spec Part 23: ROI calculator, dashboard preview, FAQ, final CTA). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) are intentionally deferred to Phase 3, when real auth/app-shell code exists to attach them to — building them with no caller yet would be the "premature abstraction" the spec's own vertical-slices principle (47.147) warns against.
 
-**Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) is the first test debt to close in this phase.
+**Blocked**: None. Phase 14 (real platform integrations) remains pre-emptively flagged blocked pending Q1/Q2 in `OPEN_QUESTIONS.md`.
+
+**Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed in Phase 3 alongside `authorize()`.
 
 **Next**:
-1. Owner runs `0001_foundation.sql` on a Supabase project (new or reset) once ready to test it live.
-2. `.env.example` + env validation.
-3. Tenant isolation smoke test (2 fake agencies, cross-access must fail).
-4. `authorize()` central permission-check function in application code.
+1. Owner reviews the landing page preview (Vercel → `docs/omniflow-v1-audit` branch → Preview deployment) and gives feedback.
+2. Continue Phase 2: ROI calculator, remaining sections.
+3. Phase 3: authenticated app shell, real auth wiring, `authorize()`, tenant isolation test.
 
 ---
 
