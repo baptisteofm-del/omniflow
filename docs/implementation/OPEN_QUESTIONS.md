@@ -1,0 +1,67 @@
+# OPEN_QUESTIONS.md
+
+Format per spec 47.155: Question / Why it matters / Blocking? / Recommended option / Owner / Status.
+
+---
+
+### Q1 — OnlyFans authorized integration path
+- **Why it matters**: spec 19.110/47.110 requires confirming a legitimate, technically-verified integration method before building the real connector. No unofficial/scraping-style access is acceptable (spec 3.13, 19, 47.112).
+- **Blocking?**: Blocks Phase 14 only. Does **not** block Phases 1–13 (Mock Connector unblocks all core development).
+- **Recommended option**: research OnlyFans' official API/partner program status; if none exists, plan V1 pilot entirely on Mock Connector + manual/semi-manual workflow until access is confirmed.
+- **Owner**: Baptiste
+- **Status**: OPEN
+
+### Q2 — MYM authorized integration path
+- Same shape as Q1, for MYM.
+- **Blocking?**: Blocks Phase 14 only.
+- **Owner**: Baptiste
+- **Status**: OPEN
+
+### Q3 — Final subscription prices
+- **Why it matters**: spec Part 1 gives "99€/mo Copilot, 199€/mo + 2.5% Full AI" as an explicit **starting point, not a locked final price** ("Les montants d'abonnement pourront être modifiés avant le lancement commercial... ils ne doivent donc pas être codés en dur").
+- **Blocking?**: Not blocking — build pricing as configurable from day one (already a P0 requirement, row 56 in `REQUIREMENTS_MATRIX.md`), lock exact numbers before Phase 25 (pre-launch).
+- **Recommended option**: use 99€/199€+2.5% as the working default; revisit before public pricing page goes live.
+- **Owner**: Baptiste
+- **Status**: OPEN (non-blocking)
+
+### Q4 — Primary AI provider confirmation
+- **Why it matters**: spec Part 5/18 says Anthropic is the likely V1 primary provider "if tests confirm necessary performance," but the architecture must not hard-depend on it. Current code already uses `@anthropic-ai/sdk` directly (no abstraction).
+- **Blocking?**: Not blocking Phase 1–6; matters starting Phase 7 (AI Gateway).
+- **Recommended option**: keep Anthropic as the initial provider behind the new abstraction layer; no action needed until Phase 7.
+- **Owner**: Baptiste (confirm no objection)
+- **Status**: OPEN (non-blocking)
+
+### Q5 — What happens to the old omniflow product's non-Chatting pillars (trends, prospection, video gen, Telegram)?
+- **Why it matters**: this code exists, is wired to real third-party services (Apify, Kling, Higgsfield, n8n, Telegram Bot API, corresponding API keys), and is explicitly out of V1 scope per spec 34.57–34.61. Deleting vs. archiving vs. leaving it untouched has different repo-hygiene implications.
+- **Blocking?**: Not blocking Phase 1.
+- **Recommended option**: leave the code in place but disconnected from the new app (per `REBUILD_PLAN.md`, classified "Delete later," not "Delete now"); revisit once V1 Chatting is proven, per spec 34's own framing ("NOT BEFORE THE CORE PRODUCT PROVES VALUE" — these could return as future pillars, not necessarily be discarded).
+- **Owner**: Baptiste
+- **Status**: OPEN (non-blocking)
+
+### Q6 — Archive/delete the 62 root-level `.md`/`.txt` report files and old `AGENTS.md`?
+- **Why it matters**: repo hygiene; these are stale AI session logs, several actively misleading (e.g. `ARCHITECTURE.md` documents one feature, not the architecture; `AGENTS.md` references a 10% commission and a branch that no longer exists).
+- **Blocking?**: Not blocking.
+- **Recommended option**: archive under a single `docs/_legacy/` folder rather than delete outright, then update/replace `AGENTS.md` with instructions pointing to `/docs/specification/` and `/docs/implementation/`.
+- **Owner**: Baptiste
+- **Status**: OPEN
+
+### Q7 — Current Vercel/Supabase project state (staging environment)
+- **Why it matters**: spec 3.25/47.17 requires LOCAL/STAGING/PRODUCTION separation. It's unclear from the repo alone whether a staging Supabase project or Vercel preview environment already exists distinct from the production-configured one referenced in `vercel.json`/old cron commits.
+- **Blocking?**: Blocks the exact shape of Phase 1's environment setup task, not Phase 0.
+- **Recommended option**: owner to confirm current Vercel project(s) and Supabase project(s) in use.
+- **Owner**: Baptiste
+- **Status**: OPEN
+
+### Q8 — Legal entity / commercial terms review
+- **Why it matters**: spec Part 42/45 makes legal/privacy/commission-disclosure review a hard pre-production gate (not pre-Phase-1).
+- **Blocking?**: Blocks Phase 17/25 only, far downstream.
+- **Recommended option**: no action needed now; flag for revisit when approaching pilot readiness.
+- **Owner**: Baptiste
+- **Status**: OPEN (not urgent)
+
+### Q9 — Logo/brand asset to use
+- **Why it matters**: `public/` contains 5 logo variants (`logo.svg`, `logo-v1/v2/v3.svg`, `logo-icon.svg`). Spec 47.30 says reuse "the validated OmniFlow logo," implying one specific version is canonical.
+- **Blocking?**: Blocks Phase 2 (design system/landing) only.
+- **Recommended option**: owner confirms which variant is current before Phase 2 starts.
+- **Owner**: Baptiste
+- **Status**: OPEN
