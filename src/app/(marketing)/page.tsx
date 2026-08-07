@@ -8,12 +8,24 @@ import { PricingSection } from '@/components/marketing/pricing/PricingSection'
 import { FaqSection } from '@/components/marketing/faq/FaqSection'
 import { FinalCta } from '@/components/marketing/cta/FinalCta'
 
+const CORE_LOOP = ['Comprend', 'Se souvient', 'Analyse', 'Décide', 'Vend', 'Négocie', 'Relance', 'Apprend']
+const CAPABILITIES_STRIP = [
+  'Creator DNA',
+  'Custom Content',
+  'Smart Follow-ups',
+  'A/B Testing',
+  'Analytics',
+  'Human Takeover',
+  'Full AI 24/7',
+]
+
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <AnimatedBanner />
+      <AnimatedBanner items={CORE_LOOP} />
       <AISalesEngine />
+      <AnimatedBanner items={CAPABILITIES_STRIP} reverse durationSeconds={22} />
       <ComparisonSection />
       <ModesComparison />
       <EconomicCalculator />

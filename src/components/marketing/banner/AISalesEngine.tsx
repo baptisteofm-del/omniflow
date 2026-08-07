@@ -39,16 +39,6 @@ const CAPABILITIES = [
   },
 ]
 
-const COMPLEMENTARY = [
-  'Creator DNA',
-  'Custom Content',
-  'Smart Follow-ups',
-  'A/B Testing',
-  'Analytics',
-  'Human Takeover',
-  'Full AI 24/7',
-]
-
 export function AISalesEngine() {
   return (
     <section id="product" className="mx-auto max-w-7xl px-6 py-24">
@@ -72,15 +62,6 @@ export function AISalesEngine() {
             <h3 className="text-base font-semibold">{title}</h3>
             <p className="mt-2 text-sm text-[color:var(--foreground-muted)]">{description}</p>
           </div>
-        ))}
-      </div>
-
-      <div className="glass mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-3 rounded-2xl px-6 py-5">
-        {COMPLEMENTARY.map((item, i) => (
-          <span key={item} className="flex items-center gap-3 text-sm text-[color:var(--foreground-muted)]">
-            {item}
-            {i < COMPLEMENTARY.length - 1 && <span aria-hidden="true">•</span>}
-          </span>
         ))}
       </div>
     </section>

@@ -28,7 +28,7 @@ export function ProductDemo() {
       {/* Stage 0: incoming fan message */}
       <div className="mb-3 flex justify-start">
         <div className="max-w-[80%] rounded-2xl rounded-bl-sm bg-[color:var(--surface-elevated)] px-4 py-2.5 text-sm">
-          you wanna show me more? 👀
+          tu me montres plus ? 👀
         </div>
       </div>
 
@@ -43,11 +43,11 @@ export function ProductDemo() {
               className="space-y-2"
             >
               <p className="mb-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)]">
-                <TrendingUp className="h-3.5 w-3.5 text-[color:var(--cyan)]" /> Fan Intelligence
+                <TrendingUp className="h-3.5 w-3.5 text-[color:var(--cyan)]" /> Intelligence Fan
               </p>
-              <ScoreRow label="Purchase Intent" value="87/100" />
-              <ScoreRow label="Relationship" value="74/100" />
-              <ScoreRow label="Spending Potential" value="HIGH" />
+              <ScoreRow label="Intention d'achat" value="87/100" />
+              <ScoreRow label="Relation" value="74/100" />
+              <ScoreRow label="Potentiel d'achat" value="ÉLEVÉ" />
             </motion.div>
           )}
 
@@ -60,9 +60,9 @@ export function ProductDemo() {
               className="space-y-2"
             >
               <p className="mb-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)]">
-                <Brain className="h-3.5 w-3.5 text-[color:var(--violet)]" /> Fan Memory
+                <Brain className="h-3.5 w-3.5 text-[color:var(--violet)]" /> Mémoire du fan
               </p>
-              {['Already purchased twice', 'Likes teasing content', 'Usually accepts €30–€50 offers'].map((f) => (
+              {['A déjà acheté 2 fois', 'Aime le contenu suggestif', 'Accepte généralement des offres 30–50€'].map((f) => (
                 <p key={f} className="rounded-lg bg-[color:var(--surface-elevated)] px-3 py-2 text-xs text-[color:var(--foreground-muted)]">
                   {f}
                 </p>
@@ -78,7 +78,7 @@ export function ProductDemo() {
               exit={{ opacity: 0 }}
               className="gradient-bg-signature rounded-xl px-4 py-3 text-sm font-medium text-white"
             >
-              OmniFlow Decision → Fan ready for an offer
+              Décision OmniFlow → le fan est prêt pour une offre
             </motion.div>
           )}
 
@@ -86,12 +86,12 @@ export function ProductDemo() {
             <motion.div key="offer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
               <div className="flex justify-end">
                 <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[color:var(--surface-elevated)] px-4 py-2.5 text-sm">
-                  maybe... but you&apos;re gonna have to earn it 😏
+                  peut-être... mais tu vas devoir le mériter 😏
                 </div>
               </div>
               <div className="glass flex items-center justify-between rounded-xl px-4 py-3">
-                <span className="text-sm">Exclusive Content</span>
-                <span className="gradient-text text-sm font-semibold">€39</span>
+                <span className="text-sm">Contenu exclusif</span>
+                <span className="gradient-text text-sm font-semibold">39€</span>
               </div>
             </motion.div>
           )}
@@ -104,7 +104,7 @@ export function ProductDemo() {
               exit={{ opacity: 0 }}
               className="flex items-center justify-center rounded-xl border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 px-4 py-4 text-center"
             >
-              <span className="text-lg font-semibold text-[color:var(--success)]">PURCHASED +€39</span>
+              <span className="text-lg font-semibold text-[color:var(--success)]">ACHETÉ +39€</span>
             </motion.div>
           )}
         </AnimatePresence>
