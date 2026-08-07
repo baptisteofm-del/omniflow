@@ -1,5 +1,20 @@
 -- ============================================================================
--- OMNIFLOW — 0001_init.sql
+-- ⚠️ SUPERSEDED — DO NOT RUN THIS FILE ⚠️
+--
+-- This schema targets the OLD OmniFlow product (agency ops tool: models,
+-- trends, prospection, credits). The product was rebuilt from a clean base
+-- per docs/specification/ (48-part spec) starting 2026-08-07. The real,
+-- current schema is docs/implementation/../../supabase/migrations/0001_foundation.sql
+-- and onward, following docs/implementation/REBUILD_PLAN.md.
+--
+-- Kept here only as a reference for the RLS-writing patterns used and as a
+-- record of the security issues found in the original 31-file schema.
+-- See docs/implementation/DECISION_LOG.md, entry "2026-08-07 — The
+-- previously-drafted 0001_init.sql Supabase migration is superseded".
+-- ============================================================================
+
+-- ============================================================================
+-- OMNIFLOW — 0001_init.sql (OLD SCHEMA)
 -- Consolidated, idempotent initial schema for a fresh Supabase project.
 --
 -- This file supersedes (without modifying or deleting) the 31 loose *.sql
