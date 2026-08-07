@@ -1,16 +1,14 @@
 import { Hero } from '@/components/marketing/hero/Hero'
-import { Features } from '@/components/marketing/features/Features'
-import { DemosSection } from '@/components/marketing/demos/DemosSection'
-import { Testimonials } from '@/components/marketing/testimonials/Testimonials'
+import { ProductValue } from '@/components/marketing/value/ProductValue'
+import { ModesComparison } from '@/components/marketing/modes/ModesComparison'
 import { PricingSection } from '@/components/marketing/pricing/PricingSection'
 
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <Features />
-      <DemosSection />
-      <Testimonials />
+      <ProductValue />
+      <ModesComparison />
       <PricingSection />
     </>
   )

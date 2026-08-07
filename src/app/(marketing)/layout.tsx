@@ -1,7 +1,6 @@
 import { Navbar } from '@/components/marketing/navbar/Navbar'
 import { Footer } from '@/components/marketing/footer/Footer'
 import { AuthRedirect } from '@/components/shared/AuthRedirect'
-import { SupportChat } from '@/components/shared/SupportChat'
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const jsonLd = {
@@ -10,44 +9,22 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     name: 'OmniFlow',
     applicationCategory: 'BusinessApplication',
     description:
-      'La plateforme d\'automatisation #1 pour les agences OnlyFans. Autoposting, génération vidéo IA, Chatting IA, Veille Trends, et prospection automatisée.',
+      "OmniFlow est une plateforme d'IA de chatting pour agences de créateurs : mémoire des fans, scripts de vente, tarification maîtrisée, en mode Copilot ou Full AI.",
     url: 'https://omniflowapp.ai',
-    image: '/og',
-    featureList: [
-      'Autoposting multi-comptes',
-      'Génération vidéo IA (Kling)',
-      'Chatting IA pour maximiser la conversion',
-      'Veille Trends Instagram',
-      'Prospection de modèles automatisée',
-    ],
     offers: [
       {
         '@type': 'Offer',
-        name: 'Plan Starter',
+        name: 'Copilot',
         price: '99',
         priceCurrency: 'EUR',
-        priceValidUntil: '2025-12-31',
       },
       {
         '@type': 'Offer',
-        name: 'Plan Pro',
+        name: 'Full AI',
         price: '199',
         priceCurrency: 'EUR',
-        priceValidUntil: '2025-12-31',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Plan Agency',
-        price: '349',
-        priceCurrency: 'EUR',
-        priceValidUntil: '2025-12-31',
       },
     ],
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '150',
-    },
   }
 
   return (
@@ -60,7 +37,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <Navbar />
       <main>{children}</main>
       <Footer />
-      <SupportChat />
     </>
   )
 }

@@ -1,92 +1,66 @@
 'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
-import { cn } from '@/lib/utils/cn'
-import { Menu, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-const navLinks = [
-  { label: 'Fonctionnalités', href: '#features' },
-  { label: 'Tarifs', href: '#pricing' },
-  { label: 'À propos', href: '/about' },
-  { label: 'FAQ', href: '/faq' },
-  { label: 'Contact', href: '/contact' },
-  { label: 'Affiliation', href: '/affiliation' },
+const LINKS = [
+  { href: '#product', label: 'Produit' },
+  { href: '#how-it-works', label: 'Comment ça marche' },
+  { href: '#pricing', label: 'Tarifs' },
 ]
 
 export function Navbar() {
-  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-purple-500/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <Image src="/logo.svg" alt="OmniFlow" width={140} height={34} priority />
-          </Link>
+    <header
+      className={`sticky top-0 z-50 transition-colors duration-300 ${
+        scrolled ? 'bg-[color:var(--background)]/80 backdrop-blur-xl border-b border-[color:var(--border)]' : 'bg-transparent'
+      }`}
+    >
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logo-mark.png" alt="" width={28} height={28} className="h-7 w-7 rounded-full" priority />
+          <span className="text-lg font-semibold tracking-tight">
+            Omni<span className="gradient-text">Flow</span>
+          </span>
+        </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Connexion
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg font-medium hover:opacity-90 transition-opacity glow-sm"
-            >
-              Essai gratuit 7j
-            </Link>
-          </div>
-
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden text-gray-400 hover:text-white"
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="md:hidden glass border-t border-purple-500/20 px-4 pb-4">
-          {navLinks.map((link) => (
-            <Link
+        <div className="hidden items-center gap-8 md:flex">
+          {LINKS.map((link) => (
+            <a
               key={link.href}
               href={link.href}
-              className="block py-3 text-gray-400 hover:text-white transition-colors"
-              onClick={() => setOpen(false)}
+              className="text-sm text-[color:var(--foreground-muted)] transition-colors hover:text-[color:var(--foreground)]"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="hidden text-sm text-[color:var(--foreground-muted)] transition-colors hover:text-[color:var(--foreground)] sm:block"
+          >
+            Connexion
+          </Link>
           <Link
             href="/register"
-            className="block mt-3 text-center px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg font-medium"
-            onClick={() => setOpen(false)}
+            className="gradient-bg-signature rounded-full px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.03]"
           >
-            Essai gratuit 7j
+            Commencer
           </Link>
         </div>
-      )}
-    </nav>
+      </nav>
+    </header>
   )
 }

@@ -1,68 +1,47 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
-const links = {
-  Produit: [
-    { label: 'Fonctionnalités', href: '#features' },
-    { label: 'Tarifs', href: '#pricing' },
-    { label: 'FAQ', href: '/faq' },
-    { label: 'Affiliation', href: '/affiliation' },
-    { label: 'À propos', href: '/about' },
-  ],
-  Légal: [
-    { label: 'CGU', href: '/legal/terms' },
-    { label: 'Politique de confidentialité', href: '/legal/privacy' },
-    { label: 'Cookies', href: '/legal/cookies' },
-  ],
-  Support: [
-    { label: 'Documentation', href: '/docs' },
-    { label: 'Contact', href: '/contact' },
-    { label: 'Statut', href: '/status' },
-  ],
-}
-
 export function Footer() {
   return (
-    <footer className="border-t border-purple-500/20 py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-4">
-              <Image src="/logo.svg" alt="OmniFlow" width={130} height={32} />
+    <footer className="border-t border-[color:var(--border)]">
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        <div className="flex flex-col items-start justify-between gap-8 sm:flex-row">
+          <div>
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/logo-mark.png" alt="" width={24} height={24} className="h-6 w-6 rounded-full" />
+              <span className="font-semibold">
+                Omni<span className="gradient-text">Flow</span>
+              </span>
             </Link>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              La plateforme tout-en-un pour automatiser et scaler votre agence OnlyFans.
+            <p className="mt-3 max-w-xs text-sm text-[color:var(--foreground-muted)]">
+              L&apos;IA de chatting pour agences de créateurs — Copilot &amp; Full AI.
             </p>
           </div>
 
-          {/* Links */}
-          {Object.entries(links).map(([category, items]) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-gray-300 mb-4">{category}</h4>
-              <ul className="space-y-3">
-                {items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          <div className="flex gap-12 text-sm">
+            <div className="flex flex-col gap-2">
+              <span className="mb-1 text-[color:var(--foreground)]">Produit</span>
+              <a href="#product" className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
+                Fonctionnalités
+              </a>
+              <a href="#pricing" className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
+                Tarifs
+              </a>
             </div>
-          ))}
+            <div className="flex flex-col gap-2">
+              <span className="mb-1 text-[color:var(--foreground)]">Compte</span>
+              <Link href="/login" className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
+                Connexion
+              </Link>
+              <Link href="/register" className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
+                Créer un compte
+              </Link>
+            </div>
+          </div>
         </div>
 
-        <div className="border-t border-purple-500/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-600 text-sm">
-            © 2025 OmniFlow. Tous droits réservés.
-          </p>
-          <p className="text-gray-600 text-sm">
-            Fait avec ❤️ pour les agences qui veulent scaler
-          </p>
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-[color:var(--border)] pt-6 text-xs text-[color:var(--foreground-muted)] sm:flex-row">
+          <span>© {new Date().getFullYear()} OmniFlow. Tous droits réservés.</span>
         </div>
       </div>
     </footer>
