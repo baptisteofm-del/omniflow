@@ -127,14 +127,14 @@ async function followAlwaysEdge(supabase: AnySupabaseClient, agencyId: string, r
 
 // Advances a script run one meaningful step at a time. 'start' passes
 // through immediately (nothing to send). A 'message' node sends its text
-// and then STOPS, moving current_node_id to what comes next but not
-// executing it yet — the run only continues once the fan actually replies
-// (resumeScriptRunAfterFanReply), matching spec 13.20's Wait Node ("wait
-// until fan responds"): a script must not fire every step back-to-back
-// regardless of whether the fan engaged. A 'paid_media' node sends the
-// offer and STOPS the same way, but only resumes via resolveScriptOffer()
-// with a real purchase outcome (spec 13.12 — never treat a message as a
-// confirmed transaction).
+// and then STOPS, leaving current_node_id pointing AT that same message
+// node — the run only moves past it once the fan actually replies
+// (resumeScriptRunAfterFanReply steps it forward then calls this again),
+// matching spec 13.20's Wait Node ("wait until fan responds"): a script
+// must not fire every step back-to-back regardless of whether the fan
+// engaged. A 'paid_media' node sends the offer and STOPS the same way, but
+// only resumes via resolveScriptOffer() with a real purchase outcome (spec
+// 13.12 — never treat a message as a confirmed transaction).
 export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: string, runId: string) {
   for (let hop = 0; hop < MAX_NODE_HOPS; hop++) {
     const { data: run } = await supabase
@@ -174,25 +174,7 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
       await supabase
         .from('script_run_events')
         .insert({ agency_id: agencyId, script_run_id: runId, node_id: node.id, event_type: 'message_sent' })
-
-      const nextId = await followAlwaysEdge(supabase, agencyId, runId, node.id)
-      if (!nextId) return
-      // Stop here even though we already know the next node — waiting for
-      // the fan's reply is the point, not a technicality.
-      const { data: nextNode } = await supabase.from('script_nodes').select('node_type').eq('id', nextId).single()
-      if (nextNode?.node_type === 'end') {
-        // An END right after a message needs no reply to "complete" —
-        // finish the run now instead of waiting on a fan who has nothing
-        // left to respond to.
-        await supabase
-          .from('script_runs')
-          .update({ status: 'completed', completed_at: new Date().toISOString() })
-          .eq('id', runId)
-        await supabase
-          .from('script_run_events')
-          .insert({ agency_id: agencyId, script_run_id: runId, node_id: nextId, event_type: 'completed' })
-      }
-      return
+      return // current_node_id stays on this node — wait for the fan's reply
     }
 
     if (node.node_type === 'paid_media' && node.message_template) {
@@ -224,10 +206,10 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
     .insert({ agency_id: agencyId, script_run_id: runId, event_type: 'stopped', outcome: 'loop_guard' })
 }
 
-// Called after a fan message is logged. If a run is waiting on a plain
-// reply (current node is anything other than paid_media, which only
-// resolves via a real purchase outcome), move it forward now that the fan
-// has actually responded.
+// Called after a fan message is logged. If a run is waiting after a plain
+// message (current node is 'message' — paid_media only resolves via a real
+// purchase outcome, never a text reply), step it to the next node and
+// process that one now that the fan has actually responded.
 export async function resumeScriptRunAfterFanReply(supabase: AnySupabaseClient, agencyId: string, conversationId: string) {
   const { data: run } = await supabase
     .from('script_runs')
@@ -238,7 +220,10 @@ export async function resumeScriptRunAfterFanReply(supabase: AnySupabaseClient, 
   if (!run || !run.current_node_id) return
 
   const { data: node } = await supabase.from('script_nodes').select('node_type').eq('id', run.current_node_id).single()
-  if (!node || node.node_type === 'paid_media') return
+  if (!node || node.node_type !== 'message') return
+
+  const nextId = await followAlwaysEdge(supabase, agencyId, run.id, run.current_node_id)
+  if (!nextId) return
 
   await advanceScriptRun(supabase, agencyId, run.id)
 }
