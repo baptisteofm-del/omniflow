@@ -62,13 +62,19 @@ export function ConversationView({
     startTransition(async () => {
       await fn()
       router.refresh()
-      // Fan Intelligence / Copilot suggestions finish in the background
-      // (no manual click needed). They aren't done yet by the time this
-      // refresh fires, so schedule a couple more to pick up the result —
-      // Response Generation (Sonnet-tier) is slower than the Fast-tier
-      // extraction/scoring calls.
+      // Fan Intelligence / Copilot suggestions / Full AI decisions finish in
+      // the background (no manual click needed). They aren't done yet by the
+      // time this refresh fires, so schedule a few more to pick up the
+      // result — Full AI's decision task (longer prompt, more reasoning) can
+      // run noticeably longer than Copilot's Response Generation, which is
+      // itself slower than the Fast-tier extraction/scoring calls. This is
+      // a fixed guess, not a real completion signal (see TECH_DEBT) — if it
+      // still proves unreliable, replace with a Supabase Realtime
+      // subscription instead of stretching this further.
       setTimeout(() => router.refresh(), 3000)
       setTimeout(() => router.refresh(), 7000)
+      setTimeout(() => router.refresh(), 12000)
+      setTimeout(() => router.refresh(), 18000)
     })
   }
 
