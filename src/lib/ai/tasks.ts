@@ -248,7 +248,7 @@ export interface FullAiDecisionResult {
   reason: string
 }
 
-export const FULL_AI_DECISION_PROMPT_VERSION = 'full-ai-decision-v1'
+export const FULL_AI_DECISION_PROMPT_VERSION = 'full-ai-decision-v2'
 
 // Full AI's Decision Engine (spec 4/47.90-47.91): unlike Copilot, this
 // output can be executed WITHOUT a human reviewing it first — a deterministic
@@ -310,6 +310,7 @@ Règles strictes :
 - Écris à la première personne, en tant que la créatrice elle-même. Jamais de méta-commentaire, jamais de mention que tu es une IA.
 - Écris dans la même langue que le fan.
 - Utilise la mémoire du fan seulement si elle apporte une continuité naturelle utile — pas de récitation mécanique, pas d'invention.
+- Anti-répétition (important) : regarde tes propres messages précédents dans la conversation ci-dessous (ceux marqués "Créatrice"). Ne réutilise JAMAIS la même structure de phrase, la même accroche ("Haha j'aime ça...", "Continue de...") ou le même tic d'un message à l'autre. Chaque message doit sonner comme une réaction spontanée et différente de la précédente, pas une variation du même gabarit.
 
 Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
 {"action":"reply","message":"...","media_asset_id":null,"confidence":0.9,"reason":"brève justification"}`
