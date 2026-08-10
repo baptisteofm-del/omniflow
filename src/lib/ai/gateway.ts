@@ -78,6 +78,11 @@ export async function runAiTask<T>({
   let parsed: T | null = null
   let estimatedCost: number | null = null
   let errorMessage: string | null = null
+  // Captured even when JSON parsing fails, so a failure is diagnosable from
+  // ai_decisions alone instead of just "JSON introuvable" with no context —
+  // this was a real gap: the first Full AI failure gave no way to tell
+  // whether the model refused, added a preamble, or was truncated.
+  let rawText: string | null = null
 
   try {
     const temperature = TEMPERATURE_BY_TASK[taskType]
@@ -90,6 +95,7 @@ export async function runAiTask<T>({
     })
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
+    rawText = text
     parsed = parseJsonResponse<T>(text)
 
     const pricing = COST_PER_MILLION_TOKENS[model]
@@ -117,7 +123,7 @@ export async function runAiTask<T>({
       model_provider: 'anthropic',
       model_name: model,
       prompt_version: promptVersion,
-      structured_output_json: parsed ?? { error: errorMessage },
+      structured_output_json: parsed ?? { error: errorMessage, raw_text: rawText },
       status,
       latency_ms: latencyMs,
       estimated_cost: estimatedCost,
