@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
-import { SignOutButton } from '@/components/app/SignOutButton'
+import { Sidebar } from '@/components/app/Sidebar'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -32,25 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)]">
-      <header className="border-b border-[color:var(--border)]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Image src="/logo-mark.png" alt="" width={24} height={24} className="h-6 w-6 rounded-full" />
-            <span className="font-semibold">
-              Omni<span className="gradient-text">Flow</span>
-            </span>
-            {agencyName && (
-              <>
-                <span className="text-[color:var(--foreground-muted)]">/</span>
-                <span className="text-sm text-[color:var(--foreground-muted)]">{agencyName}</span>
-              </>
-            )}
-          </div>
-          <SignOutButton />
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
+    <div className="flex min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)]">
+      <Sidebar agencyName={agencyName} />
+      <main className="flex-1 overflow-y-auto px-6 py-10">
+        <div className="mx-auto max-w-7xl">{children}</div>
+      </main>
     </div>
   )
 }
