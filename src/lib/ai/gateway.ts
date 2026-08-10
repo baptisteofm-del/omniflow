@@ -21,14 +21,16 @@ const MODEL_BY_TASK: Record<AiTaskType, string> = {
   RESPONSE_GENERATION: STANDARD_MODEL,
 }
 
-// Extraction/scoring feed business logic and must be consistent (spec 5.13);
-// Response Generation writes a message a fan will read and needs natural
-// variation (spec 11.4 Naturalness) — it must not sound robotic/identical
-// every time.
-const TEMPERATURE_BY_TASK: Record<AiTaskType, number> = {
+// Extraction/scoring feed business logic and must be consistent (spec 5.13),
+// so they're pinned to temperature 0 on the Fast/Haiku model, which still
+// accepts it. Response Generation has no entry here on purpose: the
+// Standard/Sonnet-5 model rejects the `temperature` param outright
+// ("`temperature` is deprecated for this model") — omit it entirely rather
+// than guess a replacement knob, and let the model's own default sampling
+// provide the natural variation spec 11.4 asks for.
+const TEMPERATURE_BY_TASK: Partial<Record<AiTaskType, number>> = {
   MEMORY_EXTRACTION: 0,
   FAN_SCORING: 0,
-  RESPONSE_GENERATION: 0.9,
 }
 
 // Approximate USD cost per 1M tokens, for the internal AI Usage Ledger
@@ -76,10 +78,11 @@ export async function runAiTask<T>({
   let errorMessage: string | null = null
 
   try {
+    const temperature = TEMPERATURE_BY_TASK[taskType]
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
-      temperature: TEMPERATURE_BY_TASK[taskType],
+      ...(temperature !== undefined ? { temperature } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })
