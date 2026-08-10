@@ -1,8 +1,9 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { CheckCircle2, Construction } from 'lucide-react'
+import { CheckCircle2, Construction, ArrowRight } from 'lucide-react'
 
-const UPCOMING = ['Inbox', 'Fans', 'Scripts', 'Média', 'Relances', 'Analytics', 'Créatrices', 'Équipe', 'Intégrations', 'Facturation']
+const UPCOMING = ['Inbox', 'Fans', 'Scripts', 'Média', 'Relances', 'Analytics', 'Équipe', 'Intégrations', 'Facturation']
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -45,14 +46,25 @@ export default async function HomePage() {
         </div>
       </div>
 
+      <Link
+        href="/creators"
+        className="glass gradient-bg-signature mb-6 flex items-center justify-between rounded-2xl p-6 text-white transition-transform hover:scale-[1.01]"
+      >
+        <div>
+          <h2 className="font-semibold">Configurer une créatrice</h2>
+          <p className="mt-1 text-sm text-white/80">Identité, Model DNA et règles commerciales.</p>
+        </div>
+        <ArrowRight className="h-5 w-5" />
+      </Link>
+
       <div className="glass rounded-2xl p-6">
         <div className="mb-3 flex items-center gap-2 text-sm text-[color:var(--foreground-muted)]">
           <Construction className="h-4 w-4" />
           En construction
         </div>
         <p className="text-sm text-[color:var(--foreground-muted)]">
-          L&apos;espace de travail complet arrive dans les prochaines étapes : configuration de vos
-          créatrices, chatting Copilot/Full AI, scripts, analytics...
+          Le reste de l&apos;espace de travail arrive dans les prochaines étapes : chatting
+          Copilot/Full AI, scripts, analytics...
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {UPCOMING.map((item) => (
