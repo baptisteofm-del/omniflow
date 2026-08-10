@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanIntelligencePanel } from '@/components/app/inbox/FanIntelligencePanel'
 import { FanProfileCard } from '@/components/app/inbox/FanProfileCard'
+import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,6 +54,15 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     .from('fan_tags')
     .select('id, tags(name)')
     .eq('fan_id', fanId)
+
+  const { data: pendingSuggestion } = await supabase
+    .from('copilot_suggestions')
+    .select('id, suggested_text')
+    .eq('conversation_id', id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   const { data: fanConversations } = await supabase.from('conversations').select('id').eq('fan_id', fanId)
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
@@ -103,13 +113,16 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           <h1 className="text-lg font-semibold">{fan?.display_name ?? 'Fan'}</h1>
           <p className="text-sm text-[color:var(--foreground-muted)]">{creator?.display_name}</p>
         </div>
-        <span className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground-muted)]">
-          {conversation.ai_mode}
-        </span>
+        <AiModeToggle conversationId={id} aiMode={conversation.ai_mode} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <ConversationView conversationId={id} initialMessages={messages ?? []} />
+        <ConversationView
+          conversationId={id}
+          initialMessages={messages ?? []}
+          aiMode={conversation.ai_mode}
+          pendingSuggestion={pendingSuggestion ?? null}
+        />
         <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <FanIntelligencePanel
             conversationId={id}

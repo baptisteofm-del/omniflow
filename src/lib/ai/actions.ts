@@ -88,7 +88,7 @@ export async function analyzeConversationWithAI(conversationId: string) {
 
   const { system: memSystem, user: memUser } = buildMemoryExtractionPrompt(transcript, existingMemories ?? [])
 
-  const memoryResult = await runAiTask<MemoryExtractionResult>({
+  const { data: memoryResult } = await runAiTask<MemoryExtractionResult>({
     taskType: 'MEMORY_EXTRACTION',
     promptVersion: MEMORY_EXTRACTION_PROMPT_VERSION,
     systemPrompt: memSystem,
@@ -140,7 +140,7 @@ export async function analyzeConversationWithAI(conversationId: string) {
 
   const { system: scoreSystem, user: scoreUser } = buildFanScoringPrompt(transcript, fan?.display_name ?? 'Fan')
 
-  const scoringResult = await runAiTask<FanScoringResult>({
+  const { data: scoringResult } = await runAiTask<FanScoringResult>({
     taskType: 'FAN_SCORING',
     promptVersion: FAN_SCORING_PROMPT_VERSION,
     systemPrompt: scoreSystem,

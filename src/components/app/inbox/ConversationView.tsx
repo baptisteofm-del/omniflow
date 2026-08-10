@@ -1,9 +1,16 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, FlaskConical, ShoppingBag, Loader2 } from 'lucide-react'
+import { Send, FlaskConical, ShoppingBag, Loader2, Sparkles, RotateCcw, Pencil } from 'lucide-react'
 import { sendHumanMessage, simulateFanMessage, simulatePurchase } from '@/lib/inbox/actions'
+import {
+  generateCopilotSuggestion,
+  regenerateCopilotSuggestion,
+  sendCopilotSuggestion,
+  discardCopilotSuggestion,
+} from '@/lib/copilot/actions'
+import type { QuickAction } from '@/lib/ai/tasks'
 
 interface Message {
   id: string
@@ -16,22 +23,51 @@ interface Message {
   sent_at: string
 }
 
-export function ConversationView({ conversationId, initialMessages }: { conversationId: string; initialMessages: Message[] }) {
+interface PendingSuggestion {
+  id: string
+  suggested_text: string
+}
+
+const QUICK_ACTIONS: { key: QuickAction; label: string }[] = [
+  { key: 'shorter', label: 'Plus court' },
+  { key: 'direct', label: 'Plus direct' },
+  { key: 'affectionate', label: 'Plus affectueux' },
+]
+
+export function ConversationView({
+  conversationId,
+  initialMessages,
+  aiMode,
+  pendingSuggestion,
+}: {
+  conversationId: string
+  initialMessages: Message[]
+  aiMode: string
+  pendingSuggestion: PendingSuggestion | null
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [reply, setReply] = useState('')
+  const [reply, setReply] = useState(pendingSuggestion?.suggested_text ?? '')
   const [fanDraft, setFanDraft] = useState('')
   const [showMockPanel, setShowMockPanel] = useState(false)
+  const isCopilot = aiMode === 'copilot'
+
+  useEffect(() => {
+    if (pendingSuggestion) setReply(pendingSuggestion.suggested_text)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSuggestion?.id])
 
   const runAction = (fn: () => Promise<void>) => {
     startTransition(async () => {
       await fn()
       router.refresh()
-      // Fan Intelligence re-analyzes in the background after each message
-      // (no manual "Analyser" click needed). It isn't done yet by the time
-      // this refresh fires, so schedule one more shortly after to pick up
-      // the updated memory/scores once the AI call has finished.
-      setTimeout(() => router.refresh(), 4000)
+      // Fan Intelligence / Copilot suggestions finish in the background
+      // (no manual click needed). They aren't done yet by the time this
+      // refresh fires, so schedule a couple more to pick up the result —
+      // Response Generation (Sonnet-tier) is slower than the Fast-tier
+      // extraction/scoring calls.
+      setTimeout(() => router.refresh(), 3000)
+      setTimeout(() => router.refresh(), 7000)
     })
   }
 
@@ -67,15 +103,62 @@ export function ConversationView({ conversationId, initialMessages }: { conversa
         })}
       </div>
 
+      {isCopilot && pendingSuggestion && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="flex items-center gap-1 text-[10px] text-[color:var(--foreground-muted)]">
+            <Sparkles className="h-3 w-3" />
+            Suggestion IA
+          </span>
+          {QUICK_ACTIONS.map((qa) => (
+            <button
+              key={qa.key}
+              type="button"
+              disabled={isPending}
+              onClick={() =>
+                runAction(() => regenerateCopilotSuggestion(conversationId, pendingSuggestion.id, qa.key))
+              }
+              className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+            >
+              {qa.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => runAction(() => regenerateCopilotSuggestion(conversationId, pendingSuggestion.id))}
+            className="flex items-center gap-1 rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+          >
+            <RotateCcw className="h-2.5 w-2.5" />
+            Régénérer
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => {
+              setReply('')
+              runAction(() => discardCopilotSuggestion(conversationId, pendingSuggestion.id))
+            }}
+            className="flex items-center gap-1 rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+          >
+            <Pencil className="h-2.5 w-2.5" />
+            Écrire moi-même
+          </button>
+        </div>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault()
           if (!reply.trim()) return
           const text = reply
           setReply('')
-          runAction(() => sendHumanMessage(conversationId, text))
+          if (isCopilot && pendingSuggestion) {
+            runAction(() => sendCopilotSuggestion(conversationId, pendingSuggestion.id, text))
+          } else {
+            runAction(() => sendHumanMessage(conversationId, text))
+          }
         }}
-        className="mb-4 flex gap-2"
+        className="mb-2 flex gap-2"
       >
         <input
           value={reply}
@@ -92,9 +175,21 @@ export function ConversationView({ conversationId, initialMessages }: { conversa
         </button>
       </form>
 
+      {isCopilot && !pendingSuggestion && (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => runAction(() => generateCopilotSuggestion(conversationId))}
+          className="mb-4 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+        >
+          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          Générer une suggestion
+        </button>
+      )}
+
       <button
         onClick={() => setShowMockPanel((v) => !v)}
-        className="mb-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+        className="mb-2 mt-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
       >
         <FlaskConical className="h-3.5 w-3.5" />
         Outils de test (MOCK)

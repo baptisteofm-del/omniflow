@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeConversationWithAI } from '@/lib/ai/actions'
+import { generateCopilotSuggestion } from '@/lib/copilot/actions'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -13,6 +14,12 @@ import { analyzeConversationWithAI } from '@/lib/ai/actions'
 function scheduleAnalysis(conversationId: string) {
   after(() => analyzeConversationWithAI(conversationId).catch((err) => {
     console.error(`[fan-intelligence] analysis failed for conversation ${conversationId}:`, err)
+  }))
+}
+
+function scheduleSuggestion(conversationId: string) {
+  after(() => generateCopilotSuggestion(conversationId).catch((err) => {
+    console.error(`[copilot] suggestion generation failed for conversation ${conversationId}:`, err)
   }))
 }
 
@@ -122,6 +129,25 @@ export async function simulateFanMessage(conversationId: string, text: string) {
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
   scheduleAnalysis(conversationId)
+
+  const { data: conversation } = await supabase.from('conversations').select('ai_mode').eq('id', conversationId).single()
+  if (conversation?.ai_mode === 'copilot') {
+    scheduleSuggestion(conversationId)
+  }
+}
+
+export async function setConversationAiMode(conversationId: string, mode: 'human_takeover' | 'copilot') {
+  const { supabase } = await getAgencyAndUser()
+  if (!['human_takeover', 'copilot'].includes(mode)) throw new Error('Mode invalide')
+
+  const { error } = await supabase
+    .from('conversations')
+    .update({ ai_mode: mode, updated_at: new Date().toISOString() })
+    .eq('id', conversationId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+  revalidatePath('/inbox')
 }
 
 export async function simulatePurchase(conversationId: string, description: string, priceAmount: number) {
