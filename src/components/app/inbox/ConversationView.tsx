@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { sendHumanMessage, simulateFanMessage, simulatePurchase, simulateDecline } from '@/lib/inbox/actions'
 import {
   generateCopilotSuggestion,
@@ -58,23 +59,38 @@ export function ConversationView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSuggestion?.id])
 
+  // Fan Intelligence / Copilot suggestions / Full AI decisions all finish in
+  // the background (no manual click needed) — a fixed-delay guess at when to
+  // refresh was unreliable (Full AI's decision task can run longer than any
+  // reasonable fixed wait). Realtime reacts to the actual DB change instead:
+  // a new message, or the conversation's ai_mode flipping (e.g. Full AI
+  // escalating to paused).
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        () => router.refresh()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversationId}` },
+        () => router.refresh()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId])
+
   const runAction = (fn: () => Promise<void>) => {
     startTransition(async () => {
       await fn()
       router.refresh()
-      // Fan Intelligence / Copilot suggestions / Full AI decisions finish in
-      // the background (no manual click needed). They aren't done yet by the
-      // time this refresh fires, so schedule a few more to pick up the
-      // result — Full AI's decision task (longer prompt, more reasoning) can
-      // run noticeably longer than Copilot's Response Generation, which is
-      // itself slower than the Fast-tier extraction/scoring calls. This is
-      // a fixed guess, not a real completion signal (see TECH_DEBT) — if it
-      // still proves unreliable, replace with a Supabase Realtime
-      // subscription instead of stretching this further.
-      setTimeout(() => router.refresh(), 3000)
-      setTimeout(() => router.refresh(), 7000)
-      setTimeout(() => router.refresh(), 12000)
-      setTimeout(() => router.refresh(), 18000)
     })
   }
 
