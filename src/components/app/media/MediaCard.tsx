@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Loader2, ImageIcon, Video, Music } from 'lucide-react'
+import { Pencil, Loader2, ImageIcon, Video, Music, Gift } from 'lucide-react'
 import { updateMediaAsset } from '@/lib/media/actions'
 
 interface Asset {
@@ -11,12 +11,19 @@ interface Asset {
   description: string | null
   media_type: string
   status: string
-  target_price: number
-  minimum_price: number
+  target_price: number | null
+  minimum_price: number | null
   currency: string
+  is_for_sale: boolean
   standalone_allowed: boolean
+  folder_id: string | null
   signedUrl: string | null
   creatorName: string | null
+}
+
+interface Folder {
+  id: string
+  name: string
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -31,12 +38,14 @@ const TYPE_ICONS: Record<string, typeof ImageIcon> = {
   audio: Music,
 }
 
-export function MediaCard({ asset }: { asset: Asset }) {
+export function MediaCard({ asset, folders }: { asset: Asset; folders: Folder[] }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editing, setEditing] = useState(false)
+  const [isForSale, setIsForSale] = useState(asset.is_for_sale)
   const [error, setError] = useState<string | null>(null)
   const TypeIcon = TYPE_ICONS[asset.media_type] ?? ImageIcon
+  const folderName = folders.find((f) => f.id === asset.folder_id)?.name
 
   const runAction = (fn: () => Promise<void>) => {
     setError(null)
@@ -62,11 +71,21 @@ export function MediaCard({ asset }: { asset: Asset }) {
       </div>
       <div className="p-4">
         <div className="mb-2 flex items-center justify-between">
-          <span className="rounded-full border border-[color:var(--border-strong)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
-            {STATUS_LABELS[asset.status] ?? asset.status}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-[color:var(--border-strong)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
+              {STATUS_LABELS[asset.status] ?? asset.status}
+            </span>
+            {folderName && (
+              <span className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
+                {folderName}
+              </span>
+            )}
+          </div>
           <button
-            onClick={() => setEditing((v) => !v)}
+            onClick={() => {
+              setIsForSale(asset.is_for_sale)
+              setEditing((v) => !v)
+            }}
             className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -79,8 +98,21 @@ export function MediaCard({ asset }: { asset: Asset }) {
             <p className="mt-0.5 text-xs text-[color:var(--foreground-muted)]">{asset.creatorName}</p>
             {asset.description && <p className="mt-1 text-xs text-[color:var(--foreground-muted)]">{asset.description}</p>}
             <div className="mt-2 flex items-center gap-2 text-xs">
-              <span className="gradient-text font-semibold">{asset.target_price}€</span>
-              <span className="text-[color:var(--foreground-muted)]">min. {asset.minimum_price}€</span>
+              {!asset.is_for_sale ? (
+                <span className="flex items-center gap-1 rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
+                  <Gift className="h-3 w-3" />
+                  Gratuit / hors vente
+                </span>
+              ) : asset.target_price !== null && asset.minimum_price !== null ? (
+                <>
+                  <span className="gradient-text font-semibold">{asset.target_price}€</span>
+                  <span className="text-[color:var(--foreground-muted)]">min. {asset.minimum_price}€</span>
+                </>
+              ) : (
+                <span className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
+                  Prix non défini
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -106,24 +138,49 @@ export function MediaCard({ asset }: { asset: Asset }) {
               placeholder="Description (optionnel)"
               className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
             />
-            <div className="flex gap-2">
+            <select
+              name="folder_id"
+              defaultValue={asset.folder_id ?? ''}
+              className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+            >
+              <option value="">— aucun dossier —</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-2 text-xs text-[color:var(--foreground-muted)]">
               <input
-                type="number"
-                name="target_price"
-                required
-                defaultValue={asset.target_price}
-                placeholder="Prix cible"
-                className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                type="checkbox"
+                name="is_for_sale"
+                checked={isForSale}
+                onChange={(e) => setIsForSale(e.target.checked)}
               />
-              <input
-                type="number"
-                name="minimum_price"
-                required
-                defaultValue={asset.minimum_price}
-                placeholder="Prix minimum"
-                className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-            </div>
+              Vendable (décocher = gratuit / hors vente)
+            </label>
+            {isForSale && (
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  name="target_price"
+                  min={0.01}
+                  step="0.01"
+                  defaultValue={asset.target_price ?? ''}
+                  placeholder="Prix cible (vide = pas encore fixé)"
+                  className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+                <input
+                  type="number"
+                  name="minimum_price"
+                  min={0.01}
+                  step="0.01"
+                  defaultValue={asset.minimum_price ?? ''}
+                  placeholder="Prix minimum (vide = pas encore fixé)"
+                  className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+              </div>
+            )}
             <select
               name="status"
               defaultValue={asset.status}

@@ -37,64 +37,41 @@ function mediaTypeFromMime(mime: string): 'image' | 'video' | 'audio' | null {
   return null
 }
 
-function sanitizeFilename(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100)
-}
-
-export async function uploadMediaAsset(formData: FormData) {
+// Step 1 of "deposit then configure": the file itself is uploaded directly
+// from the browser to Supabase Storage (see NewMediaForm) — Server Actions
+// cap request bodies at 1MB and Vercel's function payload limit (~4.5MB)
+// makes routing file bytes through here unworkable anyway. This just
+// records the row once the bytes are already safely in the bucket.
+export async function createMediaAsset(input: { creator_id: string; storage_key: string; mime: string; title: string }) {
   const { supabase, agencyId } = await getAgencyAndUser()
 
-  const creatorId = String(formData.get('creator_id') || '')
-  const title = String(formData.get('title') || '').trim()
-  const description = String(formData.get('description') || '').trim()
-  const targetPriceRaw = String(formData.get('target_price') || '').trim()
-  const minimumPriceRaw = String(formData.get('minimum_price') || '').trim()
-  const standaloneAllowed = formData.get('standalone_allowed') === 'on'
-  const file = formData.get('file') as File | null
+  if (!input.creator_id) throw new Error('Sélectionnez une créatrice')
+  if (!input.storage_key.startsWith(`${agencyId}/`)) throw new Error('Chemin de stockage invalide')
 
-  if (!creatorId) throw new Error('Sélectionnez une créatrice')
-  if (!title) throw new Error('Titre requis')
-  if (!file || file.size === 0) throw new Error('Fichier requis')
-
-  const targetPrice = Number(targetPriceRaw)
-  const minimumPrice = Number(minimumPriceRaw)
-  if (!Number.isFinite(targetPrice) || targetPrice <= 0) throw new Error('Prix cible invalide')
-  if (!Number.isFinite(minimumPrice) || minimumPrice <= 0) throw new Error('Prix minimum invalide')
-  // Pricing Validator (spec 15.28), applied here too: a media can never be
-  // configured with target < minimum in the first place.
-  if (minimumPrice > targetPrice) throw new Error('Le prix minimum ne peut pas dépasser le prix cible')
-
-  const mediaType = mediaTypeFromMime(file.type)
+  const mediaType = mediaTypeFromMime(input.mime)
   if (!mediaType) throw new Error('Type de fichier non supporté (image, vidéo ou audio uniquement)')
 
-  const storageKey = `${agencyId}/${creatorId}/${Date.now()}-${sanitizeFilename(file.name)}`
-  const { error: uploadError } = await supabase.storage.from('media').upload(storageKey, file, {
-    contentType: file.type,
-    upsert: false,
-  })
-  if (uploadError) throw new Error(`Échec de l'upload : ${uploadError.message}`)
+  const title = input.title.trim() || 'Sans titre'
 
   const { error } = await supabase.from('media_assets').insert({
     agency_id: agencyId,
-    creator_id: creatorId,
-    storage_key: storageKey,
+    creator_id: input.creator_id,
+    storage_key: input.storage_key,
     media_type: mediaType,
     title,
-    description: description || null,
-    target_price: targetPrice,
-    minimum_price: minimumPrice,
-    standalone_allowed: standaloneAllowed,
   })
   if (error) {
     // Don't leave an orphaned file if the row insert fails.
-    await supabase.storage.from('media').remove([storageKey])
+    await supabase.storage.from('media').remove([input.storage_key])
     throw new Error(error.message)
   }
 
   revalidatePath('/media')
-  redirect('/media')
 }
 
+// Step 2: configure (or reconfigure) a media already deposited — price is
+// optional (empty = not priced yet), folder is optional, and a media can be
+// marked not-for-sale (free content) which clears any price.
 export async function updateMediaAsset(mediaId: string, formData: FormData) {
   const { supabase } = await getAgencyAndUser()
 
@@ -103,16 +80,28 @@ export async function updateMediaAsset(mediaId: string, formData: FormData) {
   const targetPriceRaw = String(formData.get('target_price') || '').trim()
   const minimumPriceRaw = String(formData.get('minimum_price') || '').trim()
   const standaloneAllowed = formData.get('standalone_allowed') === 'on'
+  const isForSale = formData.get('is_for_sale') === 'on'
+  const folderIdRaw = String(formData.get('folder_id') || '').trim()
   const status = String(formData.get('status') || 'active')
 
   if (!title) throw new Error('Titre requis')
   if (!['active', 'paused', 'archived'].includes(status)) throw new Error('Statut invalide')
 
-  const targetPrice = Number(targetPriceRaw)
-  const minimumPrice = Number(minimumPriceRaw)
-  if (!Number.isFinite(targetPrice) || targetPrice <= 0) throw new Error('Prix cible invalide')
-  if (!Number.isFinite(minimumPrice) || minimumPrice <= 0) throw new Error('Prix minimum invalide')
-  if (minimumPrice > targetPrice) throw new Error('Le prix minimum ne peut pas dépasser le prix cible')
+  let targetPrice: number | null = null
+  let minimumPrice: number | null = null
+  if (isForSale) {
+    if (targetPriceRaw) {
+      targetPrice = Number(targetPriceRaw)
+      if (!Number.isFinite(targetPrice) || targetPrice <= 0) throw new Error('Prix cible invalide')
+    }
+    if (minimumPriceRaw) {
+      minimumPrice = Number(minimumPriceRaw)
+      if (!Number.isFinite(minimumPrice) || minimumPrice <= 0) throw new Error('Prix minimum invalide')
+    }
+    if (targetPrice !== null && minimumPrice !== null && minimumPrice > targetPrice) {
+      throw new Error('Le prix minimum ne peut pas dépasser le prix cible')
+    }
+  }
 
   const { error } = await supabase
     .from('media_assets')
@@ -121,6 +110,8 @@ export async function updateMediaAsset(mediaId: string, formData: FormData) {
       description: description || null,
       target_price: targetPrice,
       minimum_price: minimumPrice,
+      is_for_sale: isForSale,
+      folder_id: folderIdRaw || null,
       standalone_allowed: standaloneAllowed,
       status,
       archived_at: status === 'archived' ? new Date().toISOString() : null,
@@ -128,6 +119,21 @@ export async function updateMediaAsset(mediaId: string, formData: FormData) {
     })
     .eq('id', mediaId)
   if (error) throw new Error(error.message)
+
+  revalidatePath('/media')
+}
+
+export async function createMediaFolder(formData: FormData) {
+  const { supabase, agencyId } = await getAgencyAndUser()
+
+  const name = String(formData.get('name') || '').trim()
+  if (!name) throw new Error('Nom de dossier requis')
+
+  const { error } = await supabase.from('media_folders').insert({ agency_id: agencyId, name })
+  if (error) {
+    if (error.code === '23505') throw new Error('Un dossier avec ce nom existe déjà')
+    throw new Error(error.message)
+  }
 
   revalidatePath('/media')
 }

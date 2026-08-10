@@ -15,10 +15,15 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     .single()
   if (!script) notFound()
 
+  // Only media that's actually sellable and priced can back a paid_media
+  // step — free/not-for-sale media and media with no minimum price yet
+  // (owner left it blank at upload) aren't valid offer targets.
   let mediaQuery = supabase
     .from('media_assets')
     .select('id, title, media_type, target_price, minimum_price')
     .eq('status', 'active')
+    .eq('is_for_sale', true)
+    .not('minimum_price', 'is', null)
     .order('title', { ascending: true })
   if (script.creator_id) mediaQuery = mediaQuery.eq('creator_id', script.creator_id)
   const { data: mediaAssets } = await mediaQuery

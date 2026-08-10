@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { runAiTask } from '@/lib/ai/gateway'
 import { buildScriptMessagePrompt, SCRIPT_MESSAGE_PROMPT_VERSION, type ScriptMessageResult } from '@/lib/ai/tasks'
-import { validatePrice, PricingViolationError } from '@/lib/pricing/validator'
+import { validatePrice, PricingViolationError, PricingNotConfiguredError } from '@/lib/pricing/validator'
 
 // Loop Protection (spec 13.39): a broken graph (e.g. a cycle of 'always'
 // edges) must never spin forever.
@@ -203,7 +203,7 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
       if (node.media_asset_id) {
         const { data: media } = await supabase
           .from('media_assets')
-          .select('minimum_price, status')
+          .select('minimum_price, status, is_for_sale')
           .eq('id', node.media_asset_id)
           .single()
 
@@ -225,7 +225,8 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
         try {
           validatePrice(node.price_amount, media)
         } catch (err) {
-          const message = err instanceof PricingViolationError ? err.message : 'Prix invalide'
+          const message =
+            err instanceof PricingViolationError || err instanceof PricingNotConfiguredError ? err.message : 'Prix invalide'
           await supabase
             .from('script_runs')
             .update({ status: 'stopped', completed_at: new Date().toISOString() })

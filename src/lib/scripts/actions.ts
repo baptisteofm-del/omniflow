@@ -144,7 +144,7 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
     price = Number(priceRaw)
     const { data: media } = await supabase
       .from('media_assets')
-      .select('minimum_price')
+      .select('minimum_price, is_for_sale')
       .eq('id', mediaAssetId)
       .single()
     if (!media) throw new Error('Média introuvable')
@@ -205,7 +205,7 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
     price = Number(priceRaw)
     const { data: media } = await supabase
       .from('media_assets')
-      .select('minimum_price')
+      .select('minimum_price, is_for_sale')
       .eq('id', mediaAssetId)
       .single()
     if (!media) throw new Error('Média introuvable')
