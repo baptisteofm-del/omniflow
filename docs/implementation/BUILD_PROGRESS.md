@@ -4,8 +4,8 @@ Per spec 47.194. Updated at the end of every phase.
 
 ---
 
-**Current Phase**: Phase 5 — Conversation Domain + Mock Platform Adapter (validated) → moving toward Phase 6
-**Current Milestone**: Milestone B — CHAT CORE READY, complete (creator + Model DNA + fans/conversations/messages/Mock connector all working end-to-end)
+**Current Phase**: Phase 6 — Fan Memory + Scoring (code written, awaiting owner validation)
+**Current Milestone**: Milestone B — CHAT CORE READY, complete. Next milestone is Copilot usable daily on mock environment (spec 47.75 / spec 33 Milestone 3), reached via Phases 6-8.
 
 **Completed**:
 - Read all 46 available spec parts (`/docs/specification/`)
@@ -34,7 +34,9 @@ Per spec 47.194. Updated at the end of every phase.
 - **Phase 5 (conversations + Mock Connector) validated end-to-end by the owner**: `0004_conversations.sql` (platforms seeded MOCK/ONLYFANS/MYM, platform_connections, fans, conversations, messages) + `/inbox` (list + start-test-conversation) + `/inbox/[id]` (thread, human reply composer, MOCK test panel to simulate a fan message and a purchase). Owner confirmed a full scenario works: start conversation → simulate fan message → reply as creator → simulate purchase. This satisfies Phase 5's exit criteria exactly (spec 47.57) and completes **Milestone B — CHAT CORE READY**.
 - Clarified for the owner: the reply composer = agency operator typing as the creator; the MOCK panel = simulates the fan (no real platform yet); no AI is wired in at this stage — that's Phase 7 (AI Gateway) / Phase 8 (Copilot), intentionally not built yet.
 
-**In Progress**: Starting Phase 6 (Fan Memory + Scoring). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them.
+- **Phase 6 (Fan Memory + Scoring) code written, awaiting owner to apply the migration and validate**: `0005_fan_memory_scoring.sql` — `fan_memories` (categories per spec 8.4: profile/relationship/preference/commercial/conversation/temporal/boundary, with confidence/importance/source/status per 8.12-8.14/8.29) and `fan_scores` (5 core scores + OmniScore slot + reasons + version, per spec 9.2/9.11, one current row per fan). Scores and memories are human-entered/editable at this stage (spec 8.28) — no AI extraction or auto-scoring yet, that lands with the AI Gateway / Fan Intelligence Engine phases. UI: a "Fan Intelligence" panel added to `/inbox/[id]` (next to the conversation) showing the 5 score bars (editable) and the fan's active memories (add / confirm / soft-delete). `next build` verified clean.
+
+**In Progress**: Phase 6 — waiting on the owner to run `0005_fan_memory_scoring.sql` and validate the panel on `/inbox/[id]` (add a memory, set scores, confirm they persist). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them.
 
 **Backlog (not blocking)**: Creator DNA "Advanced Mode" (spec Part 6's full 12-section editor) — current form is Simple Mode only; owner flagged it needs more depth, scheduled for a later pass.
 
@@ -43,7 +45,8 @@ Per spec 47.194. Updated at the end of every phase.
 **Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed once a second agency exists to test isolation against.
 
 **Next**:
-1. Phase 6: `fan_memories`, `fan_scores` tables + the 5 core Fan Intelligence scores (Purchase Intent, Relationship, Spending Potential, Engagement, Churn Risk) and a way to see/correct memory on a fan.
+1. Owner applies `0005_fan_memory_scoring.sql`, validates Fan Intelligence panel on a mock conversation.
+2. Once validated: Phase 7 (AI Gateway) — the first real AI wiring, needed before Copilot suggestions or Full AI replies can exist.
 
 ---
 
