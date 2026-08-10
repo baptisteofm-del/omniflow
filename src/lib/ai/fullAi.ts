@@ -87,12 +87,21 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
     .eq('standalone_allowed', true)
     .not('minimum_price', 'is', null)
 
+  // Shown separately (not just buried in the transcript) so the model can't
+  // miss it — owner reported consecutive replies reading as the same
+  // template despite a general anti-repetition instruction.
+  const recentOwnMessages = messages
+    .filter((m: { sender_type: string }) => m.sender_type === 'ai')
+    .slice(-3)
+    .map((m: { text: string }) => m.text)
+
   const { system, user } = buildFullAiDecisionPrompt({
     transcript,
     dna: dna ?? null,
     memories: memories ?? [],
     fanName: fan?.display_name ?? 'Fan',
     availableOffers: mediaRows ?? [],
+    recentOwnMessages,
   })
 
   let decision: FullAiDecisionResult
@@ -140,11 +149,24 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
       return
     }
 
-    const { data: message } = await supabase
-      .from('messages')
-      .insert({ agency_id: agencyId, conversation_id: conversationId, direction: 'outbound', sender_type: 'ai', text })
-      .select('id')
-      .single()
+    // Occasionally the model splits a reply into 2-3 short consecutive
+    // messages (owner requested this — reads more like real texting than
+    // one long block every time) using a "---" line as the separator.
+    const segments = text
+      .split(/\n?-{3,}\n?/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 3)
+
+    let firstMessageId: string | null = null
+    for (const segment of segments) {
+      const { data: message } = await supabase
+        .from('messages')
+        .insert({ agency_id: agencyId, conversation_id: conversationId, direction: 'outbound', sender_type: 'ai', text: segment })
+        .select('id')
+        .single()
+      if (!firstMessageId) firstMessageId = message?.id ?? null
+    }
 
     await supabase.from('ai_actions').insert({
       agency_id: agencyId,
@@ -155,7 +177,7 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
       confidence,
       message_text: text,
       validator_outcome: 'approved',
-      message_id: message?.id ?? null,
+      message_id: firstMessageId,
     })
     return
   }
