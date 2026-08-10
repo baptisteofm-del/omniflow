@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { advanceScriptRun } from '@/lib/scripts/engine'
+import { validatePrice } from '@/lib/pricing/validator'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -128,13 +129,27 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
   const title = String(formData.get('title') || '').trim()
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
+  const mediaAssetId = String(formData.get('media_asset_id') || '').trim()
   const generationMode = String(formData.get('generation_mode') || 'locked')
   const delayRaw = String(formData.get('delay_seconds') || '').trim()
   if (!messageTemplate) throw new Error('Le message est requis')
-  if (nodeType === 'paid_media' && !priceRaw) throw new Error('Le prix est requis pour une offre payante')
   if (!['locked', 'adaptive'].includes(generationMode)) throw new Error('Mode de génération invalide')
   const delaySeconds = delayRaw ? Math.max(0, Number(delayRaw)) : 0
   if (Number.isNaN(delaySeconds)) throw new Error('Délai invalide')
+
+  let price: number | null = null
+  if (nodeType === 'paid_media') {
+    if (!mediaAssetId) throw new Error('Sélectionnez un média pour une offre payante')
+    if (!priceRaw) throw new Error('Le prix est requis pour une offre payante')
+    price = Number(priceRaw)
+    const { data: media } = await supabase
+      .from('media_assets')
+      .select('minimum_price')
+      .eq('id', mediaAssetId)
+      .single()
+    if (!media) throw new Error('Média introuvable')
+    validatePrice(price, media)
+  }
 
   const { data: maxNode } = await supabase
     .from('script_nodes')
@@ -153,7 +168,8 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
     node_type: nodeType,
     title: title || null,
     message_template: messageTemplate,
-    price_amount: nodeType === 'paid_media' ? Number(priceRaw) : null,
+    price_amount: price,
+    media_asset_id: nodeType === 'paid_media' ? mediaAssetId : null,
     generation_mode: generationMode,
     delay_seconds: delaySeconds,
     sequence_order: sequenceOrder,
@@ -168,9 +184,13 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
   const { supabase } = await getAgencyAndUser()
   await getDraftVersionId(supabase, scriptId)
 
+  const { data: existing } = await supabase.from('script_nodes').select('node_type').eq('id', nodeId).single()
+  if (!existing) throw new Error('Étape introuvable')
+
   const title = String(formData.get('title') || '').trim()
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
+  const mediaAssetId = String(formData.get('media_asset_id') || '').trim()
   const generationMode = String(formData.get('generation_mode') || 'locked')
   const delayRaw = String(formData.get('delay_seconds') || '').trim()
   if (!messageTemplate) throw new Error('Le message est requis')
@@ -178,12 +198,27 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
   const delaySeconds = delayRaw ? Math.max(0, Number(delayRaw)) : 0
   if (Number.isNaN(delaySeconds)) throw new Error('Délai invalide')
 
+  let price: number | null = null
+  if (existing.node_type === 'paid_media') {
+    if (!mediaAssetId) throw new Error('Sélectionnez un média pour une offre payante')
+    if (!priceRaw) throw new Error('Le prix est requis pour une offre payante')
+    price = Number(priceRaw)
+    const { data: media } = await supabase
+      .from('media_assets')
+      .select('minimum_price')
+      .eq('id', mediaAssetId)
+      .single()
+    if (!media) throw new Error('Média introuvable')
+    validatePrice(price, media)
+  }
+
   const { error } = await supabase
     .from('script_nodes')
     .update({
       title: title || null,
       message_template: messageTemplate,
-      price_amount: priceRaw ? Number(priceRaw) : null,
+      price_amount: price,
+      media_asset_id: existing.node_type === 'paid_media' ? mediaAssetId : null,
       generation_mode: generationMode,
       delay_seconds: delaySeconds,
     })
@@ -300,6 +335,7 @@ export async function createNewDraftVersion(scriptId: string) {
         message_template: n.message_template,
         price_amount: n.price_amount,
         currency: n.currency,
+        media_asset_id: n.media_asset_id,
         generation_mode: n.generation_mode,
         delay_seconds: n.delay_seconds,
         sequence_order: n.sequence_order,

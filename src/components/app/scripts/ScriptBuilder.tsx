@@ -19,6 +19,7 @@ interface ScriptNode {
   message_template: string | null
   price_amount: number | null
   currency: string | null
+  media_asset_id: string | null
   generation_mode: string
   delay_seconds: number
   sequence_order: number
@@ -28,6 +29,14 @@ interface Branch {
   from_node_id: string
   to_node_id: string
   condition_type: string
+}
+
+interface MediaAsset {
+  id: string
+  title: string
+  media_type: string
+  target_price: number
+  minimum_price: number
 }
 
 const NODE_TYPE_LABELS: Record<string, string> = {
@@ -55,6 +64,7 @@ export function ScriptBuilder({
   scriptStatus,
   nodes,
   branches,
+  mediaAssets,
 }: {
   scriptId: string
   isDraftEditable: boolean
@@ -62,12 +72,17 @@ export function ScriptBuilder({
   scriptStatus: string
   nodes: ScriptNode[]
   branches: Branch[]
+  mediaAssets: MediaAsset[]
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+  const [editMediaId, setEditMediaId] = useState<string>('')
   const [addingType, setAddingType] = useState<'message' | 'paid_media' | null>(null)
+  const [addMediaId, setAddMediaId] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+
+  const findMedia = (mediaId: string) => mediaAssets.find((m) => m.id === mediaId)
 
   const realNodes = nodes.filter((n) => n.node_type === 'message' || n.node_type === 'paid_media')
   const endNode = nodes.find((n) => n.node_type === 'end')
@@ -158,7 +173,11 @@ export function ScriptBuilder({
               {isDraftEditable && (
                 <div className="flex gap-1">
                   <button
-                    onClick={() => setEditingNodeId(editingNodeId === node.id ? null : node.id)}
+                    onClick={() => {
+                      const opening = editingNodeId !== node.id
+                      setEditingNodeId(opening ? node.id : null)
+                      setEditMediaId(opening ? node.media_asset_id ?? '' : '')
+                    }}
                     className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -198,14 +217,38 @@ export function ScriptBuilder({
                   className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
                 />
                 {node.node_type === 'paid_media' && (
-                  <input
-                    type="number"
-                    name="price_amount"
-                    required
-                    defaultValue={node.price_amount ?? ''}
-                    placeholder="Prix (€)"
-                    className="w-32 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Média</label>
+                      <select
+                        name="media_asset_id"
+                        required
+                        value={editMediaId}
+                        onChange={(e) => setEditMediaId(e.target.value)}
+                        className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                      >
+                        <option value="">— choisir un média —</option>
+                        {mediaAssets.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.title} (min {m.minimum_price}€)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-28">
+                      <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Prix (€)</label>
+                      <input
+                        key={editMediaId}
+                        type="number"
+                        name="price_amount"
+                        required
+                        min={findMedia(editMediaId)?.minimum_price ?? 0}
+                        defaultValue={node.media_asset_id === editMediaId ? node.price_amount ?? '' : findMedia(editMediaId)?.target_price ?? ''}
+                        placeholder="Prix"
+                        className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 )}
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -352,6 +395,7 @@ export function ScriptBuilder({
                 const formData = new FormData(e.currentTarget)
                 runAction(() => addScriptNode(scriptId, formData))
                 setAddingType(null)
+                setAddMediaId('')
                 e.currentTarget.reset()
               }}
               className="space-y-2"
@@ -370,13 +414,44 @@ export function ScriptBuilder({
                 className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
               />
               {addingType === 'paid_media' && (
-                <input
-                  type="number"
-                  name="price_amount"
-                  required
-                  placeholder="Prix (€)"
-                  className="w-32 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-                />
+                mediaAssets.length === 0 ? (
+                  <p className="text-xs text-[color:var(--danger)]">
+                    Aucun média disponible pour cette créatrice — ajoutez-en un dans Médias avant de créer une offre payante.
+                  </p>
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Média</label>
+                      <select
+                        name="media_asset_id"
+                        required
+                        value={addMediaId}
+                        onChange={(e) => setAddMediaId(e.target.value)}
+                        className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                      >
+                        <option value="">— choisir un média —</option>
+                        {mediaAssets.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.title} (min {m.minimum_price}€)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-28">
+                      <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Prix (€)</label>
+                      <input
+                        key={addMediaId}
+                        type="number"
+                        name="price_amount"
+                        required
+                        min={findMedia(addMediaId)?.minimum_price ?? 0}
+                        defaultValue={findMedia(addMediaId)?.target_price ?? ''}
+                        placeholder="Prix"
+                        className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )
               )}
               <div className="flex gap-2">
                 <div className="flex-1">

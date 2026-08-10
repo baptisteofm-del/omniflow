@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { runAiTask } from '@/lib/ai/gateway'
 import { buildScriptMessagePrompt, SCRIPT_MESSAGE_PROMPT_VERSION, type ScriptMessageResult } from '@/lib/ai/tasks'
+import { validatePrice, PricingViolationError } from '@/lib/pricing/validator'
 
 // Loop Protection (spec 13.39): a broken graph (e.g. a cycle of 'always'
 // edges) must never spin forever.
@@ -22,6 +23,7 @@ interface NodeRow {
   price_amount: number | null
   currency: string | null
   generation_mode: string
+  media_asset_id: string | null
 }
 
 // LOCKED (spec 13.8): send the template verbatim. ADAPTIVE: the template is
@@ -161,7 +163,7 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
 
     const { data: node } = await supabase
       .from('script_nodes')
-      .select('id, node_type, message_template, price_amount, currency, generation_mode')
+      .select('id, node_type, message_template, price_amount, currency, generation_mode, media_asset_id')
       .eq('id', run.current_node_id)
       .single()
     if (!node) return
@@ -192,21 +194,98 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
       return // current_node_id stays on this node — wait for the fan's reply
     }
 
-    if (node.node_type === 'paid_media' && node.message_template) {
+    if (node.node_type === 'paid_media' && node.message_template && node.price_amount) {
+      // Pricing Validator (spec 15.28): re-checked here, at send time, not
+      // just when the step was authored — a media's minimum can change
+      // after a script was built. "THE AI CAN NEGOTIATE. IT CAN NEVER
+      // INVENT ITS OWN LIMITS." (spec 15.1). No media reference = nothing
+      // to validate against (legacy steps predating Phase 10) — sent as-is.
+      if (node.media_asset_id) {
+        const { data: media } = await supabase
+          .from('media_assets')
+          .select('minimum_price, status')
+          .eq('id', node.media_asset_id)
+          .single()
+
+        if (!media || media.status !== 'active') {
+          await supabase
+            .from('script_runs')
+            .update({ status: 'stopped', completed_at: new Date().toISOString() })
+            .eq('id', runId)
+          await supabase.from('script_run_events').insert({
+            agency_id: agencyId,
+            script_run_id: runId,
+            node_id: node.id,
+            event_type: 'stopped',
+            outcome: 'media_unavailable',
+          })
+          return
+        }
+
+        try {
+          validatePrice(node.price_amount, media)
+        } catch (err) {
+          const message = err instanceof PricingViolationError ? err.message : 'Prix invalide'
+          await supabase
+            .from('script_runs')
+            .update({ status: 'stopped', completed_at: new Date().toISOString() })
+            .eq('id', runId)
+          await supabase.from('script_run_events').insert({
+            agency_id: agencyId,
+            script_run_id: runId,
+            node_id: node.id,
+            event_type: 'stopped',
+            outcome: message,
+          })
+          console.error('[scripts] pricing violation blocked an offer:', message)
+          return
+        }
+      }
+
       const text = await resolveMessageText(supabase, agencyId, run, node)
-      await supabase.from('messages').insert({
-        agency_id: agencyId,
-        conversation_id: run.conversation_id,
-        direction: 'outbound',
-        sender_type: 'ai',
-        text,
-        is_paid: true,
-        price_amount: node.price_amount,
-        currency: node.currency ?? 'EUR',
-      })
+      const { data: sentMessage } = await supabase
+        .from('messages')
+        .insert({
+          agency_id: agencyId,
+          conversation_id: run.conversation_id,
+          direction: 'outbound',
+          sender_type: 'ai',
+          text,
+          is_paid: true,
+          price_amount: node.price_amount,
+          currency: node.currency ?? 'EUR',
+        })
+        .select('id')
+        .single()
+
       await supabase
         .from('script_run_events')
         .insert({ agency_id: agencyId, script_run_id: runId, node_id: node.id, event_type: 'offer_sent' })
+
+      if (node.media_asset_id) {
+        const { data: media } = await supabase
+          .from('media_assets')
+          .select('minimum_price')
+          .eq('id', node.media_asset_id)
+          .single()
+        await supabase.from('offers').insert({
+          agency_id: agencyId,
+          conversation_id: run.conversation_id,
+          fan_id: run.fan_id,
+          creator_id: run.creator_id,
+          offer_type: 'script_media',
+          source_type: 'script_node',
+          source_id: node.id,
+          media_asset_id: node.media_asset_id,
+          initial_price: node.price_amount,
+          final_price: node.price_amount,
+          minimum_allowed_price: media?.minimum_price ?? node.price_amount,
+          currency: node.currency ?? 'EUR',
+          status: 'sent',
+          sent_message_id: sentMessage?.id ?? null,
+        })
+      }
+
       return // wait for resolveScriptOffer()
     }
 
@@ -287,6 +366,14 @@ export async function resolveScriptOffer(
   await supabase
     .from('script_run_events')
     .insert({ agency_id: agencyId, script_run_id: run.id, node_id: run.current_node_id, event_type: outcome })
+
+  await supabase
+    .from('offers')
+    .update({ status: outcome === 'purchased' ? 'purchased' : 'declined', updated_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('source_type', 'script_node')
+    .eq('source_id', run.current_node_id)
+    .eq('status', 'sent')
 
   const { data: edge } = await supabase
     .from('script_edges')

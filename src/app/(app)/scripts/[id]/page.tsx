@@ -10,10 +10,18 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
 
   const { data: script } = await supabase
     .from('scripts')
-    .select('id, name, description, status, creators(display_name)')
+    .select('id, name, description, status, creator_id, creators(display_name)')
     .eq('id', id)
     .single()
   if (!script) notFound()
+
+  let mediaQuery = supabase
+    .from('media_assets')
+    .select('id, title, media_type, target_price, minimum_price')
+    .eq('status', 'active')
+    .order('title', { ascending: true })
+  if (script.creator_id) mediaQuery = mediaQuery.eq('creator_id', script.creator_id)
+  const { data: mediaAssets } = await mediaQuery
 
   const { data: versions } = await supabase
     .from('script_versions')
@@ -32,6 +40,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     message_template: string | null
     price_amount: number | null
     currency: string | null
+    media_asset_id: string | null
     generation_mode: string
     delay_seconds: number
     sequence_order: number
@@ -41,7 +50,9 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
   if (displayVersion) {
     const { data: nodeRows } = await supabase
       .from('script_nodes')
-      .select('id, node_type, title, message_template, price_amount, currency, generation_mode, delay_seconds, sequence_order')
+      .select(
+        'id, node_type, title, message_template, price_amount, currency, media_asset_id, generation_mode, delay_seconds, sequence_order'
+      )
       .eq('script_version_id', displayVersion.id)
       .order('sequence_order', { ascending: true })
     nodes = nodeRows ?? []
@@ -84,6 +95,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
         scriptStatus={script.status}
         nodes={nodes}
         branches={branches}
+        mediaAssets={mediaAssets ?? []}
       />
     </div>
   )
