@@ -67,22 +67,36 @@ export function ConversationView({
   // escalating to paused).
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase
-      .channel(`conversation-${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        () => router.refresh()
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversationId}` },
-        () => router.refresh()
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let cancelled = false
+
+    // RLS gates messages/conversations by agency membership — the Realtime
+    // socket needs the session's access token explicitly set before
+    // subscribing, or it can authorize as anon and silently receive nothing
+    // (no error, just no events, which is exactly what looked like "not
+    // instant" but was actually "not connected").
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return
+      if (session) supabase.realtime.setAuth(session.access_token)
+
+      channel = supabase
+        .channel(`conversation-${conversationId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+          () => router.refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${conversationId}` },
+          () => router.refresh()
+        )
+        .subscribe((status) => console.log('[realtime]', status))
+    })
 
     return () => {
-      supabase.removeChannel(channel)
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId])
