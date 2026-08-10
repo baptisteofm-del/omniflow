@@ -111,9 +111,12 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
     decision = result.data
     decisionId = result.decisionId
   } catch (err) {
-    // An AI failure must never leave the conversation silently unattended.
+    // An AI failure must never leave the conversation silently unattended —
+    // but the escalation reason must carry the real error, not a generic
+    // label, or a real failure becomes undiagnosable from ai_actions alone.
+    const message = err instanceof Error ? err.message : 'Erreur IA inconnue'
     console.error('[full-ai] decision task failed, escalating:', err)
-    await escalate(supabase, agencyId, conversationId, null, null, 'Échec de la tâche IA')
+    await escalate(supabase, agencyId, conversationId, null, null, `Échec de la tâche IA : ${message}`)
     return
   }
 
