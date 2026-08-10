@@ -6,6 +6,7 @@ import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeConversationWithAI } from '@/lib/ai/actions'
 import { generateCopilotSuggestion } from '@/lib/copilot/actions'
+import { resolveScriptOffer } from '@/lib/scripts/engine'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -164,6 +165,28 @@ export async function simulatePurchase(conversationId: string, description: stri
     price_amount: priceAmount,
   })
   if (error) throw new Error(error.message)
+
+  await resolveScriptOffer(supabase, agencyId, conversationId, 'purchased')
+
+  revalidatePath(`/inbox/${conversationId}`)
+  revalidatePath('/inbox')
+  scheduleAnalysis(conversationId)
+}
+
+export async function simulateDecline(conversationId: string) {
+  const { supabase, agencyId } = await getAgencyAndUser()
+
+  const { error } = await supabase.from('messages').insert({
+    agency_id: agencyId,
+    conversation_id: conversationId,
+    direction: 'inbound',
+    sender_type: 'system',
+    text: '[MOCK] Refus simulé',
+    message_type: 'system',
+  })
+  if (error) throw new Error(error.message)
+
+  await resolveScriptOffer(supabase, agencyId, conversationId, 'not_purchased')
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')

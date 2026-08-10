@@ -6,6 +6,7 @@ import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanIntelligencePanel } from '@/components/app/inbox/FanIntelligencePanel'
 import { FanProfileCard } from '@/components/app/inbox/FanProfileCard'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
+import { ScriptRunPanel } from '@/components/app/inbox/ScriptRunPanel'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +16,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const { data: conversation } = await supabase
     .from('conversations')
     .select(
-      'id, ai_mode, fan_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source)'
+      'id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source)'
     )
     .eq('id', id)
     .single()
@@ -23,6 +24,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   if (!conversation) notFound()
 
   const fanId = conversation.fan_id as string
+  const creatorId = conversation.creator_id as string
 
   const { data: messages } = await supabase
     .from('messages')
@@ -101,6 +103,41 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     name: (t.tags as unknown as { name: string } | null)?.name ?? '',
   }))
 
+  const { data: activeRunRow } = await supabase
+    .from('script_runs')
+    .select('id, script_version_id, current_node_id')
+    .eq('conversation_id', id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  let activeRun: { id: string; scriptName: string; currentNodeTitle: string | null } | null = null
+  if (activeRunRow) {
+    const { data: version } = await supabase
+      .from('script_versions')
+      .select('script_id')
+      .eq('id', activeRunRow.script_version_id)
+      .single()
+    const { data: scriptRow } = version
+      ? await supabase.from('scripts').select('name').eq('id', version.script_id).single()
+      : { data: null }
+    const { data: node } = activeRunRow.current_node_id
+      ? await supabase.from('script_nodes').select('title, node_type').eq('id', activeRunRow.current_node_id).single()
+      : { data: null }
+    activeRun = {
+      id: activeRunRow.id,
+      scriptName: scriptRow?.name ?? 'Script',
+      currentNodeTitle: node ? node.title || (node.node_type === 'paid_media' ? 'Offre en attente' : null) : null,
+    }
+  }
+
+  const { data: availableScriptRows } = await supabase
+    .from('scripts')
+    .select('id, name, creator_id')
+    .eq('status', 'active')
+  const availableScripts = (availableScriptRows ?? [])
+    .filter((s) => !s.creator_id || s.creator_id === creatorId)
+    .map((s) => ({ id: s.id, name: s.name }))
+
   return (
     <div className="mx-auto max-w-6xl">
       <Link href="/inbox" className="mb-6 inline-flex items-center gap-1.5 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
@@ -124,6 +161,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           pendingSuggestion={pendingSuggestion ?? null}
         />
         <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+          <ScriptRunPanel conversationId={id} activeRun={activeRun} availableScripts={availableScripts} />
           <FanIntelligencePanel
             conversationId={id}
             fanId={fanId}

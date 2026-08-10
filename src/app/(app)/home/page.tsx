@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CheckCircle2, Construction, ArrowRight } from 'lucide-react'
 
-const UPCOMING = ['Fans', 'Scripts', 'Média', 'Relances', 'Analytics', 'Équipe', 'Intégrations', 'Facturation']
+const UPCOMING = ['Fans', 'Média', 'Relances', 'Analytics', 'Équipe', 'Intégrations', 'Facturation']
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -64,6 +64,16 @@ export default async function HomePage() {
           <div>
             <h2 className="font-semibold">Inbox</h2>
             <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Conversations (environnement Mock).</p>
+          </div>
+          <ArrowRight className="h-5 w-5" />
+        </Link>
+        <Link
+          href="/scripts"
+          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
+        >
+          <div>
+            <h2 className="font-semibold">Scripts</h2>
+            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Scénarios de vente, branches achat / non-achat.</p>
           </div>
           <ArrowRight className="h-5 w-5" />
         </Link>

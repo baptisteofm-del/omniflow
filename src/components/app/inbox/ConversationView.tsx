@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, FlaskConical, ShoppingBag, Loader2, Sparkles, RotateCcw, Pencil } from 'lucide-react'
-import { sendHumanMessage, simulateFanMessage, simulatePurchase } from '@/lib/inbox/actions'
+import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil } from 'lucide-react'
+import { sendHumanMessage, simulateFanMessage, simulatePurchase, simulateDecline } from '@/lib/inbox/actions'
 import {
   generateCopilotSuggestion,
   regenerateCopilotSuggestion,
@@ -217,14 +217,24 @@ export function ConversationView({
               Envoyer (fan)
             </button>
           </div>
-          <button
-            onClick={() => runAction(() => simulatePurchase(conversationId, 'Contenu exclusif', 39))}
-            disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--border-strong)] px-3 py-2 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            Simuler un achat (39€)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => runAction(() => simulatePurchase(conversationId, 'Contenu exclusif', 39))}
+              disabled={isPending}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[color:var(--border-strong)] px-3 py-2 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" />
+              Simuler un achat (39€)
+            </button>
+            <button
+              onClick={() => runAction(() => simulateDecline(conversationId))}
+              disabled={isPending}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[color:var(--border-strong)] px-3 py-2 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              Simuler un refus
+            </button>
+          </div>
         </div>
       )}
     </div>
