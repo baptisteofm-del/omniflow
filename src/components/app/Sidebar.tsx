@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck, BarChart3 } from 'lucide-react'
+import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck, BarChart3, CreditCard } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
 import { NotificationBell } from '@/components/app/NotificationBell'
 
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { href: '/media', label: 'Médias', icon: ImageIcon },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/settings/ai', label: 'Paramètres IA', icon: ShieldCheck },
+  { href: '/settings/billing', label: 'Facturation', icon: CreditCard },
 ]
 
 export function Sidebar({

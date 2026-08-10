@@ -8,6 +8,7 @@ import { analyzeConversationWithAI } from '@/lib/ai/actions'
 import { generateCopilotSuggestion } from '@/lib/copilot/actions'
 import { resolveScriptOffer, resumeScriptRunAfterFanReply } from '@/lib/scripts/engine'
 import { runFullAiDecision } from '@/lib/ai/fullAi'
+import { recordTransactionAndCommission } from '@/lib/billing/ledger'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -204,16 +205,31 @@ export async function setConversationAiMode(conversationId: string, mode: 'human
 export async function simulatePurchase(conversationId: string, description: string, priceAmount: number) {
   const { supabase, agencyId } = await getAgencyAndUser()
 
-  const { error } = await supabase.from('messages').insert({
-    agency_id: agencyId,
-    conversation_id: conversationId,
-    direction: 'inbound',
-    sender_type: 'system',
-    text: `[MOCK] Achat simulé — ${description || 'Contenu'}`,
-    message_type: 'purchase_confirmation',
-    is_paid: true,
-    price_amount: priceAmount,
-  })
+  // Captured before resolving, so the commission ledger can link the sale
+  // back to whichever offer (if any) it closes out — script or Full AI.
+  const { data: pendingOffer } = await supabase
+    .from('offers')
+    .select('id, media_asset_id')
+    .eq('conversation_id', conversationId)
+    .eq('status', 'sent')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { data: message, error } = await supabase
+    .from('messages')
+    .insert({
+      agency_id: agencyId,
+      conversation_id: conversationId,
+      direction: 'inbound',
+      sender_type: 'system',
+      text: `[MOCK] Achat simulé — ${description || 'Contenu'}`,
+      message_type: 'purchase_confirmation',
+      is_paid: true,
+      price_amount: priceAmount,
+    })
+    .select('id')
+    .single()
   if (error) throw new Error(error.message)
 
   await resolveScriptOffer(supabase, agencyId, conversationId, 'purchased')
@@ -226,6 +242,24 @@ export async function simulatePurchase(conversationId: string, description: stri
     .eq('conversation_id', conversationId)
     .eq('source_type', 'full_ai')
     .eq('status', 'sent')
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('creator_id, fan_id')
+    .eq('id', conversationId)
+    .single()
+  if (conversation) {
+    await recordTransactionAndCommission(supabase, {
+      agencyId,
+      creatorId: conversation.creator_id,
+      fanId: conversation.fan_id,
+      conversationId,
+      offerId: pendingOffer?.id ?? null,
+      messageId: message?.id ?? null,
+      transactionType: pendingOffer?.media_asset_id ? 'media_purchase' : 'message_purchase',
+      grossAmount: priceAmount,
+    })
+  }
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
