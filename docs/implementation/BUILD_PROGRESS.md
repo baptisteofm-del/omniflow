@@ -4,8 +4,8 @@ Per spec 47.194. Updated at the end of every phase.
 
 ---
 
-**Current Phase**: Phase 2 — Design System + Landing Page (in progress; started in parallel with Phase 1's remaining lightweight items, which are deferred to when Phase 3 actually needs them — see note below)
-**Current Milestone**: Milestone A — FOUNDATION READY (database done; app-side auth/RBAC deferred to Phase 3) → moving toward Milestone B
+**Current Phase**: Phase 4 — Creator DNA + Commercial Configuration (validated) → moving toward Phase 5
+**Current Milestone**: Milestone B — CHAT CORE READY (creator + Model DNA done; fan/conversation/mock platform next)
 
 **Completed**:
 - Read all 46 available spec parts (`/docs/specification/`)
@@ -28,16 +28,17 @@ Per spec 47.194. Updated at the end of every phase.
 - **Landing page V2** shipped per owner's detailed corrections doc: revenue-first hero copy with animated bilingual-correct (French) product demo, dual scrolling banners, 6-capability AI sales engine section, chatters-vs-OmniFlow comparison, interactive economic calculator (explicitly not paired with fabricated stats — see Decision Log), FAQ accordion, final CTA.
 - **Phase 3 (auth) validated end-to-end by the owner**: new `(app)` route group (auth-gated layout + `/home`), rebuilt `/login` and `/register` on new schema/design, signup → `handle_new_user()` trigger → agency + user + membership created → login → `/home` shows correct agency name/plan/role. Confirmed working live via the owner's own test on the Preview deployment (new Supabase project's env vars added to Vercel, scoped to Preview only — Production untouched).
 
-**In Progress**: Starting Phase 4 (Creator DNA + commercial configuration). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them — building them with no caller yet would be the "premature abstraction" the spec's own vertical-slices principle (47.147) warns against.
+- **Phase 4 (Creator DNA + commercial settings) validated end-to-end by the owner**: `0002_creator_dna.sql` (creator_ai_profiles, creator_commercial_settings) + `/creators` list + `/creators/new` form (identity, Simple Mode DNA sliders, commercial toggles) via a `createCreator` server action.
+- **Real bug found and fixed in production testing**: `0001_foundation.sql`'s "Agency members can view teammates" policy on `users` caused infinite RLS recursion (a raw correlated subquery on `users` inside a policy defined on `users` itself), breaking every query against that table — surfaced as "Utilisateur introuvable" when creating a creator. Fixed in `0003_fix_users_rls_recursion.sql` by moving the check into a `SECURITY DEFINER` helper function (`shares_agency_with`), the same safe pattern already used by `is_agency_member()`/`has_permission()`. Applied by the owner and confirmed working.
+
+**In Progress**: Starting Phase 5 (Conversation domain + Mock Platform Adapter). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them — building them with no caller yet would be the "premature abstraction" the spec's own vertical-slices principle (47.147) warns against.
 
 **Blocked**: None. Phase 14 (real platform integrations) remains pre-emptively flagged blocked pending Q1/Q2 in `OPEN_QUESTIONS.md`.
 
-**Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed in Phase 3 alongside `authorize()`.
+**Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed once a second agency exists to test isolation against.
 
 **Next**:
-1. Owner reviews the landing page preview (Vercel → `docs/omniflow-v1-audit` branch → Preview deployment) and gives feedback.
-2. Continue Phase 2: ROI calculator, remaining sections.
-3. Phase 3: authenticated app shell, real auth wiring, `authorize()`, tenant isolation test.
+1. Phase 5: `fans`, `conversations`, `messages`, `platforms`, `platform_connections` tables + a Mock Platform Adapter, so a full fan message → human reply → simulated purchase loop works without needing real OnlyFans/MYM access.
 
 ---
 
