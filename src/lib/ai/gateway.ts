@@ -58,6 +58,11 @@ export async function runAiTask<T>({
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
+      // Extraction/scoring tasks need consistency, not creative variation
+      // (spec 5.13: structured outputs feeding business logic must be
+      // reliable) — deterministic sampling so re-analyzing an unchanged
+      // conversation doesn't drift.
+      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })

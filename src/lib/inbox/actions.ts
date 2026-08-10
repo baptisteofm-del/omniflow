@@ -2,7 +2,19 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { analyzeConversationWithAI } from '@/lib/ai/actions'
+
+// Fan Intelligence must stay current without a human clicking "Analyser"
+// (owner requirement). Scheduled via after() so it runs once the response
+// has been sent — it never adds latency to sending a message. Failures are
+// swallowed here: a stale analysis must never block or crash the chat.
+function scheduleAnalysis(conversationId: string) {
+  after(() => analyzeConversationWithAI(conversationId).catch((err) => {
+    console.error(`[fan-intelligence] analysis failed for conversation ${conversationId}:`, err)
+  }))
+}
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -91,6 +103,7 @@ export async function sendHumanMessage(conversationId: string, text: string) {
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
+  scheduleAnalysis(conversationId)
 }
 
 export async function simulateFanMessage(conversationId: string, text: string) {
@@ -108,6 +121,7 @@ export async function simulateFanMessage(conversationId: string, text: string) {
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
+  scheduleAnalysis(conversationId)
 }
 
 export async function simulatePurchase(conversationId: string, description: string, priceAmount: number) {
@@ -127,4 +141,5 @@ export async function simulatePurchase(conversationId: string, description: stri
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
+  scheduleAnalysis(conversationId)
 }

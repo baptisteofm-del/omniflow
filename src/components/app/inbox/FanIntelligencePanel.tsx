@@ -102,13 +102,16 @@ export function FanIntelligencePanel({
         <button
           onClick={handleAnalyze}
           disabled={isAnalyzing}
-          title="L'IA lit la conversation et met à jour mémoire + scores"
+          title="Se met à jour automatiquement après chaque message — force une ré-analyse immédiate"
           className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
         >
           {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-          Analyser avec l&apos;IA
+          Ré-analyser
         </button>
       </div>
+      <p className="mb-3 text-[10px] text-[color:var(--foreground-muted)]">
+        Mis à jour automatiquement par l&apos;IA après chaque message.
+      </p>
       {analyzeError && <p className="mb-3 text-xs text-[color:var(--danger)]">{analyzeError}</p>}
 
       {/* Scores */}

@@ -27,6 +27,11 @@ export function ConversationView({ conversationId, initialMessages }: { conversa
     startTransition(async () => {
       await fn()
       router.refresh()
+      // Fan Intelligence re-analyzes in the background after each message
+      // (no manual "Analyser" click needed). It isn't done yet by the time
+      // this refresh fires, so schedule one more shortly after to pick up
+      // the updated memory/scores once the AI call has finished.
+      setTimeout(() => router.refresh(), 4000)
     })
   }
 
