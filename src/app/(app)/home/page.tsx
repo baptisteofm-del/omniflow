@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CheckCircle2, Construction, ArrowRight } from 'lucide-react'
 
-const UPCOMING = ['Fans', 'Relances', 'Analytics', 'Équipe', 'Intégrations', 'Facturation']
+const UPCOMING = ['Fans', 'Relances', 'Équipe', 'Intégrations', 'Facturation']
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -84,6 +84,16 @@ export default async function HomePage() {
           <div>
             <h2 className="font-semibold">Médias</h2>
             <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Contenus vendables, prix cible et minimum garanti.</p>
+          </div>
+          <ArrowRight className="h-5 w-5" />
+        </Link>
+        <Link
+          href="/analytics"
+          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
+        >
+          <div>
+            <h2 className="font-semibold">Analytics</h2>
+            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Revenu, conversion, scripts, Copilot, Full AI.</p>
           </div>
           <ArrowRight className="h-5 w-5" />
         </Link>

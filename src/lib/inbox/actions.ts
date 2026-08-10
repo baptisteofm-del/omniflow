@@ -154,20 +154,21 @@ export async function simulateFanMessage(conversationId: string, text: string) {
 }
 
 export async function setConversationAiMode(conversationId: string, mode: 'human_takeover' | 'copilot' | 'full_ai') {
-  const { supabase, appUser } = await getAgencyAndUser()
+  const { supabase, agencyId, appUser } = await getAgencyAndUser()
   if (!['human_takeover', 'copilot', 'full_ai'].includes(mode)) throw new Error('Mode invalide')
+
+  const { data: current } = await supabase.from('conversations').select('creator_id, ai_mode').eq('id', conversationId).single()
+  if (!current) throw new Error('Conversation introuvable')
 
   // Full AI Activation Flow (spec 24.73, condensed): an agency must have
   // explicitly turned Full AI on for this creator first — a conversation
   // can never be switched into full_ai just because someone picked it in a
   // dropdown.
   if (mode === 'full_ai') {
-    const { data: conversation } = await supabase.from('conversations').select('creator_id').eq('id', conversationId).single()
-    if (!conversation) throw new Error('Conversation introuvable')
     const { data: settings } = await supabase
       .from('creator_commercial_settings')
       .select('full_ai_enabled')
-      .eq('creator_id', conversation.creator_id)
+      .eq('creator_id', current.creator_id)
       .maybeSingle()
     if (!settings?.full_ai_enabled) {
       throw new Error("Full AI n'est pas activé pour cette créatrice — activez-le d'abord dans Paramètres IA.")
@@ -185,6 +186,16 @@ export async function setConversationAiMode(conversationId: string, mode: 'human
     })
     .eq('id', conversationId)
   if (error) throw new Error(error.message)
+
+  // Analytics event pipeline (spec 47.96 "takeover") — the only mode
+  // transition fact not already captured by an existing table.
+  await supabase.from('conversation_mode_events').insert({
+    agency_id: agencyId,
+    conversation_id: conversationId,
+    from_mode: current.ai_mode,
+    to_mode: mode,
+    changed_by: appUser.id,
+  })
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')

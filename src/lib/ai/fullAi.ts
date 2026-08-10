@@ -322,11 +322,24 @@ async function escalate(
   // Only flip out of 'full_ai' — if a human already took over (or another
   // escalation already paused it) in the meantime, don't clobber that state
   // (spec 32.23/32.24: race conditions around takeover must never regress).
-  await supabase
+  const { data: updated } = await supabase
     .from('conversations')
     .update({ ai_mode: 'paused', updated_at: new Date().toISOString() })
     .eq('id', conversationId)
     .eq('ai_mode', 'full_ai')
+    .select('id')
+
+  // Only log a takeover event if the update actually applied — otherwise a
+  // human already changed the mode first and this escalation is stale.
+  if (updated && updated.length > 0) {
+    await supabase.from('conversation_mode_events').insert({
+      agency_id: agencyId,
+      conversation_id: conversationId,
+      from_mode: 'full_ai',
+      to_mode: 'paused',
+      reason,
+    })
+  }
 
   await supabase.from('ai_actions').insert({
     agency_id: agencyId,
