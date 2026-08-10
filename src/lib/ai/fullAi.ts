@@ -182,64 +182,132 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
     return
   }
 
-  // decision.action === 'offer'
-  const text = decision.message?.trim()
-  if (!text || !decision.media_asset_id) {
-    await escalate(supabase, agencyId, conversationId, decisionId, confidence, 'Offre incomplète générée par l’IA')
-    return
-  }
+  if (decision.action === 'no_offer_available') {
+    // Owner's explicit product requirement: Full AI never leaves a fan with
+    // no reply just because the agency hasn't configured anything to sell —
+    // that's a setup gap, not a trust/safety concern, so it must not pause
+    // the conversation waiting for a human like a real escalate() does. The
+    // AI deflects in character and keeps going; the agency gets a
+    // "missed opportunity" notification instead so they fix their catalog.
+    const text = decision.message?.trim()
+    if (!text) {
+      await escalate(supabase, agencyId, conversationId, decisionId, confidence, 'Esquive vide générée par l’IA')
+      return
+    }
 
-  const check = await validateOffer(supabase, { agencyId, creatorId, confidence }, decision.media_asset_id)
-  if (!check.ok || !check.media) {
-    await escalate(supabase, agencyId, conversationId, decisionId, confidence, check.reason ?? 'Validation refusée')
-    return
-  }
+    const check = await validateReply(supabase, { agencyId, creatorId, confidence })
+    if (!check.ok) {
+      // Even the deflection must respect a kill switch — if send_message
+      // itself is killed, this still has to go through the human path.
+      await escalate(supabase, agencyId, conversationId, decisionId, confidence, check.reason ?? 'Validation refusée')
+      return
+    }
 
-  const { data: message } = await supabase
-    .from('messages')
-    .insert({
+    const { data: message } = await supabase
+      .from('messages')
+      .insert({ agency_id: agencyId, conversation_id: conversationId, direction: 'outbound', sender_type: 'ai', text })
+      .select('id')
+      .single()
+
+    await supabase.from('ai_actions').insert({
       agency_id: agencyId,
       conversation_id: conversationId,
-      direction: 'outbound',
-      sender_type: 'ai',
-      text,
-      is_paid: true,
-      price_amount: check.media.target_price,
-      currency: 'EUR',
+      ai_decision_id: decisionId,
+      action_type: 'missed_opportunity',
+      status: 'executed',
+      confidence,
+      message_text: text,
+      validator_outcome: decision.reason || 'Aucune offre disponible',
+      message_id: message?.id ?? null,
     })
-    .select('id')
-    .single()
 
-  await supabase.from('offers').insert({
-    agency_id: agencyId,
-    conversation_id: conversationId,
-    fan_id: fanId,
-    creator_id: creatorId,
-    offer_type: 'out_of_script_media',
-    source_type: 'full_ai',
-    source_id: decisionId,
-    media_asset_id: check.media.id,
-    initial_price: check.media.target_price,
-    final_price: check.media.target_price,
-    minimum_allowed_price: check.media.minimum_price,
-    currency: 'EUR',
-    status: 'sent',
-    ai_decision_id: decisionId,
-    sent_message_id: message?.id ?? null,
-  })
+    await notifyAgency(
+      supabase,
+      agencyId,
+      'missed_opportunity',
+      'Vente ratée — aucun contenu disponible',
+      `Un fan était prêt à acheter mais aucun média vendable n'était configuré pour cette créatrice. L'IA a temporisé pour ne pas laisser le fan sans réponse — ajoutez un média tarifé pour ne plus manquer ces ventes.${decision.reason ? ` (${decision.reason})` : ''}`,
+      conversationId
+    )
+    return
+  }
 
-  await supabase.from('ai_actions').insert({
+  if (decision.action === 'offer') {
+    const text = decision.message?.trim()
+    if (!text || !decision.media_asset_id) {
+      await escalate(supabase, agencyId, conversationId, decisionId, confidence, 'Offre incomplète générée par l’IA')
+      return
+    }
+
+    const check = await validateOffer(supabase, { agencyId, creatorId, confidence }, decision.media_asset_id)
+    if (!check.ok || !check.media) {
+      await escalate(supabase, agencyId, conversationId, decisionId, confidence, check.reason ?? 'Validation refusée')
+      return
+    }
+
+    const { data: message } = await supabase
+      .from('messages')
+      .insert({
+        agency_id: agencyId,
+        conversation_id: conversationId,
+        direction: 'outbound',
+        sender_type: 'ai',
+        text,
+        is_paid: true,
+        price_amount: check.media.target_price,
+        currency: 'EUR',
+      })
+      .select('id')
+      .single()
+
+    await supabase.from('offers').insert({
+      agency_id: agencyId,
+      conversation_id: conversationId,
+      fan_id: fanId,
+      creator_id: creatorId,
+      offer_type: 'out_of_script_media',
+      source_type: 'full_ai',
+      source_id: decisionId,
+      media_asset_id: check.media.id,
+      initial_price: check.media.target_price,
+      final_price: check.media.target_price,
+      minimum_allowed_price: check.media.minimum_price,
+      currency: 'EUR',
+      status: 'sent',
+      ai_decision_id: decisionId,
+      sent_message_id: message?.id ?? null,
+    })
+
+    await supabase.from('ai_actions').insert({
+      agency_id: agencyId,
+      conversation_id: conversationId,
+      ai_decision_id: decisionId,
+      action_type: 'send_paid_offer',
+      status: 'executed',
+      confidence,
+      message_text: text,
+      media_asset_id: check.media.id,
+      price_amount: check.media.target_price,
+      validator_outcome: 'approved',
+      message_id: message?.id ?? null,
+    })
+  }
+}
+
+async function notifyAgency(
+  supabase: AnySupabaseClient,
+  agencyId: string,
+  type: 'escalation' | 'missed_opportunity',
+  title: string,
+  body: string,
+  conversationId: string
+) {
+  await supabase.from('agency_notifications').insert({
     agency_id: agencyId,
+    type,
+    title,
+    body,
     conversation_id: conversationId,
-    ai_decision_id: decisionId,
-    action_type: 'send_paid_offer',
-    status: 'executed',
-    confidence,
-    message_text: text,
-    media_asset_id: check.media.id,
-    price_amount: check.media.target_price,
-    validator_outcome: 'approved',
-    message_id: message?.id ?? null,
   })
 }
 
@@ -269,4 +337,13 @@ async function escalate(
     confidence,
     validator_outcome: reason,
   })
+
+  await notifyAgency(
+    supabase,
+    agencyId,
+    'escalation',
+    'Full AI a besoin d’un humain',
+    reason,
+    conversationId
+  )
 }

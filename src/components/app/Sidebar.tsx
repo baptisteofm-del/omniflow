@@ -5,6 +5,17 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
+import { NotificationBell } from '@/components/app/NotificationBell'
+
+interface Notification {
+  id: string
+  type: string
+  title: string
+  body: string | null
+  conversation_id: string | null
+  read_at: string | null
+  created_at: string
+}
 
 const NAV_ITEMS = [
   { href: '/home', label: 'Accueil', icon: Home },
@@ -15,7 +26,15 @@ const NAV_ITEMS = [
   { href: '/settings/ai', label: 'Paramètres IA', icon: ShieldCheck },
 ]
 
-export function Sidebar({ agencyName }: { agencyName: string | null }) {
+export function Sidebar({
+  agencyName,
+  agencyId,
+  initialNotifications,
+}: {
+  agencyName: string | null
+  agencyId: string | null
+  initialNotifications: Notification[]
+}) {
   const pathname = usePathname()
 
   return (
@@ -49,7 +68,8 @@ export function Sidebar({ agencyName }: { agencyName: string | null }) {
         })}
       </nav>
 
-      <div className="border-t border-[color:var(--border)] px-2 pt-4">
+      <div className="space-y-1 border-t border-[color:var(--border)] px-2 pt-4">
+        {agencyId && <NotificationBell agencyId={agencyId} initialNotifications={initialNotifications} />}
         <SignOutButton />
       </div>
     </aside>
