@@ -12,14 +12,14 @@ export function AuthRedirect() {
     // Écoute les changements d'état auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        router.replace('/dashboard')
+        router.replace('/home')
       }
     })
 
     // Vérifier si déjà connecté
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        router.replace('/dashboard')
+        router.replace('/home')
       }
     })
 
@@ -28,7 +28,7 @@ export function AuthRedirect() {
       const hash = window.location.hash
       if (hash.includes('access_token') || hash.includes('code=')) {
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) router.replace('/dashboard')
+          if (session) router.replace('/home')
         })
       }
     }

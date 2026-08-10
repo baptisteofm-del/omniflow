@@ -1,14 +1,14 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
+import Image from 'next/image'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gradient-bg px-4">
-      <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-8">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-          <Zap size={18} className="text-white" />
-        </div>
-        <span className="gradient-text">OmniFlow</span>
+    <div className="gradient-ambient flex min-h-screen flex-col items-center justify-center bg-[color:var(--background)] px-4">
+      <Link href="/" className="mb-8 flex items-center gap-2 text-xl font-semibold">
+        <Image src="/logo-mark.png" alt="" width={32} height={32} className="h-8 w-8 rounded-full" priority />
+        <span>
+          Omni<span className="gradient-text">Flow</span>
+        </span>
       </Link>
       {children}
     </div>
