@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Brain, Plus, Check, Trash2, Pencil, Loader2 } from 'lucide-react'
+import { Brain, Plus, Check, Trash2, Pencil, Loader2, Sparkles } from 'lucide-react'
 import { addFanMemory, confirmFanMemory, deleteFanMemory, upsertFanScores } from '@/lib/fans/actions'
+import { analyzeConversationWithAI } from '@/lib/ai/actions'
 
 interface Memory {
   id: string
@@ -13,6 +14,7 @@ interface Memory {
   confidence: number
   importance: number
   status: string
+  source: string
   last_confirmed_at: string | null
 }
 
@@ -24,6 +26,7 @@ interface ScoreValues {
   churn_risk: number
   omni_score: number | null
   reasons: string | null
+  computed_by: string
   version: number
 }
 
@@ -60,6 +63,8 @@ export function FanIntelligencePanel({
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [editingScores, setEditingScores] = useState(false)
   const [addingMemory, setAddingMemory] = useState(false)
 
@@ -70,14 +75,41 @@ export function FanIntelligencePanel({
     })
   }
 
+  const handleAnalyze = () => {
+    setAnalyzeError(null)
+    setIsAnalyzing(true)
+    startTransition(async () => {
+      try {
+        await analyzeConversationWithAI(conversationId)
+        router.refresh()
+      } catch (err) {
+        setAnalyzeError(err instanceof Error ? err.message : "Échec de l'analyse IA")
+      } finally {
+        setIsAnalyzing(false)
+      }
+    })
+  }
+
   const activeMemories = memories.filter((m) => m.status === 'active')
 
   return (
     <div className="glass mb-4 rounded-2xl p-5">
-      <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-        <Brain className="h-4 w-4" />
-        Fan Intelligence
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Brain className="h-4 w-4" />
+          Fan Intelligence
+        </div>
+        <button
+          onClick={handleAnalyze}
+          disabled={isAnalyzing}
+          title="L'IA lit la conversation et met à jour mémoire + scores"
+          className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+        >
+          {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          Analyser avec l&apos;IA
+        </button>
       </div>
+      {analyzeError && <p className="mb-3 text-xs text-[color:var(--danger)]">{analyzeError}</p>}
 
       {/* Scores */}
       <div className="mb-4 space-y-2">
@@ -98,13 +130,20 @@ export function FanIntelligencePanel({
             {scores?.reasons && (
               <p className="mt-2 text-xs text-[color:var(--foreground-muted)]">{scores.reasons}</p>
             )}
-            <button
-              onClick={() => setEditingScores(true)}
-              className="mt-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
-            >
-              <Pencil className="h-3 w-3" />
-              {scores ? 'Modifier les scores' : 'Renseigner les scores'}
-            </button>
+            <div className="mt-2 flex items-center justify-between">
+              <button
+                onClick={() => setEditingScores(true)}
+                className="flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+              >
+                <Pencil className="h-3 w-3" />
+                {scores ? 'Modifier les scores' : 'Renseigner les scores'}
+              </button>
+              {scores && (
+                <span className="text-[10px] text-[color:var(--foreground-muted)]">
+                  {scores.computed_by === 'system' ? 'calculé par l’IA' : 'saisi manuellement'} · v{scores.version}
+                </span>
+              )}
+            </div>
           </>
         ) : (
           <form
@@ -170,6 +209,12 @@ export function FanIntelligencePanel({
               <span className="mr-2 rounded-full border border-[color:var(--border-strong)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
                 {CATEGORY_LABELS[m.category] ?? m.category}
               </span>
+              {m.source === 'ai' && (
+                <span className="mr-2 inline-flex items-center gap-1 text-[10px] text-[color:var(--foreground-muted)]">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  IA
+                </span>
+              )}
               <span className="text-[color:var(--foreground)]">{m.label} :</span>{' '}
               <span className="text-[color:var(--foreground-muted)]">{m.value}</span>
             </div>

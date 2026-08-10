@@ -4,7 +4,7 @@ Per spec 47.194. Updated at the end of every phase.
 
 ---
 
-**Current Phase**: Phase 6 — Fan Memory + Scoring (code written, awaiting owner validation)
+**Current Phase**: Phase 6 (Fan Memory + Scoring) + Phase 7 (AI Gateway) — code written together, awaiting owner to apply migrations and validate
 **Current Milestone**: Milestone B — CHAT CORE READY, complete. Next milestone is Copilot usable daily on mock environment (spec 47.75 / spec 33 Milestone 3), reached via Phases 6-8.
 
 **Completed**:
@@ -34,9 +34,12 @@ Per spec 47.194. Updated at the end of every phase.
 - **Phase 5 (conversations + Mock Connector) validated end-to-end by the owner**: `0004_conversations.sql` (platforms seeded MOCK/ONLYFANS/MYM, platform_connections, fans, conversations, messages) + `/inbox` (list + start-test-conversation) + `/inbox/[id]` (thread, human reply composer, MOCK test panel to simulate a fan message and a purchase). Owner confirmed a full scenario works: start conversation → simulate fan message → reply as creator → simulate purchase. This satisfies Phase 5's exit criteria exactly (spec 47.57) and completes **Milestone B — CHAT CORE READY**.
 - Clarified for the owner: the reply composer = agency operator typing as the creator; the MOCK panel = simulates the fan (no real platform yet); no AI is wired in at this stage — that's Phase 7 (AI Gateway) / Phase 8 (Copilot), intentionally not built yet.
 
-- **Phase 6 (Fan Memory + Scoring) code written, awaiting owner to apply the migration and validate**: `0005_fan_memory_scoring.sql` — `fan_memories` (categories per spec 8.4: profile/relationship/preference/commercial/conversation/temporal/boundary, with confidence/importance/source/status per 8.12-8.14/8.29) and `fan_scores` (5 core scores + OmniScore slot + reasons + version, per spec 9.2/9.11, one current row per fan). Scores and memories are human-entered/editable at this stage (spec 8.28) — no AI extraction or auto-scoring yet, that lands with the AI Gateway / Fan Intelligence Engine phases. UI: a "Fan Intelligence" panel added to `/inbox/[id]` (next to the conversation) showing the 5 score bars (editable) and the fan's active memories (add / confirm / soft-delete). `next build` verified clean.
+- **Phase 6 (Fan Memory + Scoring) code written**: `0005_fan_memory_scoring.sql` — `fan_memories` (categories per spec 8.4: profile/relationship/preference/commercial/conversation/temporal/boundary, with confidence/importance/source/status per 8.12-8.14/8.29) and `fan_scores` (5 core scores + OmniScore slot + reasons + version, per spec 9.2/9.11, one current row per fan). UI: a "Fan Intelligence" panel on `/inbox/[id]` (next to the conversation) showing the 5 score bars and the fan's active memories, with manual add/confirm/soft-delete kept permanently as the human-correction path required by spec 8.28.
+- **Owner asked, correctly, why scores/memory entry was manual** — clarified that Phase 6's own exit criteria (spec 47.63) only required the data model + a human view/correct path, and that AI-driven extraction was deliberately Phase 7's job per the build order. Owner wants the AI doing this now rather than waiting, so **Phase 7 (AI Gateway) was pulled forward and built immediately after Phase 6**, in the same push.
+- **Phase 7 (AI Gateway) code written**: `0006_ai_gateway.sql` — `ai_decisions` (spec 28.31, logs every AI call: task, model, prompt version, structured output, status, latency, estimated cost). `src/lib/ai/gateway.ts` — minimal provider-agnostic `runAiTask()` (spec 5.2: single entry point, nothing calls Anthropic directly outside this file for new-build code), a 2-task Task Registry (`MEMORY_EXTRACTION`, `FAN_SCORING`), Fast-tier Model Registry (spec 5.3/5.12), JSON structured-output parsing, per-call cost estimate and audit logging. `src/lib/ai/tasks.ts` — centralized, versioned prompts (spec 5.14) for both tasks. `src/lib/ai/actions.ts` — `analyzeConversationWithAI()`: reads the mock conversation transcript, calls the AI for memory extraction (with a write gate: confidence threshold + merge-into-existing-memory instead of duplicating, spec 8.16/8.19) and for the 5 scores, writes both into Phase 6's tables tagged `source: 'ai'` / `computed_by: 'system'`. Wired to a new "Analyser avec l'IA" button on the Fan Intelligence panel; the panel now shows whether each memory/score came from a human or the AI. `next build` verified clean (with placeholder env vars locally — no live Supabase/Anthropic reachable from this sandbox).
+- **Security note**: the owner pasted a real Anthropic API key directly into chat while we were discussing Phase 7. Flagged immediately: that key must never go into code/commits, the owner was asked to revoke/regenerate it on console.anthropic.com and add the new one only as a Vercel env var (`ANTHROPIC_API_KEY`, scoped to Preview, same pattern as Supabase). No key value was used or stored anywhere in the repo.
 
-**In Progress**: Phase 6 — waiting on the owner to run `0005_fan_memory_scoring.sql` and validate the panel on `/inbox/[id]` (add a memory, set scores, confirm they persist). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them.
+**In Progress**: Owner needs to (1) regenerate the Anthropic key if not already done, (2) add `ANTHROPIC_API_KEY` to Vercel scoped to Preview, (3) run `0005_fan_memory_scoring.sql` then `0006_ai_gateway.sql` in Supabase, (4) validate on `/inbox/[id]`: click "Analyser avec l'IA" on a mock conversation with a few messages, confirm memories and scores populate and are tagged as AI-sourced. Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them.
 
 **Backlog (not blocking)**: Creator DNA "Advanced Mode" (spec Part 6's full 12-section editor) — current form is Simple Mode only; owner flagged it needs more depth, scheduled for a later pass.
 
@@ -45,8 +48,8 @@ Per spec 47.194. Updated at the end of every phase.
 **Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed once a second agency exists to test isolation against.
 
 **Next**:
-1. Owner applies `0005_fan_memory_scoring.sql`, validates Fan Intelligence panel on a mock conversation.
-2. Once validated: Phase 7 (AI Gateway) — the first real AI wiring, needed before Copilot suggestions or Full AI replies can exist.
+1. Owner applies `0005_fan_memory_scoring.sql` + `0006_ai_gateway.sql`, adds the new Anthropic key to Vercel (Preview), validates AI-driven memory + scoring on a mock conversation.
+2. Once validated: Phase 8 (Copilot) — suggestion generation from these same signals, human review → edit/regenerate/send. This is the first genuinely shippable internal product per the spec.
 
 ---
 

@@ -25,14 +25,14 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const { data: memories } = await supabase
     .from('fan_memories')
-    .select('id, category, label, value, confidence, importance, status, last_confirmed_at')
+    .select('id, category, label, value, confidence, importance, status, source, last_confirmed_at')
     .eq('fan_id', conversation.fan_id)
     .order('importance', { ascending: false })
 
   const { data: scores } = await supabase
     .from('fan_scores')
     .select(
-      'purchase_intent, relationship_score, spending_potential, engagement_score, churn_risk, omni_score, reasons, version'
+      'purchase_intent, relationship_score, spending_potential, engagement_score, churn_risk, omni_score, reasons, computed_by, version'
     )
     .eq('fan_id', conversation.fan_id)
     .maybeSingle()
