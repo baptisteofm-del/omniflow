@@ -124,3 +124,106 @@ export async function upsertFanScores(conversationId: string, formData: FormData
 
   revalidatePath(`/inbox/${conversationId}`)
 }
+
+export async function updateFanProfile(conversationId: string, formData: FormData) {
+  const { supabase } = await getAgencyAndUser()
+
+  const fanId = String(formData.get('fan_id') || '')
+  if (!fanId) throw new Error('Fan manquant')
+
+  const birthday = String(formData.get('birthday') || '').trim()
+  const location = String(formData.get('location') || '').trim()
+  const incomeAmountRaw = String(formData.get('income_amount') || '').trim()
+  const incomeFrequency = String(formData.get('income_frequency') || '').trim()
+  const subscriptionStatus = String(formData.get('subscription_status') || 'active')
+  const source = String(formData.get('source') || '').trim()
+
+  if (!['active', 'inactive'].includes(subscriptionStatus)) {
+    throw new Error('Statut d’abonnement invalide')
+  }
+  if (incomeFrequency && !['weekly', 'monthly', 'yearly'].includes(incomeFrequency)) {
+    throw new Error('Fréquence de revenu invalide')
+  }
+
+  const { error } = await supabase
+    .from('fans')
+    .update({
+      birthday: birthday || null,
+      location: location || null,
+      income_amount: incomeAmountRaw ? Number(incomeAmountRaw) : null,
+      income_frequency: incomeFrequency || null,
+      subscription_status: subscriptionStatus,
+      source: source || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', fanId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+}
+
+export async function addFanNote(conversationId: string, formData: FormData) {
+  const { supabase, appUser, agencyId } = await getAgencyAndUser()
+
+  const fanId = String(formData.get('fan_id') || '')
+  const text = String(formData.get('text') || '').trim()
+  const priority = String(formData.get('priority') || 'normal')
+
+  if (!fanId) throw new Error('Fan manquant')
+  if (!text) throw new Error('Note vide')
+  if (!['normal', 'important'].includes(priority)) throw new Error('Priorité invalide')
+
+  const { error } = await supabase.from('fan_notes').insert({
+    agency_id: agencyId,
+    fan_id: fanId,
+    author_id: appUser.id,
+    text,
+    priority,
+  })
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+}
+
+export async function deleteFanNote(conversationId: string, noteId: string) {
+  const { supabase } = await getAgencyAndUser()
+
+  const { error } = await supabase.from('fan_notes').delete().eq('id', noteId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+}
+
+export async function addFanTag(conversationId: string, formData: FormData) {
+  const { supabase, agencyId } = await getAgencyAndUser()
+
+  const fanId = String(formData.get('fan_id') || '')
+  const name = String(formData.get('name') || '').trim().toLowerCase()
+  if (!fanId) throw new Error('Fan manquant')
+  if (!name) throw new Error('Nom de liste requis')
+
+  const { data: tag, error: tagError } = await supabase
+    .from('tags')
+    .upsert({ agency_id: agencyId, name }, { onConflict: 'agency_id,name' })
+    .select('id')
+    .single()
+  if (tagError || !tag) throw new Error(tagError?.message || 'Échec de création de la liste')
+
+  const { error } = await supabase
+    .from('fan_tags')
+    .upsert({ agency_id: agencyId, fan_id: fanId, tag_id: tag.id }, { onConflict: 'fan_id,tag_id' })
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+  revalidatePath('/inbox')
+}
+
+export async function removeFanTag(conversationId: string, fanTagId: string) {
+  const { supabase } = await getAgencyAndUser()
+
+  const { error } = await supabase.from('fan_tags').delete().eq('id', fanTagId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+  revalidatePath('/inbox')
+}
