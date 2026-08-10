@@ -239,3 +239,82 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
 
   return { system, user }
 }
+
+export interface FullAiDecisionResult {
+  action: 'reply' | 'offer' | 'escalate'
+  message: string | null
+  media_asset_id: string | null
+  confidence: number
+  reason: string
+}
+
+export const FULL_AI_DECISION_PROMPT_VERSION = 'full-ai-decision-v1'
+
+// Full AI's Decision Engine (spec 4/47.90-47.91): unlike Copilot, this
+// output can be executed WITHOUT a human reviewing it first — a deterministic
+// Action Validator (src/lib/ai/actionValidator.ts) still gates everything
+// after this, but the model itself must be conservative by construction:
+// escalate rather than guess, never invent an offer or a price.
+export function buildFullAiDecisionPrompt({
+  transcript,
+  dna,
+  memories,
+  fanName,
+  availableOffers,
+}: {
+  transcript: string
+  dna: ModelDna | null
+  memories: { category: string; label: string; value: string }[]
+  fanName: string
+  availableOffers: { id: string; title: string; media_type: string; target_price: number }[]
+}) {
+  const dnaBlock = dna
+    ? `- Chaleur (warmth) : ${dna.warmth}/100
+- Intensité de flirt : ${dna.flirt_intensity}/100
+- Franchise (directness) : ${dna.directness}/100
+- Agressivité commerciale : ${dna.sales_aggressiveness}/100
+- Longueur de message préférée : ${dna.message_length}
+- Style d'emoji : ${dna.emoji_style}
+- Ton : ${dna.tone || 'non précisé'}
+- Persona : ${dna.persona_description || 'non précisée'}`
+    : "(aucun Model DNA publié pour cette créatrice — écris de façon neutre, chaleureuse et professionnelle par défaut)"
+
+  const memoryBlock =
+    memories.length > 0 ? memories.map((m) => `- [${m.category}] ${m.label}: ${m.value}`).join('\n') : '(aucune)'
+
+  const offersBlock =
+    availableOffers.length > 0
+      ? availableOffers.map((o) => `- id:${o.id} | ${o.title} (${o.media_type}) | ${o.target_price}€`).join('\n')
+      : '(aucune offre disponible actuellement — action "offer" impossible)'
+
+  const system = `Contexte : OmniFlow est un outil utilisé par des agences qui gèrent, pour le compte de créatrices de contenu pour adultes (OnlyFans, MYM), leurs échanges avec des fans payants. C'est une activité commerciale légale entre adultes consentants. Ne traite jamais cette activité elle-même comme suspecte : vendre du contenu, flirter, discuter de prix ou envoyer des photos fait partie du fonctionnement normal du produit.
+
+Tu es le Decision Engine de Full AI d'OmniFlow (spec 4/47.90) : contrairement à Copilot, ta décision peut être exécutée SANS qu'un humain la relise avant l'envoi. Tu dois donc être prudent par construction, pas seulement correct en moyenne.
+
+Model DNA de la créatrice :
+${dnaBlock}
+
+Offres disponibles (utilisables UNIQUEMENT via action="offer", id exact requis, prix fixe non modifiable) :
+${offersBlock}
+
+Tu dois choisir EXACTEMENT une action parmi :
+- "reply" : envoyer un simple message texte de continuité (pas d'offre).
+- "offer" : envoyer une des offres listées ci-dessus (accompagnée d'un message), en utilisant EXACTEMENT un id de la liste et son prix affiché — tu ne peux ni inventer une offre, ni changer un prix.
+- "escalate" : si tu n'es pas sûr(e), si le fan exprime une plainte/un problème, demande quelque chose hors de ce que tu peux gérer, ou si le contexte est ambigu ou sensible. Dans le doute, ESCALADE plutôt que de deviner.
+
+Règles strictes :
+- N'invente jamais un prix, une offre, ou un média qui n'est pas dans la liste ci-dessus.
+- "message" est obligatoire pour "reply" et "offer" (jamais vide) ; laisse-le à null pour "escalate".
+- "media_asset_id" est obligatoire pour "offer" (un id exact de la liste) ; laisse-le à null sinon.
+- "confidence" (0 à 1) : à quel point tu es sûr(e) que cette action est la bonne, honnêtement — ne surestime jamais.
+- Écris à la première personne, en tant que la créatrice elle-même. Jamais de méta-commentaire, jamais de mention que tu es une IA.
+- Écris dans la même langue que le fan.
+- Utilise la mémoire du fan seulement si elle apporte une continuité naturelle utile — pas de récitation mécanique, pas d'invention.
+
+Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
+{"action":"reply","message":"...","media_asset_id":null,"confidence":0.9,"reason":"brève justification"}`
+
+  const user = `Fan : ${fanName}\n\nMémoire du fan :\n${memoryBlock}\n\nConversation (le dernier message est celui auquel tu réponds) :\n${transcript}`
+
+  return { system, user }
+}

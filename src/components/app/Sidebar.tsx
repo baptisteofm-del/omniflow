@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, UserRound, MessageSquare, Workflow, ImageIcon } from 'lucide-react'
+import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
 
 const NAV_ITEMS = [
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/inbox', label: 'Inbox', icon: MessageSquare },
   { href: '/scripts', label: 'Scripts', icon: Workflow },
   { href: '/media', label: 'Médias', icon: ImageIcon },
+  { href: '/settings/ai', label: 'Paramètres IA', icon: ShieldCheck },
 ]
 
 export function Sidebar({ agencyName }: { agencyName: string | null }) {

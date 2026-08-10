@@ -6,7 +6,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 // Task Registry (spec 5.4) — extend as new AI-driven features are built.
 // Only the tasks actually wired up exist here; the full spec list is
 // illustrative, not a checklist to pre-implement.
-export type AiTaskType = 'MEMORY_EXTRACTION' | 'FAN_SCORING' | 'RESPONSE_GENERATION' | 'SCRIPT_MESSAGE'
+export type AiTaskType = 'MEMORY_EXTRACTION' | 'FAN_SCORING' | 'RESPONSE_GENERATION' | 'SCRIPT_MESSAGE' | 'FULL_AI_DECISION'
 
 // Model Registry (spec 5.3) — minimal routing table (spec 5.12: extraction/
 // scoring are Fast-tier, Response Generation is Standard-tier). Model
@@ -20,6 +20,7 @@ const MODEL_BY_TASK: Record<AiTaskType, string> = {
   FAN_SCORING: FAST_MODEL,
   RESPONSE_GENERATION: STANDARD_MODEL,
   SCRIPT_MESSAGE: STANDARD_MODEL,
+  FULL_AI_DECISION: STANDARD_MODEL,
 }
 
 // Extraction/scoring feed business logic and must be consistent (spec 5.13),

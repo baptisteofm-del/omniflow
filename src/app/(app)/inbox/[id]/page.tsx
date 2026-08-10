@@ -144,6 +144,25 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     .filter((s) => !s.creator_id || s.creator_id === creatorId)
     .map((s) => ({ id: s.id, name: s.name }))
 
+  const { data: commercialSettings } = await supabase
+    .from('creator_commercial_settings')
+    .select('full_ai_enabled')
+    .eq('creator_id', creatorId)
+    .maybeSingle()
+
+  let escalationReason: string | null = null
+  if (conversation.ai_mode === 'paused') {
+    const { data: lastEscalation } = await supabase
+      .from('ai_actions')
+      .select('validator_outcome')
+      .eq('conversation_id', id)
+      .eq('action_type', 'escalate')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    escalationReason = lastEscalation?.validator_outcome ?? null
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <Link href="/inbox" className="mb-6 inline-flex items-center gap-1.5 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
@@ -156,7 +175,12 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           <h1 className="text-lg font-semibold">{fan?.display_name ?? 'Fan'}</h1>
           <p className="text-sm text-[color:var(--foreground-muted)]">{creator?.display_name}</p>
         </div>
-        <AiModeToggle conversationId={id} aiMode={conversation.ai_mode} />
+        <AiModeToggle
+          conversationId={id}
+          aiMode={conversation.ai_mode}
+          fullAiEnabled={commercialSettings?.full_ai_enabled ?? false}
+          escalationReason={escalationReason}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

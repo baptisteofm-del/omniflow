@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil } from 'lucide-react'
+import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot } from 'lucide-react'
 import { sendHumanMessage, simulateFanMessage, simulatePurchase, simulateDecline } from '@/lib/inbox/actions'
 import {
   generateCopilotSuggestion,
@@ -51,6 +51,7 @@ export function ConversationView({
   const [fanDraft, setFanDraft] = useState('')
   const [showMockPanel, setShowMockPanel] = useState(false)
   const isCopilot = aiMode === 'copilot'
+  const isFullAi = aiMode === 'full_ai'
 
   useEffect(() => {
     if (pendingSuggestion) setReply(pendingSuggestion.suggested_text)
@@ -151,34 +152,41 @@ export function ConversationView({
         </div>
       )}
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (!reply.trim()) return
-          const text = reply
-          setReply('')
-          if (isCopilot && pendingSuggestion) {
-            runAction(() => sendCopilotSuggestion(conversationId, pendingSuggestion.id, text))
-          } else {
-            runAction(() => sendHumanMessage(conversationId, text))
-          }
-        }}
-        className="mb-2 flex gap-2"
-      >
-        <input
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          placeholder="Écrire une réponse..."
-          className="flex-1 rounded-xl border border-[color:var(--border)] bg-white/5 px-4 py-2.5 text-sm focus:border-[color:var(--border-strong)] focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="gradient-bg-signature flex items-center justify-center rounded-xl px-4 disabled:opacity-50"
+      {isFullAi ? (
+        <div className="glass mb-2 flex items-center gap-2 rounded-xl px-4 py-3 text-xs text-[color:var(--foreground-muted)]">
+          <Bot className="h-4 w-4 shrink-0" />
+          Mode Full AI actif — l&apos;IA répond automatiquement. Utilisez « Prendre le contrôle » en haut pour écrire vous-même.
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!reply.trim()) return
+            const text = reply
+            setReply('')
+            if (isCopilot && pendingSuggestion) {
+              runAction(() => sendCopilotSuggestion(conversationId, pendingSuggestion.id, text))
+            } else {
+              runAction(() => sendHumanMessage(conversationId, text))
+            }
+          }}
+          className="mb-2 flex gap-2"
         >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </button>
-      </form>
+          <input
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            placeholder="Écrire une réponse..."
+            className="flex-1 rounded-xl border border-[color:var(--border)] bg-white/5 px-4 py-2.5 text-sm focus:border-[color:var(--border-strong)] focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={isPending}
+            className="gradient-bg-signature flex items-center justify-center rounded-xl px-4 disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
+        </form>
+      )}
 
       {isCopilot && !pendingSuggestion && (
         <button

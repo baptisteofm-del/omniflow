@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { analyzeConversationWithAI } from '@/lib/ai/actions'
 import { generateCopilotSuggestion } from '@/lib/copilot/actions'
 import { resolveScriptOffer, resumeScriptRunAfterFanReply } from '@/lib/scripts/engine'
+import { runFullAiDecision } from '@/lib/ai/fullAi'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -22,6 +23,17 @@ function scheduleSuggestion(conversationId: string) {
   after(() => generateCopilotSuggestion(conversationId).catch((err) => {
     console.error(`[copilot] suggestion generation failed for conversation ${conversationId}:`, err)
   }))
+}
+
+function scheduleFullAiDecision(agencyId: string, conversationId: string) {
+  after(async () => {
+    try {
+      const supabase = await createClient()
+      await runFullAiDecision(supabase, agencyId, conversationId)
+    } catch (err) {
+      console.error(`[full-ai] decision failed for conversation ${conversationId}:`, err)
+    }
+  })
 }
 
 async function getAgencyAndUser() {
@@ -136,16 +148,41 @@ export async function simulateFanMessage(conversationId: string, text: string) {
   const { data: conversation } = await supabase.from('conversations').select('ai_mode').eq('id', conversationId).single()
   if (conversation?.ai_mode === 'copilot') {
     scheduleSuggestion(conversationId)
+  } else if (conversation?.ai_mode === 'full_ai') {
+    scheduleFullAiDecision(agencyId, conversationId)
   }
 }
 
-export async function setConversationAiMode(conversationId: string, mode: 'human_takeover' | 'copilot') {
-  const { supabase } = await getAgencyAndUser()
-  if (!['human_takeover', 'copilot'].includes(mode)) throw new Error('Mode invalide')
+export async function setConversationAiMode(conversationId: string, mode: 'human_takeover' | 'copilot' | 'full_ai') {
+  const { supabase, appUser } = await getAgencyAndUser()
+  if (!['human_takeover', 'copilot', 'full_ai'].includes(mode)) throw new Error('Mode invalide')
+
+  // Full AI Activation Flow (spec 24.73, condensed): an agency must have
+  // explicitly turned Full AI on for this creator first — a conversation
+  // can never be switched into full_ai just because someone picked it in a
+  // dropdown.
+  if (mode === 'full_ai') {
+    const { data: conversation } = await supabase.from('conversations').select('creator_id').eq('id', conversationId).single()
+    if (!conversation) throw new Error('Conversation introuvable')
+    const { data: settings } = await supabase
+      .from('creator_commercial_settings')
+      .select('full_ai_enabled')
+      .eq('creator_id', conversation.creator_id)
+      .maybeSingle()
+    if (!settings?.full_ai_enabled) {
+      throw new Error("Full AI n'est pas activé pour cette créatrice — activez-le d'abord dans Paramètres IA.")
+    }
+  }
 
   const { error } = await supabase
     .from('conversations')
-    .update({ ai_mode: mode, updated_at: new Date().toISOString() })
+    .update({
+      ai_mode: mode,
+      // Takeover records who's holding the conversation; any other mode
+      // clears it (Full AI/Copilot own it, nobody "assigned").
+      assigned_user_id: mode === 'human_takeover' ? appUser.id : null,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', conversationId)
   if (error) throw new Error(error.message)
 
@@ -169,6 +206,15 @@ export async function simulatePurchase(conversationId: string, description: stri
   if (error) throw new Error(error.message)
 
   await resolveScriptOffer(supabase, agencyId, conversationId, 'purchased')
+  // A paid offer sent autonomously by Full AI (src/lib/ai/fullAi.ts) isn't a
+  // script step, so resolveScriptOffer's script_node-scoped update above
+  // never touches it — close it out here instead.
+  await supabase
+    .from('offers')
+    .update({ status: 'purchased', updated_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('source_type', 'full_ai')
+    .eq('status', 'sent')
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
@@ -189,6 +235,12 @@ export async function simulateDecline(conversationId: string) {
   if (error) throw new Error(error.message)
 
   await resolveScriptOffer(supabase, agencyId, conversationId, 'not_purchased')
+  await supabase
+    .from('offers')
+    .update({ status: 'declined', updated_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .eq('source_type', 'full_ai')
+    .eq('status', 'sent')
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')
