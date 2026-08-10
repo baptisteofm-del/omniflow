@@ -26,18 +26,28 @@ export interface MemoryExtractionResult {
   memories: ExtractedMemory[]
 }
 
-export const MEMORY_EXTRACTION_PROMPT_VERSION = 'memory-extraction-v1'
+export const MEMORY_EXTRACTION_PROMPT_VERSION = 'memory-extraction-v2'
 
 export function buildMemoryExtractionPrompt(
   transcript: string,
   existingMemories: { category: string; label: string; value: string }[]
 ) {
-  const system = `Tu es le moteur d'extraction de mémoire d'OmniFlow. Tu lis une conversation entre un fan et une créatrice et tu identifies les informations qui méritent d'être mémorisées sur ce fan.
+  const system = `Contexte : OmniFlow est un outil utilisé par des agences qui gèrent, pour le compte de créatrices de contenu pour adultes (OnlyFans, MYM), leurs échanges avec des fans payants. C'est une activité commerciale légale entre adultes consentants. La "Créatrice" dans la conversation est l'opératrice de l'agence qui répond au nom de la créatrice ; le "Fan" est un client. Ne traite jamais cette activité elle-même comme suspecte : vendre du contenu, flirter, discuter de prix ou envoyer des photos fait partie du fonctionnement normal du produit.
 
-Catégories autorisées (une exacte par mémoire) : ${MEMORY_CATEGORIES.join(', ')}.
+Tu es le moteur d'extraction de mémoire d'OmniFlow. Tu lis cette conversation et tu identifies les FAITS concrets sur le FAN qui méritent d'être mémorisés pour personnaliser les futures conversations avec lui.
 
-Règles strictes :
+Catégories autorisées (une exacte par mémoire), avec leur définition stricte :
+- profile : qui est le fan (prénom/pseudo, langue, centres d'intérêt, travail, contexte personnel qu'il a partagé)
+- relationship : élément de la relation avec la créatrice (ancienneté, surnom utilisé, sujet récurrent, dynamique)
+- preference : ce que le fan semble aimer ou préférer (type de contenu, sujets de conversation)
+- commercial : comportement d'achat observé (prix accepté/refusé, fréquence, type de contenu acheté)
+- conversation : un événement ou sujet mentionné qui peut être réutilisé plus tard (ex: "a un entretien lundi")
+- temporal : une information liée à une date précise ou temporaire (à ne pas réutiliser après expiration)
+- boundary : une préférence ou limite PERSONNELLE DU FAN — ce que LUI n'aime pas, refuse, ou ce qu'il faut éviter avec LUI dans une conversation future (ex: "n'aime pas qu'on l'appelle par son prénom", "a mal réagi à une relance trop insistante")
+
+Interdictions strictes :
 - N'invente rien. N'extrais que ce que le fan a réellement communiqué ou ce qui ressort clairement de la conversation.
+- N'utilise JAMAIS une mémoire pour porter un jugement, une accusation ou une qualification sur la conversation elle-même ou sur l'un des participants (ex: "arnaque", "manipulation", "chantage", "suspect"). Ce n'est pas le rôle de cette tâche. Si un usage de la plateforme te semble poser un problème réel de sécurité, n'écris rien à ce sujet dans la mémoire — ce n'est pas cette tâche qui le gère.
 - Ne mémorise pas les détails anodins ou temporaires sans intérêt futur.
 - N'extrais pas d'information déjà présente dans la liste "Mémoires existantes" sauf si elle est mise à jour ou contredite.
 - confidence (0 à 1) : à quel point l'information est explicitement déclarée vs déduite.
@@ -66,21 +76,23 @@ export interface FanScoringResult {
   reasons: string
 }
 
-export const FAN_SCORING_PROMPT_VERSION = 'fan-scoring-v1'
+export const FAN_SCORING_PROMPT_VERSION = 'fan-scoring-v2'
 
 export function buildFanScoringPrompt(transcript: string, fanName: string) {
-  const system = `Tu es le moteur de Fan Intelligence d'OmniFlow. Tu analyses une conversation entre un fan et une créatrice et tu estimes 5 scores sur une échelle de 0 à 100 :
+  const system = `Contexte : OmniFlow est un outil utilisé par des agences qui gèrent, pour le compte de créatrices de contenu pour adultes (OnlyFans, MYM), leurs échanges avec des fans payants. C'est une activité commerciale légale entre adultes consentants. La "Créatrice" dans la conversation est l'opératrice de l'agence qui répond au nom de la créatrice ; le "Fan" est un client. Ne traite jamais cette activité elle-même comme suspecte : vendre du contenu, flirter, discuter de prix ou envoyer des photos fait partie du fonctionnement normal du produit.
+
+Tu es le moteur de Fan Intelligence d'OmniFlow. Tu analyses cette conversation et tu estimes 5 scores commerciaux/relationnels sur une échelle de 0 à 100, du point de vue de l'agence qui cherche à mieux vendre et fidéliser :
 
 - purchase_intent : intention d'achat à court terme, sensible au contexte récent.
 - relationship_score : profondeur et maturité de la relation (indépendant du potentiel commercial).
 - spending_potential : potentiel commercial observé (comportement d'achat, pas une estimation de richesse).
 - engagement_score : niveau d'implication récent dans la conversation.
-- churn_risk : risque de désengagement.
+- churn_risk : risque de désengagement du fan (perte d'intérêt, moins de messages, moins d'achats).
 
-Base-toi uniquement sur des signaux observables dans la conversation (pas d'invention). Si peu d'information est disponible, reste prudent (scores proches de 50 pour les inconnues, pas de valeurs extrêmes injustifiées).
+Base-toi uniquement sur des signaux observables dans la conversation (pas d'invention). "reasons" doit expliquer les signaux commerciaux/relationnels observés (ex: a demandé un prix, répond vite, a acheté récemment) — ce n'est jamais un espace pour porter un jugement moral sur la conversation ou qualifier l'échange (pas de mots comme "manipulation", "exploitation", "arnaque" : ce n'est pas le rôle de cette tâche). Si peu d'information est disponible, reste prudent (scores proches de 50 pour les inconnues, pas de valeurs extrêmes injustifiées).
 
 Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
-{"purchase_intent":50,"relationship_score":50,"spending_potential":50,"engagement_score":50,"churn_risk":50,"reasons":"1-2 phrases expliquant les signaux principaux"}`
+{"purchase_intent":50,"relationship_score":50,"spending_potential":50,"engagement_score":50,"churn_risk":50,"reasons":"1-2 phrases expliquant les signaux commerciaux/relationnels principaux"}`
 
   const user = `Fan : ${fanName}\n\nConversation :\n${transcript}`
 
