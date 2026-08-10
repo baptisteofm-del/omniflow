@@ -100,7 +100,7 @@ export async function runAiTask<T>({
 
   const latencyMs = Date.now() - startedAt
 
-  const { data: inserted } = await supabase
+  const { data: inserted, error: decisionError } = await supabase
     .from('ai_decisions')
     .insert({
       agency_id: agencyId,
@@ -119,6 +119,14 @@ export async function runAiTask<T>({
     })
     .select('id')
     .single()
+
+  // The AI Usage Ledger (spec 5.27/28.31) is an audit trail, not a
+  // dependency of the feature itself — a logging failure here must not
+  // break Fan Intelligence/Copilot, but it must not be silent either
+  // (this is exactly how a missing ai_decisions table went unnoticed).
+  if (decisionError) {
+    console.error('[ai-gateway] failed to log ai_decisions row:', decisionError.message)
+  }
 
   if (status === 'failed' || parsed === null) {
     throw new Error(errorMessage || 'Échec de la tâche IA')
