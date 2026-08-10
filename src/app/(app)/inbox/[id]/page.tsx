@@ -108,25 +108,27 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         </span>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px_320px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <ConversationView conversationId={id} initialMessages={messages ?? []} />
-        <FanIntelligencePanel
-          conversationId={id}
-          fanId={fanId}
-          memories={memories ?? []}
-          scores={scores ?? null}
-        />
-        {fan && (
-          <FanProfileCard
+        <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+          <FanIntelligencePanel
             conversationId={id}
-            fan={fan}
-            flowStage={flowStage}
-            totalSpent={totalSpent}
-            purchaseCount={purchaseCount}
-            notes={notes ?? []}
-            tags={tags}
+            fanId={fanId}
+            memories={memories ?? []}
+            scores={scores ?? null}
           />
-        )}
+          {fan && (
+            <FanProfileCard
+              conversationId={id}
+              fan={fan}
+              flowStage={flowStage}
+              totalSpent={totalSpent}
+              purchaseCount={purchaseCount}
+              notes={notes ?? []}
+              tags={tags}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
