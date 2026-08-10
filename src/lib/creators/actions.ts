@@ -8,24 +8,33 @@ export async function createCreator(formData: FormData) {
 
   const {
     data: { user: authUser },
+    error: authError,
   } = await supabase.auth.getUser()
-  if (!authUser) redirect('/login')
+  if (authError || !authUser) redirect('/login')
 
-  const { data: appUser } = await supabase
+  const { data: appUser, error: appUserError } = await supabase
     .from('users')
     .select('id')
     .eq('auth_user_id', authUser!.id)
     .single()
-  if (!appUser) throw new Error('Utilisateur introuvable')
+  if (appUserError || !appUser) {
+    throw new Error(
+      `Utilisateur introuvable (auth_user_id=${authUser!.id}): ${appUserError?.message || 'aucune ligne'}`
+    )
+  }
 
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from('agency_memberships')
     .select('agency_id')
     .eq('user_id', appUser.id)
     .eq('status', 'active')
     .limit(1)
     .maybeSingle()
-  if (!membership) throw new Error('Aucune agence active pour cet utilisateur')
+  if (membershipError || !membership) {
+    throw new Error(
+      `Aucune agence active pour cet utilisateur (user_id=${appUser.id}): ${membershipError?.message || 'aucune ligne'}`
+    )
+  }
 
   const agencyId = membership.agency_id as string
 
