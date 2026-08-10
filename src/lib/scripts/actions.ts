@@ -128,8 +128,10 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
   const title = String(formData.get('title') || '').trim()
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
+  const generationMode = String(formData.get('generation_mode') || 'locked')
   if (!messageTemplate) throw new Error('Le message est requis')
   if (nodeType === 'paid_media' && !priceRaw) throw new Error('Le prix est requis pour une offre payante')
+  if (!['locked', 'adaptive'].includes(generationMode)) throw new Error('Mode de génération invalide')
 
   const { data: maxNode } = await supabase
     .from('script_nodes')
@@ -149,6 +151,7 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
     title: title || null,
     message_template: messageTemplate,
     price_amount: nodeType === 'paid_media' ? Number(priceRaw) : null,
+    generation_mode: generationMode,
     sequence_order: sequenceOrder,
   })
   if (error) throw new Error(error.message)
@@ -164,7 +167,9 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
   const title = String(formData.get('title') || '').trim()
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
+  const generationMode = String(formData.get('generation_mode') || 'locked')
   if (!messageTemplate) throw new Error('Le message est requis')
+  if (!['locked', 'adaptive'].includes(generationMode)) throw new Error('Mode de génération invalide')
 
   const { error } = await supabase
     .from('script_nodes')
@@ -172,6 +177,7 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
       title: title || null,
       message_template: messageTemplate,
       price_amount: priceRaw ? Number(priceRaw) : null,
+      generation_mode: generationMode,
     })
     .eq('id', nodeId)
   if (error) throw new Error(error.message)
@@ -286,6 +292,7 @@ export async function createNewDraftVersion(scriptId: string) {
         message_template: n.message_template,
         price_amount: n.price_amount,
         currency: n.currency,
+        generation_mode: n.generation_mode,
         sequence_order: n.sequence_order,
       })
       .select('id')

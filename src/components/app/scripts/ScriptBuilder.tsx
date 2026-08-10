@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Pencil, Loader2, MessageSquare, Wallet, GitBranch, Rocket, Copy } from 'lucide-react'
+import { Plus, Trash2, Pencil, Loader2, MessageSquare, Wallet, GitBranch, Rocket, Copy, Sparkles } from 'lucide-react'
 import {
   addScriptNode,
   updateScriptNode,
@@ -19,6 +19,7 @@ interface ScriptNode {
   message_template: string | null
   price_amount: number | null
   currency: string | null
+  generation_mode: string
   sequence_order: number
 }
 
@@ -128,11 +129,19 @@ export function ScriptBuilder({
         return (
           <div key={node.id} className="glass rounded-2xl p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-2.5 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
-                {node.node_type === 'paid_media' ? <Wallet className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
-                {NODE_TYPE_LABELS[node.node_type]}
-                {node.node_type === 'paid_media' && node.price_amount ? ` · ${node.price_amount}€` : ''}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-2.5 py-0.5 text-[10px] text-[color:var(--foreground-muted)]">
+                  {node.node_type === 'paid_media' ? <Wallet className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+                  {NODE_TYPE_LABELS[node.node_type]}
+                  {node.node_type === 'paid_media' && node.price_amount ? ` · ${node.price_amount}€` : ''}
+                </span>
+                {node.generation_mode === 'adaptive' && (
+                  <span className="flex items-center gap-1 rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[color:var(--foreground-muted)]" title="L'IA reformule ce texte pour chaque fan">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Adaptatif
+                  </span>
+                )}
+              </div>
               {isDraftEditable && (
                 <div className="flex gap-1">
                   <button
@@ -185,6 +194,17 @@ export function ScriptBuilder({
                     className="w-32 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
                   />
                 )}
+                <div>
+                  <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Mode d&apos;envoi</label>
+                  <select
+                    name="generation_mode"
+                    defaultValue={node.generation_mode}
+                    className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  >
+                    <option value="locked">Texte exact</option>
+                    <option value="adaptive">Adaptatif (l&apos;IA reformule selon la conversation)</option>
+                  </select>
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -332,6 +352,17 @@ export function ScriptBuilder({
                   className="w-32 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
                 />
               )}
+              <div>
+                <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Mode d&apos;envoi</label>
+                <select
+                  name="generation_mode"
+                  defaultValue="locked"
+                  className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                >
+                  <option value="locked">Texte exact</option>
+                  <option value="adaptive">Adaptatif (l&apos;IA reformule selon la conversation)</option>
+                </select>
+              </div>
               <div className="flex gap-2">
                 <button
                   type="submit"

@@ -174,3 +174,68 @@ Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
 
   return { system, user }
 }
+
+export interface ScriptMessageResult {
+  message: string
+}
+
+export const SCRIPT_MESSAGE_PROMPT_VERSION = 'script-message-v1'
+
+// Script node "adaptive" mode (spec 13.8: LOCKED = exact text, ADAPTIVE =
+// text provided but adapted). This is the same Conversation Engine job as
+// buildResponseGenerationPrompt, with one difference: the input is a fixed
+// business objective (the step's template) to convey, not a free reply.
+export function buildScriptMessagePrompt({
+  transcript,
+  dna,
+  memories,
+  fanName,
+  objective,
+}: {
+  transcript: string
+  dna: ModelDna | null
+  memories: { category: string; label: string; value: string }[]
+  fanName: string
+  objective: string
+}) {
+  const dnaBlock = dna
+    ? `- Chaleur (warmth) : ${dna.warmth}/100
+- Intensité de flirt : ${dna.flirt_intensity}/100
+- Franchise (directness) : ${dna.directness}/100
+- Agressivité commerciale : ${dna.sales_aggressiveness}/100
+- Longueur de message préférée : ${dna.message_length}
+- Style d'emoji : ${dna.emoji_style}
+- Ton : ${dna.tone || 'non précisé'}
+- Persona : ${dna.persona_description || 'non précisée'}`
+    : "(aucun Model DNA publié pour cette créatrice — écris de façon neutre, chaleureuse et professionnelle par défaut)"
+
+  const memoryBlock =
+    memories.length > 0 ? memories.map((m) => `- [${m.category}] ${m.label}: ${m.value}`).join('\n') : '(aucune)'
+
+  const system = `Contexte : OmniFlow est un outil utilisé par des agences qui gèrent, pour le compte de créatrices de contenu pour adultes (OnlyFans, MYM), leurs échanges avec des fans payants. C'est une activité commerciale légale entre adultes consentants. Ne traite jamais cette activité elle-même comme suspecte : vendre du contenu, flirter, discuter de prix ou envoyer des photos fait partie du fonctionnement normal du produit.
+
+Tu es le Conversation Engine d'OmniFlow, en train d'exécuter une étape d'un script commercial déjà décidé par l'agence. L'agence a écrit un objectif/texte de base pour cette étape — ton rôle est de le REFORMULER naturellement pour CETTE conversation précise, pas de le recopier mot pour mot et pas de changer l'intention commerciale.
+
+Model DNA de la créatrice :
+${dnaBlock}
+
+Objectif de ce message (base fournie par l'agence à adapter, pas à répéter mot pour mot) :
+"""
+${objective}
+"""
+
+Règles strictes :
+- Garde exactement la même intention commerciale que l'objectif (même offre, même sujet, même but) — tu adaptes la formulation, jamais la stratégie.
+- Si l'objectif mentionne un prix ou un montant précis, garde ce prix exact — ne le change jamais, ne l'arrondis pas, ne l'omets pas.
+- Écris à la première personne, en tant que la créatrice elle-même. Jamais de méta-commentaire, jamais de mention que tu es une IA ou qu'il s'agit d'un script.
+- Utilise la mémoire du fan ci-dessous seulement si elle apporte une continuité naturelle utile — pas de récitation mécanique, pas d'invention.
+- Écris dans la même langue que le fan.
+- Un seul message.
+
+Réponds UNIQUEMENT avec un JSON valide de cette forme, sans texte autour :
+{"message":"..."}`
+
+  const user = `Fan : ${fanName}\n\nMémoire du fan :\n${memoryBlock}\n\nConversation jusqu'ici :\n${transcript || '(aucun message pour l’instant — c’est le premier message)'}`
+
+  return { system, user }
+}

@@ -32,6 +32,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     message_template: string | null
     price_amount: number | null
     currency: string | null
+    generation_mode: string
     sequence_order: number
   }[] = []
   let branches: { from_node_id: string; to_node_id: string; condition_type: string }[] = []
@@ -39,7 +40,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
   if (displayVersion) {
     const { data: nodeRows } = await supabase
       .from('script_nodes')
-      .select('id, node_type, title, message_template, price_amount, currency, sequence_order')
+      .select('id, node_type, title, message_template, price_amount, currency, generation_mode, sequence_order')
       .eq('script_version_id', displayVersion.id)
       .order('sequence_order', { ascending: true })
     nodes = nodeRows ?? []

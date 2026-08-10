@@ -6,7 +6,7 @@ import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeConversationWithAI } from '@/lib/ai/actions'
 import { generateCopilotSuggestion } from '@/lib/copilot/actions'
-import { resolveScriptOffer } from '@/lib/scripts/engine'
+import { resolveScriptOffer, resumeScriptRunAfterFanReply } from '@/lib/scripts/engine'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -126,6 +126,8 @@ export async function simulateFanMessage(conversationId: string, text: string) {
     text: text.trim(),
   })
   if (error) throw new Error(error.message)
+
+  await resumeScriptRunAfterFanReply(supabase, agencyId, conversationId)
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')

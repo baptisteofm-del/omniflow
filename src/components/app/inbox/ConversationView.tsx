@@ -95,7 +95,12 @@ export function ConversationView({
                   isOutbound ? 'gradient-bg-signature rounded-br-sm text-white' : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
                 }`}
               >
-                {m.text}
+                {m.is_paid && m.price_amount && (
+                  <span className="mb-1 inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
+                    💰 {m.price_amount}€
+                  </span>
+                )}
+                <p>{m.text}</p>
                 <span className="mt-1 block text-[10px] opacity-60">{m.sender_type}</span>
               </div>
             </div>
