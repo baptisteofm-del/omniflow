@@ -4,8 +4,8 @@ Per spec 47.194. Updated at the end of every phase.
 
 ---
 
-**Current Phase**: Phase 4 — Creator DNA + Commercial Configuration (validated) → moving toward Phase 5
-**Current Milestone**: Milestone B — CHAT CORE READY (creator + Model DNA done; fan/conversation/mock platform next)
+**Current Phase**: Phase 5 — Conversation Domain + Mock Platform Adapter (validated) → moving toward Phase 6
+**Current Milestone**: Milestone B — CHAT CORE READY, complete (creator + Model DNA + fans/conversations/messages/Mock connector all working end-to-end)
 
 **Completed**:
 - Read all 46 available spec parts (`/docs/specification/`)
@@ -31,14 +31,19 @@ Per spec 47.194. Updated at the end of every phase.
 - **Phase 4 (Creator DNA + commercial settings) validated end-to-end by the owner**: `0002_creator_dna.sql` (creator_ai_profiles, creator_commercial_settings) + `/creators` list + `/creators/new` form (identity, Simple Mode DNA sliders, commercial toggles) via a `createCreator` server action.
 - **Real bug found and fixed in production testing**: `0001_foundation.sql`'s "Agency members can view teammates" policy on `users` caused infinite RLS recursion (a raw correlated subquery on `users` inside a policy defined on `users` itself), breaking every query against that table — surfaced as "Utilisateur introuvable" when creating a creator. Fixed in `0003_fix_users_rls_recursion.sql` by moving the check into a `SECURITY DEFINER` helper function (`shares_agency_with`), the same safe pattern already used by `is_agency_member()`/`has_permission()`. Applied by the owner and confirmed working.
 
-**In Progress**: Starting Phase 5 (Conversation domain + Mock Platform Adapter). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them — building them with no caller yet would be the "premature abstraction" the spec's own vertical-slices principle (47.147) warns against.
+- **Phase 5 (conversations + Mock Connector) validated end-to-end by the owner**: `0004_conversations.sql` (platforms seeded MOCK/ONLYFANS/MYM, platform_connections, fans, conversations, messages) + `/inbox` (list + start-test-conversation) + `/inbox/[id]` (thread, human reply composer, MOCK test panel to simulate a fan message and a purchase). Owner confirmed a full scenario works: start conversation → simulate fan message → reply as creator → simulate purchase. This satisfies Phase 5's exit criteria exactly (spec 47.57) and completes **Milestone B — CHAT CORE READY**.
+- Clarified for the owner: the reply composer = agency operator typing as the creator; the MOCK panel = simulates the fan (no real platform yet); no AI is wired in at this stage — that's Phase 7 (AI Gateway) / Phase 8 (Copilot), intentionally not built yet.
+
+**In Progress**: Starting Phase 6 (Fan Memory + Scoring). Phase 1's remaining app-code items (`authorize()` middleware, structured logging, tenant-isolation automated test) remain intentionally deferred until a feature actually needs them.
+
+**Backlog (not blocking)**: Creator DNA "Advanced Mode" (spec Part 6's full 12-section editor) — current form is Simple Mode only; owner flagged it needs more depth, scheduled for a later pass.
 
 **Blocked**: None. Phase 14 (real platform integrations) remains pre-emptively flagged blocked pending Q1/Q2 in `OPEN_QUESTIONS.md`.
 
 **Tests**: None yet — `REQUIREMENTS_MATRIX.md` row 76 (cross-agency isolation tests) remains open, to be closed once a second agency exists to test isolation against.
 
 **Next**:
-1. Phase 5: `fans`, `conversations`, `messages`, `platforms`, `platform_connections` tables + a Mock Platform Adapter, so a full fan message → human reply → simulated purchase loop works without needing real OnlyFans/MYM access.
+1. Phase 6: `fan_memories`, `fan_scores` tables + the 5 core Fan Intelligence scores (Purchase Intent, Relationship, Spending Potential, Engagement, Churn Risk) and a way to see/correct memory on a fan.
 
 ---
 
