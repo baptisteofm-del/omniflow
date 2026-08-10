@@ -83,18 +83,24 @@ export async function runAiTask<T>({
   // this was a real gap: the first Full AI failure gave no way to tell
   // whether the model refused, added a preamble, or was truncated.
   let rawText: string | null = null
+  let responseDebug: { stop_reason: string | null; content_types: string[] } | null = null
 
   try {
     const temperature = TEMPERATURE_BY_TASK[taskType]
     const response = await client.messages.create({
       model,
-      max_tokens: 1024,
+      // 1024 was too tight for longer prompts (Full AI's decision task hit
+      // it) — the model can spend its budget before ever emitting the text
+      // block, leaving an empty response with no error thrown.
+      max_tokens: 2048,
       ...(temperature !== undefined ? { temperature } : {}),
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
+    responseDebug = { stop_reason: response.stop_reason, content_types: response.content.map((b) => b.type) }
+    const textBlock = response.content.find((b) => b.type === 'text')
+    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
     rawText = text
     parsed = parseJsonResponse<T>(text)
 
@@ -123,7 +129,7 @@ export async function runAiTask<T>({
       model_provider: 'anthropic',
       model_name: model,
       prompt_version: promptVersion,
-      structured_output_json: parsed ?? { error: errorMessage, raw_text: rawText },
+      structured_output_json: parsed ?? { error: errorMessage, raw_text: rawText, debug: responseDebug },
       status,
       latency_ms: latencyMs,
       estimated_cost: estimatedCost,
