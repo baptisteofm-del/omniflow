@@ -7,6 +7,7 @@ import { FanIntelligencePanel } from '@/components/app/inbox/FanIntelligencePane
 import { FanProfileCard } from '@/components/app/inbox/FanProfileCard'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
 import { ScriptRunPanel } from '@/components/app/inbox/ScriptRunPanel'
+import { checkDueScriptRuns } from '@/lib/scripts/engine'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,7 +17,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const { data: conversation } = await supabase
     .from('conversations')
     .select(
-      'id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source)'
+      'id, agency_id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source)'
     )
     .eq('id', id)
     .single()
@@ -25,6 +26,10 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const fanId = conversation.fan_id as string
   const creatorId = conversation.creator_id as string
+
+  // No background scheduler yet (see TECH_DEBT) — catch up any delayed
+  // script step that's now due whenever this page is opened/refreshed.
+  await checkDueScriptRuns(supabase, conversation.agency_id as string, id)
 
   const { data: messages } = await supabase
     .from('messages')
@@ -105,12 +110,12 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const { data: activeRunRow } = await supabase
     .from('script_runs')
-    .select('id, script_version_id, current_node_id')
+    .select('id, script_version_id, current_node_id, scheduled_at')
     .eq('conversation_id', id)
     .eq('status', 'active')
     .maybeSingle()
 
-  let activeRun: { id: string; scriptName: string; currentNodeTitle: string | null } | null = null
+  let activeRun: { id: string; scriptName: string; currentNodeTitle: string | null; scheduledAt: string | null } | null = null
   if (activeRunRow) {
     const { data: version } = await supabase
       .from('script_versions')
@@ -127,6 +132,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       id: activeRunRow.id,
       scriptName: scriptRow?.name ?? 'Script',
       currentNodeTitle: node ? node.title || (node.node_type === 'paid_media' ? 'Offre en attente' : null) : null,
+      scheduledAt: activeRunRow.scheduled_at,
     }
   }
 

@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Workflow, Square, Loader2 } from 'lucide-react'
+import { Workflow, Square, Loader2, Clock } from 'lucide-react'
 import { startScriptRun, stopScriptRun } from '@/lib/scripts/actions'
 
 interface ActiveRun {
   id: string
   scriptName: string
   currentNodeTitle: string | null
+  scheduledAt: string | null
 }
 
 interface AvailableScript {
@@ -42,6 +43,11 @@ export function ScriptRunPanel({
     })
   }
 
+  const secondsUntilScheduled =
+    activeRun?.scheduledAt && new Date(activeRun.scheduledAt).getTime() > Date.now()
+      ? Math.round((new Date(activeRun.scheduledAt).getTime() - Date.now()) / 1000)
+      : null
+
   return (
     <div className="glass rounded-2xl p-5">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -58,6 +64,12 @@ export function ScriptRunPanel({
           </p>
           {activeRun.currentNodeTitle && (
             <p className="text-xs text-[color:var(--foreground-muted)]">Étape : {activeRun.currentNodeTitle}</p>
+          )}
+          {secondsUntilScheduled !== null && (
+            <p className="flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)]">
+              <Clock className="h-3 w-3" />
+              Envoi dans ~{secondsUntilScheduled}s (recharge la page pour vérifier)
+            </p>
           )}
           <button
             disabled={isPending}

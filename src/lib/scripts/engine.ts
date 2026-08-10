@@ -121,7 +121,17 @@ async function followAlwaysEdge(supabase: AnySupabaseClient, agencyId: string, r
     return null
   }
 
-  await supabase.from('script_runs').update({ current_node_id: edge.to_node_id }).eq('id', runId)
+  // Queue the target node's delay (spec 11.10 Timing Metadata) rather than
+  // moving straight to it — advanceScriptRun won't actually act on it until
+  // scheduled_at has passed.
+  const { data: targetNode } = await supabase.from('script_nodes').select('delay_seconds').eq('id', edge.to_node_id).single()
+  const delaySeconds = targetNode?.delay_seconds ?? 0
+  const scheduledAt = delaySeconds > 0 ? new Date(Date.now() + delaySeconds * 1000).toISOString() : null
+
+  await supabase
+    .from('script_runs')
+    .update({ current_node_id: edge.to_node_id, scheduled_at: scheduledAt })
+    .eq('id', runId)
   return edge.to_node_id as string
 }
 
@@ -139,10 +149,15 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
   for (let hop = 0; hop < MAX_NODE_HOPS; hop++) {
     const { data: run } = await supabase
       .from('script_runs')
-      .select('id, conversation_id, fan_id, creator_id, current_node_id, status')
+      .select('id, conversation_id, fan_id, creator_id, current_node_id, status, scheduled_at')
       .eq('id', runId)
       .single()
     if (!run || run.status !== 'active' || !run.current_node_id) return
+
+    // Delay not elapsed yet (spec 11.10) — do nothing. Whoever calls this
+    // again once it's due (checkDueScriptRuns, or a future scheduler) will
+    // pick up here.
+    if (run.scheduled_at && new Date(run.scheduled_at).getTime() > Date.now()) return
 
     const { data: node } = await supabase
       .from('script_nodes')
@@ -204,6 +219,25 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
   await supabase
     .from('script_run_events')
     .insert({ agency_id: agencyId, script_run_id: runId, event_type: 'stopped', outcome: 'loop_guard' })
+}
+
+// No background scheduler exists yet (spec 13.19/13.20 assume one — see
+// TECH_DEBT). As a stand-in, call this whenever a conversation is loaded:
+// it catches up any run whose delay has already elapsed. This only fires
+// while someone is actually looking at the conversation; a run nobody
+// revisits won't send on its own. Safe/cheap to call unconditionally — it's
+// a no-op unless a run is both active and actually due.
+export async function checkDueScriptRuns(supabase: AnySupabaseClient, agencyId: string, conversationId: string) {
+  const { data: run } = await supabase
+    .from('script_runs')
+    .select('id, scheduled_at')
+    .eq('conversation_id', conversationId)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!run || !run.scheduled_at) return
+  if (new Date(run.scheduled_at).getTime() > Date.now()) return
+
+  await advanceScriptRun(supabase, agencyId, run.id)
 }
 
 // Called after a fan message is logged. If a run is waiting after a plain

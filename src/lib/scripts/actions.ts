@@ -129,9 +129,12 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
   const generationMode = String(formData.get('generation_mode') || 'locked')
+  const delayRaw = String(formData.get('delay_seconds') || '').trim()
   if (!messageTemplate) throw new Error('Le message est requis')
   if (nodeType === 'paid_media' && !priceRaw) throw new Error('Le prix est requis pour une offre payante')
   if (!['locked', 'adaptive'].includes(generationMode)) throw new Error('Mode de génération invalide')
+  const delaySeconds = delayRaw ? Math.max(0, Number(delayRaw)) : 0
+  if (Number.isNaN(delaySeconds)) throw new Error('Délai invalide')
 
   const { data: maxNode } = await supabase
     .from('script_nodes')
@@ -152,6 +155,7 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
     message_template: messageTemplate,
     price_amount: nodeType === 'paid_media' ? Number(priceRaw) : null,
     generation_mode: generationMode,
+    delay_seconds: delaySeconds,
     sequence_order: sequenceOrder,
   })
   if (error) throw new Error(error.message)
@@ -168,8 +172,11 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
   const messageTemplate = String(formData.get('message_template') || '').trim()
   const priceRaw = String(formData.get('price_amount') || '').trim()
   const generationMode = String(formData.get('generation_mode') || 'locked')
+  const delayRaw = String(formData.get('delay_seconds') || '').trim()
   if (!messageTemplate) throw new Error('Le message est requis')
   if (!['locked', 'adaptive'].includes(generationMode)) throw new Error('Mode de génération invalide')
+  const delaySeconds = delayRaw ? Math.max(0, Number(delayRaw)) : 0
+  if (Number.isNaN(delaySeconds)) throw new Error('Délai invalide')
 
   const { error } = await supabase
     .from('script_nodes')
@@ -178,6 +185,7 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
       message_template: messageTemplate,
       price_amount: priceRaw ? Number(priceRaw) : null,
       generation_mode: generationMode,
+      delay_seconds: delaySeconds,
     })
     .eq('id', nodeId)
   if (error) throw new Error(error.message)
@@ -293,6 +301,7 @@ export async function createNewDraftVersion(scriptId: string) {
         price_amount: n.price_amount,
         currency: n.currency,
         generation_mode: n.generation_mode,
+        delay_seconds: n.delay_seconds,
         sequence_order: n.sequence_order,
       })
       .select('id')
