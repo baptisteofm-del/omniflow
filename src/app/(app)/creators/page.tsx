@@ -6,7 +6,7 @@ export default async function CreatorsPage() {
   const supabase = await createClient()
   const { data: creators } = await supabase
     .from('creators')
-    .select('id, display_name, status, default_language, created_at')
+    .select('id, display_name, status, default_language, avatar_url, created_at')
     .order('created_at', { ascending: false })
 
   return (
@@ -47,15 +47,20 @@ export default async function CreatorsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {creators.map((c) => (
-            <div key={c.id} className="glass rounded-2xl p-5">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)]">
-                <UserRound className="h-5 w-5 text-[color:var(--cyan)]" />
-              </div>
+            <Link key={c.id} href={`/creators/${c.id}`} className="glass rounded-2xl p-5 transition-colors hover:bg-white/5">
+              {c.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.avatar_url} alt={c.display_name} className="mb-3 h-10 w-10 rounded-xl object-cover" />
+              ) : (
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)]">
+                  <UserRound className="h-5 w-5 text-[color:var(--cyan)]" />
+                </div>
+              )}
               <h3 className="font-medium">{c.display_name}</h3>
               <p className="mt-1 text-xs text-[color:var(--foreground-muted)]">
                 {c.status === 'ready' ? 'Prête' : c.status} · {c.default_language.toUpperCase()}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       )}

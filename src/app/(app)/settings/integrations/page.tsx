@@ -2,6 +2,11 @@ import { Plug, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { MymConnectionCard } from '@/components/app/settings/MymConnectionCard'
 
+// Applies to the syncMymCreator Server Action triggered from this page —
+// a full sync is a serial per-conversation network loop that can run past
+// Vercel's default Server Action timeout for a large account.
+export const maxDuration = 300
+
 // Phase 14 (Real Platform Integrations), MYM first — spec 47.115's
 // Progressive Integration: this page covers Authentication + status. The
 // token is entered directly in this page's form and encrypted server-side

@@ -8,9 +8,12 @@ import { getMymCredentialsForCreator } from '@/lib/platforms/credentialsActions'
 
 // A full sync (list + per-conversation messages, all serial network calls
 // to styx.mym.fans) can run well past Vercel's default Server Action
-// timeout for an account with many conversations — raise the ceiling.
+// timeout for an account with many conversations. A 'use server' file can
+// only export async functions, so the higher ceiling is instead declared
+// via `maxDuration` on the pages that trigger this action (see
+// settings/integrations/page.tsx and creators/[id]/page.tsx) — Next.js
+// applies a route's maxDuration to Server Actions invoked from it.
 // Requires a Vercel plan that allows it; Hobby caps below this regardless.
-export const maxDuration = 300
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
