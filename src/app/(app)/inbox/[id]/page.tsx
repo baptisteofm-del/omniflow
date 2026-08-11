@@ -58,7 +58,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   ] = await Promise.all([
     supabase
       .from('messages')
-      .select('id, direction, sender_type, text, is_paid, price_amount, message_type, sent_at')
+      .select('id, direction, sender_type, sender_user_id, text, is_paid, price_amount, message_type, sent_at, users(display_name, email)')
       .eq('conversation_id', id)
       .order('sent_at', { ascending: true }),
     supabase
@@ -164,6 +164,13 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const escalationReason = conversation.ai_mode === 'paused' ? (lastEscalation?.validator_outcome ?? null) : null
 
+  // Owner request: show which team member actually sent each message, not
+  // just the generic "human" sender_type.
+  const messagesWithSender = (messages ?? []).map((m) => {
+    const sender = m.users as unknown as { display_name: string | null; email: string } | null
+    return { ...m, senderName: sender?.display_name || sender?.email || null }
+  })
+
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex shrink-0 items-center justify-between">
@@ -186,7 +193,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         <div className="min-h-0">
           <ConversationView
             conversationId={id}
-            initialMessages={messages ?? []}
+            initialMessages={messagesWithSender}
             aiMode={conversation.ai_mode}
             pendingSuggestion={pendingSuggestion ?? null}
             isMockConversation={isMockConversation}

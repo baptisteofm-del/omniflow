@@ -18,6 +18,7 @@ interface Message {
   id: string
   direction: 'inbound' | 'outbound'
   sender_type: 'fan' | 'human' | 'ai' | 'system'
+  senderName: string | null
   text: string
   is_paid: boolean
   price_amount: number | null
@@ -35,6 +36,16 @@ const QUICK_ACTIONS: { key: QuickAction; label: string }[] = [
   { key: 'direct', label: 'Plus direct' },
   { key: 'affectionate', label: 'Plus affectueux' },
 ]
+
+// Owner request: show which team member sent a message, not just the
+// generic sender_type — falls back gracefully if the member has since
+// been removed from the agency (senderName then null).
+function senderLabel(m: Message): string {
+  if (m.sender_type === 'human') return m.senderName || 'Équipe'
+  if (m.sender_type === 'ai') return 'IA'
+  if (m.sender_type === 'fan') return 'Fan'
+  return 'Système'
+}
 
 export function ConversationView({
   conversationId,
@@ -161,7 +172,7 @@ export function ConversationView({
                   </span>
                 )}
                 <p>{m.text}</p>
-                <span className="mt-1 block text-[10px] opacity-60">{m.sender_type}</span>
+                <span className="mt-1 block text-[10px] opacity-60">{senderLabel(m)}</span>
               </div>
             </div>
           )
