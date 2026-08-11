@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, CheckCircle2, XCircle, RefreshCw, Unplug } from 'lucide-react'
 import { connectMymCreator, disconnectMymCreator } from '@/lib/platforms/credentialsActions'
-import { syncMymCreator } from '@/lib/platforms/sync'
+import { syncMymCreator, getMymSyncProgress } from '@/lib/platforms/sync'
 
 interface Props {
   creatorId: string
@@ -20,6 +20,41 @@ export function MymConnectionCard({ creatorId, creatorName, status, lastError, l
   const [error, setError] = useState<string | null>(null)
   const [syncResult, setSyncResult] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(status !== 'connected')
+  const [progress, setProgress] = useState<{ done: number; total: number; label: string | null } | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+
+  const runSync = () => {
+    setError(null)
+    setSyncResult(null)
+    setProgress({ done: 0, total: 0, label: null })
+
+    pollRef.current = setInterval(async () => {
+      const p = await getMymSyncProgress(creatorId)
+      if (p && p.sync_status === 'syncing') {
+        setProgress({ done: p.sync_done ?? 0, total: p.sync_total ?? 0, label: p.sync_current_label })
+      }
+    }, 800)
+
+    startTransition(async () => {
+      try {
+        const result = await syncMymCreator(creatorId)
+        setSyncResult(`${result.conversationsSynced} conversation(s), ${result.messagesSynced} nouveau(x) message(s)`)
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+      } finally {
+        stopPolling()
+        setProgress(null)
+      }
+    })
+  }
 
   const runAction = (fn: () => Promise<void>) => {
     setError(null)
@@ -57,13 +92,7 @@ export function MymConnectionCard({ creatorId, creatorName, status, lastError, l
           <div className="flex gap-2">
             <button
               disabled={isPending}
-              onClick={() => {
-                setSyncResult(null)
-                runAction(async () => {
-                  const result = await syncMymCreator(creatorId)
-                  setSyncResult(`${result.conversationsSynced} conversation(s), ${result.messagesSynced} nouveau(x) message(s)`)
-                })
-              }}
+              onClick={runSync}
               className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
             >
               {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -80,6 +109,22 @@ export function MymConnectionCard({ creatorId, creatorName, status, lastError, l
           </div>
         )}
       </div>
+
+      {progress && (
+        <div className="mb-3">
+          <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div
+              className="gradient-bg-signature h-full transition-all"
+              style={{ width: progress.total > 0 ? `${Math.min(100, (progress.done / progress.total) * 100)}%` : '8%' }}
+            />
+          </div>
+          <p className="text-[10px] text-[color:var(--foreground-muted)]">
+            {progress.total > 0
+              ? `${progress.done} / ${progress.total} conversations${progress.label ? ` — ${progress.label}` : ''}`
+              : 'Récupération de la liste des conversations...'}
+          </p>
+        </div>
+      )}
 
       {lastError && status === 'error' && <p className="mb-2 text-xs text-[color:var(--danger)]">{lastError}</p>}
       {lastSyncedAt && <p className="mb-2 text-[10px] text-[color:var(--foreground-muted)]">Dernière synchro : {new Date(lastSyncedAt).toLocaleString('fr-FR')}</p>}
