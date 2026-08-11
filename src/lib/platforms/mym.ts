@@ -219,7 +219,11 @@ export async function getMessages(
 }
 
 /**
- * Send a message to a fan conversation
+ * Send a message to a fan conversation (conversationId = the fan's user
+ * id, used as receiver_id here). Real endpoint + payload shape confirmed
+ * live via the owner's DevTools (POST styx.mym.fans/v1/chats/messages,
+ * 201 Created, body {receiver_id, content, type}) — not guessed, same
+ * discovery process as every other endpoint in this file.
  */
 export async function sendMessage(
   creds: MYMCredentials,
@@ -228,10 +232,10 @@ export async function sendMessage(
 ): Promise<boolean> {
   try {
     const headers = buildMYMHeaders(creds)
-    const response = await fetch(`https://mym.fans/api/v2/conversations/${conversationId}/messages`, {
+    const response = await fetch(`${STYX_BASE}/chats/messages`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ content: message, type: 'text' }),
+      body: JSON.stringify({ receiver_id: conversationId, content: message, type: 'text' }),
     })
     return response.ok
   } catch {
