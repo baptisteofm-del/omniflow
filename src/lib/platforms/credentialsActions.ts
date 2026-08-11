@@ -113,7 +113,7 @@ export async function connectMymCreator(creatorId: string, formData: FormData) {
     .update({ status: testOk ? 'connected' : 'error', updated_at: new Date().toISOString() })
     .eq('id', connectionId)
 
-  revalidatePath('/settings/integrations')
+  revalidatePath(`/creators/${creatorId}`)
 
   if (!testOk) throw new Error(testError || 'Connexion MYM échouée — vérifiez email/mot de passe')
 }
@@ -134,7 +134,7 @@ export async function disconnectMymCreator(creatorId: string) {
   // Credentials row is left in place (so reconnecting doesn't require
   // re-entering the token) but the connection is marked disconnected —
   // nothing reads credentials for a disconnected connection.
-  revalidatePath('/settings/integrations')
+  revalidatePath(`/creators/${creatorId}`)
 }
 
 // Re-derives a fresh Bearer token on every call (rather than caching one)

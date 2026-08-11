@@ -8,8 +8,8 @@ import { MymConnectionCard } from '@/components/app/settings/MymConnectionCard'
 import { checkPageAccess } from '@/lib/permissions/check'
 import { AccessRestricted } from '@/components/app/AccessRestricted'
 
-// See settings/integrations/page.tsx — same reason (syncMymCreator can run
-// long for a large account).
+// syncMymCreator is a serial per-conversation network loop that can run
+// past Vercel's default Server Action timeout for a large account.
 export const maxDuration = 300
 
 export default async function CreatorProfilePage({ params }: { params: Promise<{ id: string }> }) {
