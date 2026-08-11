@@ -15,8 +15,11 @@ export interface MYMLoginRequest {
 export interface MYMMessage {
   id: string
   conversationId: string
-  userId: string
-  userName: string
+  // The fan's user id and the creator's own user id — direction is derived
+  // by comparing senderId to the conversation's fan id (conversationId),
+  // never by trusting a boolean flag from the API.
+  senderId: string
+  receiverId: string
   text: string
   createdAt: string
   hasMedia: boolean
@@ -103,19 +106,30 @@ function buildMYMHeaders(creds: MYMCredentials): Headers {
   return headers
 }
 
+// Real MYM API host (styx.mym.fans, not mym.fans) confirmed live via the
+// owner's own DevTools Network tab — same discovery process as the Cognito
+// login above, nothing guessed. A conversation's real identifier, as used
+// by this API, is the fan's user id (not a separate "conversation id"): the
+// list endpoint returns rows shaped `{creatorId}#{fanId}`, and fetching a
+// single conversation's messages is `GET /v1/chats/{fanId}`. So throughout
+// this file and the adapter layer, `MYMConversation.id`/`conversationId` IS
+// the fan's user id.
+const STYX_BASE = 'https://styx.mym.fans/v1'
+
 /**
  * Get all conversations
  */
 export async function getConversations(
   creds: MYMCredentials,
   limit: number = 100,
-  offset: number = 0
+  cursor?: string
 ): Promise<MYMConversation[]> {
   try {
     const headers = buildMYMHeaders(creds)
-    const url = new URL('https://mym.fans/api/v2/conversations')
-    url.searchParams.append('limit', limit.toString())
-    url.searchParams.append('offset', offset.toString())
+    const url = new URL(`${STYX_BASE}/chats`)
+    url.searchParams.set('limit', limit.toString())
+    url.searchParams.set('last_message_opts', 'light')
+    if (cursor) url.searchParams.set('cursor', cursor)
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -127,16 +141,25 @@ export async function getConversations(
     }
 
     const data = await response.json()
+    const rows: any[] = data.data || []
 
-    return (data.conversations || data || []).map((conv: any) => ({
-      id: conv.id?.toString() || '',
-      userId: conv.userId?.toString() || '',
-      userName: conv.userName || conv.username || '',
-      avatar: conv.avatar || undefined,
-      lastMessage: conv.lastMessage || '',
-      lastMessageAt: conv.lastMessageAt || new Date().toISOString(),
-      unreadCount: conv.unreadCount || 0,
-    }))
+    return rows.map((row) => {
+      // row.id is "{creatorId}#{fanId}" — the part after '#' is the fan's
+      // user id, which doubles as our conversation id.
+      const fanId = String(row.id || '').split('#')[1] || ''
+      return {
+        id: fanId,
+        userId: fanId,
+        userName: row.user?.nickname || row.user?.username || '',
+        avatar: row.user?.avatar_url || undefined,
+        // The `last_message_opts=light` response doesn't include message
+        // text, only its date/read state — getMessages() is the source of
+        // truth for actual content.
+        lastMessage: '',
+        lastMessageAt: row.last_message?.date || new Date().toISOString(),
+        unreadCount: row.is_read ? 0 : 1,
+      }
+    })
   } catch (error) {
     console.error('Error fetching MYM conversations:', error)
     throw error
@@ -144,7 +167,7 @@ export async function getConversations(
 }
 
 /**
- * Get messages from a conversation
+ * Get messages from a conversation (conversationId = the fan's user id)
  */
 export async function getMessages(
   creds: MYMCredentials,
@@ -153,8 +176,8 @@ export async function getMessages(
 ): Promise<MYMMessage[]> {
   try {
     const headers = buildMYMHeaders(creds)
-    const url = new URL(`https://mym.fans/api/v2/conversations/${conversationId}/messages`)
-    url.searchParams.append('limit', limit.toString())
+    const url = new URL(`${STYX_BASE}/chats/${conversationId}`)
+    url.searchParams.set('limit', limit.toString())
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -166,15 +189,17 @@ export async function getMessages(
     }
 
     const data = await response.json()
+    const rows: any[] = data.data?.messages || []
 
-    return (data.messages || data || []).map((msg: any) => ({
+    // Real API returns newest-first (confirmed live).
+    return rows.map((msg: any) => ({
       id: msg.id?.toString() || '',
-      conversationId: conversationId,
-      userId: msg.userId?.toString() || '',
-      userName: msg.userName || msg.username || '',
-      text: msg.text || msg.content || '',
-      createdAt: msg.createdAt || msg.date || new Date().toISOString(),
-      hasMedia: msg.hasMedia || msg.mediaCount > 0 || false,
+      conversationId,
+      senderId: msg.sender_id?.toString() || '',
+      receiverId: msg.receiver_id?.toString() || '',
+      text: msg.content || '',
+      createdAt: msg.date || new Date().toISOString(),
+      hasMedia: msg.type === 'private_media',
     }))
   } catch (error) {
     console.error('Error fetching MYM messages:', error)
@@ -213,23 +238,25 @@ export async function getNewMessages(
   try {
     const conversations = await getConversations(creds, 50)
     const results = []
-    
+
     for (const conv of conversations) {
       if (conv.unreadCount === 0) continue
-      
+
       const messages = await getMessages(creds, conv.id, 5)
-      const lastMsg = messages[messages.length - 1]
-      
+      // Newest-first — the most recent message is index 0.
+      const lastMsg = messages[0]
+
       if (!lastMsg) continue
-      // Skip messages sent by the model (only process fan messages)
-      if ((lastMsg as any).is_mine || (lastMsg as any).sender === 'model') continue
-      
+      // Only process messages actually sent by the fan (senderId === the
+      // conversation's fan id), never our own outbound sends.
+      if (lastMsg.senderId !== conv.userId) continue
+
       results.push({
         conversationId: conv.id,
         fanId: conv.userId,
         fanName: conv.userName,
-        message: (lastMsg as any).content || (lastMsg as any).text || '',
-        timestamp: (lastMsg as any).created_at || new Date().toISOString(),
+        message: lastMsg.text,
+        timestamp: lastMsg.createdAt,
       })
     }
     

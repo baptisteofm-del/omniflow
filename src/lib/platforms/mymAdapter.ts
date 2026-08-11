@@ -39,15 +39,12 @@ export const mymAdapter: PlatformAdapter<MYMCredentials> = {
 
   async fetchMessages(credentials, externalConversationId): Promise<AdapterMessage[]> {
     const messages = await getMessages(credentials, externalConversationId, 100)
+    // externalConversationId IS the fan's user id (see mym.ts) — a message
+    // is inbound (from the fan) when it was sent by that same id.
     return messages.map((m) => ({
       externalMessageId: m.id,
       externalConversationId,
-      // The old client's raw API response doesn't reliably expose sender
-      // side — see TECH_DEBT.md. Conservative default: treat as inbound
-      // (fan) unless proven otherwise, since silently mislabeling an
-      // inbound fan message as our own outbound send would be worse (it
-      // would suppress a reply Full AI/Copilot should have reacted to).
-      direction: 'inbound',
+      direction: m.senderId === externalConversationId ? 'inbound' : 'outbound',
       text: m.text,
       sentAt: m.createdAt,
     }))
