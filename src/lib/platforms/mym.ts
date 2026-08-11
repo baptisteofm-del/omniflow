@@ -85,9 +85,14 @@ export async function loginAndGetToken(email: string, password: string): Promise
     throw new Error(`MYM demande une étape supplémentaire (${data.ChallengeName}) non gérée pour l'instant`)
   }
 
-  const idToken = data.AuthenticationResult?.IdToken
+  // MYM's real API (styx.mym.fans) rejects the Cognito IdToken with a 403 —
+  // confirmed live by inspecting the owner's own browser request headers.
+  // It expects the AccessToken specifically (its JWT payload has
+  // "token_use": "access"), not the IdToken, even though both come back
+  // from the same InitiateAuth call.
   const accessToken = data.AuthenticationResult?.AccessToken
-  const token = idToken || accessToken
+  const idToken = data.AuthenticationResult?.IdToken
+  const token = accessToken || idToken
   if (!token) throw new Error('Connexion MYM : aucun token dans la réponse Cognito')
 
   return token
