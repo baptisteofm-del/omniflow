@@ -39,76 +39,55 @@ export interface MYMEarnings {
   lastUpdated: string
 }
 
+// MYM's creator platform (creators.mym.fans — a distinct app from the
+// mym.fans consumer site, confirmed via live DevTools capture) authenticates
+// through Amazon Cognito, not a custom login API — the previous guessed
+// endpoints (mym.fans/api/auth/login etc.) were simply wrong. Confirmed live
+// from a real captured request: host cognito-idp.eu-west-3.amazonaws.com,
+// this specific Cognito App Client ID. This is AWS's own public, documented
+// InitiateAuth API (https://docs.aws.amazon.com/cognito/...), not something
+// reverse-engineered from MYM itself.
+const COGNITO_REGION = 'eu-west-3'
+const COGNITO_CLIENT_ID = '27hq9jdoc4t09pmvab18aaf1sh'
+
 /**
- * Login to MYM.fans and get Bearer token
+ * Login to MYM.fans (creators.mym.fans) via Amazon Cognito and get a token
+ * usable as a Bearer token for subsequent API calls.
  */
-export async function loginAndGetToken(
-  email: string,
-  password: string
-): Promise<string> {
-  const attemptUrls = [
-    'https://mym.fans/api/auth/login',
-    'https://api.mym.fans/auth/login',
-    'https://mym.fans/api/v1/auth/login',
-  ]
+export async function loginAndGetToken(email: string, password: string): Promise<string> {
+  const res = await fetch(`https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-amz-json-1.1',
+      'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
+    },
+    body: JSON.stringify({
+      AuthFlow: 'USER_PASSWORD_AUTH',
+      AuthParameters: { USERNAME: email, PASSWORD: password },
+      ClientId: COGNITO_CLIENT_ID,
+    }),
+  })
 
-  // Diagnostic trail per attempted URL (status/body snippet, never the
-  // credentials) — the previous version swallowed non-401/403 failures
-  // (e.g. a 404 because the guessed endpoint is wrong or MYM changed it)
-  // into a single generic message with no way to tell what actually
-  // happened without re-running this with a debugger attached.
-  const attempts: string[] = []
+  const data = await res.json().catch(() => ({}))
 
-  for (const url of attemptUrls) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
-          'Origin': 'https://mym.fans',
-          'Referer': 'https://mym.fans/login',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) {
-        const bodyText = await res.text().catch(() => '')
-        attempts.push(`${url} → HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 200)}` : ''}`)
-        if (res.status === 401 || res.status === 403) {
-          throw new Error(`Authentification refusée (${res.status}) — vérifiez l'email/mot de passe`)
-        }
-        continue // Try next URL
-      }
-
-      const data = await res.json()
-
-      // Try various token field names
-      const token =
-        data.token ||
-        data.access_token ||
-        data.data?.token ||
-        data.data?.access_token ||
-        data.accessToken
-
-      if (!token) {
-        attempts.push(`${url} → 200 mais aucun champ token reconnu dans la réponse`)
-        throw new Error('No token found in response')
-      }
-
-      return token
-    } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Authentification refusée')) throw error
-      if (!attempts.some((a) => a.startsWith(url))) {
-        attempts.push(`${url} → ${error instanceof Error ? error.message : 'erreur réseau'}`)
-      }
-      // Continue to next URL
-    }
+  if (!res.ok) {
+    // Cognito's error shape: { __type: "NotAuthorizedException", message: "..." }
+    const type = data.__type || `HTTP ${res.status}`
+    throw new Error(`Connexion MYM refusée (${type})${data.message ? ` — ${data.message}` : ''}`)
   }
 
-  // All URLs failed
-  throw new Error(`Échec de connexion à MYM.fans après ${attemptUrls.length} tentative(s) :\n${attempts.join('\n')}`)
+  if (data.ChallengeName) {
+    // e.g. NEW_PASSWORD_REQUIRED, SMS_MFA — direct password auth alone
+    // can't complete these; not handled yet, see TECH_DEBT.md.
+    throw new Error(`MYM demande une étape supplémentaire (${data.ChallengeName}) non gérée pour l'instant`)
+  }
+
+  const idToken = data.AuthenticationResult?.IdToken
+  const accessToken = data.AuthenticationResult?.AccessToken
+  const token = idToken || accessToken
+  if (!token) throw new Error('Connexion MYM : aucun token dans la réponse Cognito')
+
+  return token
 }
 
 /**
