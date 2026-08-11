@@ -52,7 +52,12 @@ export async function loginAndGetToken(
     'https://mym.fans/api/v1/auth/login',
   ]
 
-  let lastError: Error | null = null
+  // Diagnostic trail per attempted URL (status/body snippet, never the
+  // credentials) — the previous version swallowed non-401/403 failures
+  // (e.g. a 404 because the guessed endpoint is wrong or MYM changed it)
+  // into a single generic message with no way to tell what actually
+  // happened without re-running this with a debugger attached.
+  const attempts: string[] = []
 
   for (const url of attemptUrls) {
     try {
@@ -69,8 +74,10 @@ export async function loginAndGetToken(
       })
 
       if (!res.ok) {
+        const bodyText = await res.text().catch(() => '')
+        attempts.push(`${url} → HTTP ${res.status}${bodyText ? ` — ${bodyText.slice(0, 200)}` : ''}`)
         if (res.status === 401 || res.status === 403) {
-          throw new Error(`Authentication failed: ${res.status}`)
+          throw new Error(`Authentification refusée (${res.status}) — vérifiez l'email/mot de passe`)
         }
         continue // Try next URL
       }
@@ -86,23 +93,22 @@ export async function loginAndGetToken(
         data.accessToken
 
       if (!token) {
+        attempts.push(`${url} → 200 mais aucun champ token reconnu dans la réponse`)
         throw new Error('No token found in response')
       }
 
       return token
     } catch (error) {
-      lastError = error as Error
+      if (error instanceof Error && error.message.startsWith('Authentification refusée')) throw error
+      if (!attempts.some((a) => a.startsWith(url))) {
+        attempts.push(`${url} → ${error instanceof Error ? error.message : 'erreur réseau'}`)
+      }
       // Continue to next URL
     }
   }
 
   // All URLs failed
-  throw (
-    lastError ||
-    new Error(
-      'Failed to login to MYM.fans. Please check your credentials and try again.'
-    )
-  )
+  throw new Error(`Échec de connexion à MYM.fans après ${attemptUrls.length} tentative(s) :\n${attempts.join('\n')}`)
 }
 
 /**
