@@ -16,23 +16,38 @@ export interface DateRange {
 // docs/implementation/METRIC_REGISTRY.md for the human-readable registry
 // this file implements.
 
+// Test/simulation data (MOCK-platform conversations, created by the Inbox's
+// internal "Outils de test" panel) must never surface as real activity in
+// Dashboard/Analytics (owner requirement: no fake numbers, ever) — every
+// revenue/conversation-derived metric below excludes it.
+async function getMockConversationIds(supabase: AnySupabaseClient, agencyId: string): Promise<Set<string>> {
+  const { data: mockPlatform } = await supabase.from('platforms').select('id').eq('code', 'MOCK').maybeSingle()
+  if (!mockPlatform) return new Set()
+  const { data } = await supabase.from('conversations').select('id').eq('agency_id', agencyId).eq('platform_id', mockPlatform.id)
+  return new Set((data ?? []).map((c: { id: string }) => c.id))
+}
+
 // ---------------------------------------------------------------------------
 // REVENUE (spec 44.10-44.12)
 // ---------------------------------------------------------------------------
 export async function getRevenueMetrics(supabase: AnySupabaseClient, agencyId: string, range: DateRange) {
-  const { data: purchases } = await supabase
+  const mockConversationIds = await getMockConversationIds(supabase, agencyId)
+
+  const { data: purchaseRows } = await supabase
     .from('messages')
-    .select('price_amount')
+    .select('conversation_id, price_amount')
     .eq('agency_id', agencyId)
     .eq('message_type', 'purchase_confirmation')
     .gte('sent_at', range.from)
     .lte('sent_at', range.to)
 
-  const totalRevenue = (purchases ?? []).reduce(
+  const purchases = (purchaseRows ?? []).filter((p: { conversation_id: string }) => !mockConversationIds.has(p.conversation_id))
+
+  const totalRevenue = purchases.reduce(
     (sum: number, p: { price_amount: number | null }) => sum + (p.price_amount ?? 0),
     0
   )
-  const salesCount = (purchases ?? []).length
+  const salesCount = purchases.length
 
   // AI-attributed: only purchases traceable through a real offers row whose
   // source is script_node or full_ai — never guessed from conversation mode
@@ -40,44 +55,49 @@ export async function getRevenueMetrics(supabase: AnySupabaseClient, agencyId: s
   // purchase triggered with no matching offer (e.g. the MOCK panel's
   // freeform button with no active offer) is counted in gross revenue but
   // NOT here — see METRIC_REGISTRY.md's known limitations.
-  const { data: aiOffers } = await supabase
+  const { data: aiOfferRows } = await supabase
     .from('offers')
-    .select('final_price, initial_price')
+    .select('conversation_id, final_price, initial_price')
     .eq('agency_id', agencyId)
     .eq('status', 'purchased')
     .in('source_type', ['script_node', 'full_ai'])
     .gte('updated_at', range.from)
     .lte('updated_at', range.to)
 
-  const aiAttributedRevenue = (aiOffers ?? []).reduce(
+  const aiOffers = (aiOfferRows ?? []).filter((o: { conversation_id: string }) => !mockConversationIds.has(o.conversation_id))
+
+  const aiAttributedRevenue = aiOffers.reduce(
     (sum: number, o: { final_price: number | null; initial_price: number }) => sum + (o.final_price ?? o.initial_price ?? 0),
     0
   )
 
-  const { count: offersSentCount } = await supabase
+  const { data: offersSentRows } = await supabase
     .from('offers')
-    .select('id', { count: 'exact', head: true })
+    .select('conversation_id')
     .eq('agency_id', agencyId)
     .gte('created_at', range.from)
     .lte('created_at', range.to)
+  const offersSentCount = (offersSentRows ?? []).filter((o: { conversation_id: string }) => !mockConversationIds.has(o.conversation_id)).length
 
-  const { count: offersPurchasedCount } = await supabase
+  const { data: offersPurchasedRows } = await supabase
     .from('offers')
-    .select('id', { count: 'exact', head: true })
+    .select('conversation_id')
     .eq('agency_id', agencyId)
     .eq('status', 'purchased')
     .gte('created_at', range.from)
     .lte('created_at', range.to)
+  const offersPurchasedCount = (offersPurchasedRows ?? []).filter(
+    (o: { conversation_id: string }) => !mockConversationIds.has(o.conversation_id)
+  ).length
 
-  const conversionRate =
-    offersSentCount && offersSentCount > 0 ? (offersPurchasedCount ?? 0) / offersSentCount : null
+  const conversionRate = offersSentCount > 0 ? offersPurchasedCount / offersSentCount : null
 
   return {
     totalRevenue,
     aiAttributedRevenue,
     salesCount,
-    offersSentCount: offersSentCount ?? 0,
-    offersPurchasedCount: offersPurchasedCount ?? 0,
+    offersSentCount,
+    offersPurchasedCount,
     conversionRate,
   }
 }
@@ -97,9 +117,11 @@ export async function getCreatorComparison(
   agencyId: string,
   range: DateRange
 ): Promise<CreatorComparisonRow[]> {
+  const mockConversationIds = await getMockConversationIds(supabase, agencyId)
   const { data: creators } = await supabase.from('creators').select('id, display_name').eq('agency_id', agencyId)
-  const { data: conversations } = await supabase.from('conversations').select('id, creator_id').eq('agency_id', agencyId)
-  const conversationToCreator = new Map((conversations ?? []).map((c: { id: string; creator_id: string }) => [c.id, c.creator_id]))
+  const { data: allConversations } = await supabase.from('conversations').select('id, creator_id').eq('agency_id', agencyId)
+  const conversations = (allConversations ?? []).filter((c: { id: string }) => !mockConversationIds.has(c.id))
+  const conversationToCreator = new Map(conversations.map((c: { id: string; creator_id: string }) => [c.id, c.creator_id]))
 
   const { data: purchases } = await supabase
     .from('messages')
@@ -342,6 +364,7 @@ export async function getFullAiMetrics(supabase: AnySupabaseClient, agencyId: st
 // dossier UI (src/lib/fans/fanFlow.ts), never a separate/divergent formula.
 // ---------------------------------------------------------------------------
 export async function getFanSegments(supabase: AnySupabaseClient, agencyId: string): Promise<Record<FanFlowStage, number>> {
+  const mockConversationIds = await getMockConversationIds(supabase, agencyId)
   const { data: fans } = await supabase.from('fans').select('id').eq('agency_id', agencyId)
   const fanIds = (fans ?? []).map((f: { id: string }) => f.id)
   const counts: Record<FanFlowStage, number> = { new: 0, connaissance: 0, pret: 0, spender: 0 }
@@ -350,14 +373,15 @@ export async function getFanSegments(supabase: AnySupabaseClient, agencyId: stri
   const { data: scores } = await supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds)
   const purchaseIntentByFan = new Map((scores ?? []).map((s: { fan_id: string; purchase_intent: number | null }) => [s.fan_id, s.purchase_intent]))
 
-  const { data: conversations } = await supabase.from('conversations').select('id, fan_id').eq('agency_id', agencyId)
+  const { data: rawConversations } = await supabase.from('conversations').select('id, fan_id').eq('agency_id', agencyId)
+  const conversations = (rawConversations ?? []).filter((c: { id: string }) => !mockConversationIds.has(c.id))
   const conversationIdsByFan = new Map<string, string[]>()
-  for (const c of conversations ?? []) {
+  for (const c of conversations) {
     const list = conversationIdsByFan.get(c.fan_id) ?? []
     list.push(c.id)
     conversationIdsByFan.set(c.fan_id, list)
   }
-  const allConversationIds = (conversations ?? []).map((c: { id: string }) => c.id)
+  const allConversationIds = conversations.map((c: { id: string }) => c.id)
 
   const { data: messages } =
     allConversationIds.length > 0

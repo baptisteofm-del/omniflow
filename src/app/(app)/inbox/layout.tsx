@@ -29,23 +29,34 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   // Wave 1: nothing here depends on anything else — was 3+ sequential
   // round-trips, now one. (appUser was already fetched above, for the
   // permission check.)
-  const [{ data: conversations }, { data: allTags }, { data: todaysTransactions }] =
+  const [{ data: rawConversations }, { data: allTags }, { data: todaysTransactions }, { data: platforms }] =
     await Promise.all([
       supabase
         .from('conversations')
         .select(
-          'id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name, avatar_url, is_subscriber, last_seen_at)'
+          'id, platform_id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name, avatar_url, is_subscriber, last_seen_at)'
         )
         .order('last_message_at', { ascending: false, nullsFirst: false }),
       supabase.from('tags').select('id, name').order('name'),
-      supabase.from('transactions').select('gross_amount').eq('status', 'confirmed').gte('occurred_at', todayStart.toISOString()),
+      supabase.from('transactions').select('gross_amount, conversation_id').eq('status', 'confirmed').gte('occurred_at', todayStart.toISOString()),
+      supabase.from('platforms').select('id, code'),
     ])
 
-  const salesToday = (todaysTransactions ?? []).reduce((sum, t) => sum + (t.gross_amount as number), 0)
+  // Test/simulation conversations (platform MOCK) stay fully usable by direct
+  // URL for internal testing, but the owner asked that the test phase's
+  // artifacts stop being visible in the normal production Inbox list — and
+  // their fake sales must never count toward a real revenue number either.
+  const mockPlatformId = (platforms ?? []).find((p) => p.code === 'MOCK')?.id
+  const mockConversationIds = new Set((rawConversations ?? []).filter((c) => c.platform_id === mockPlatformId).map((c) => c.id))
+  const conversations = (rawConversations ?? []).filter((c) => c.platform_id !== mockPlatformId)
 
-  const fanIds = (conversations ?? []).map((c) => c.fan_id)
-  const conversationIds = (conversations ?? []).map((c) => c.id)
-  const assignedUserIds = [...new Set((conversations ?? []).map((c) => c.assigned_user_id).filter(Boolean))] as string[]
+  const salesToday = (todaysTransactions ?? [])
+    .filter((t) => !mockConversationIds.has(t.conversation_id as string))
+    .reduce((sum, t) => sum + (t.gross_amount as number), 0)
+
+  const fanIds = conversations.map((c) => c.fan_id)
+  const conversationIds = conversations.map((c) => c.id)
+  const assignedUserIds = [...new Set(conversations.map((c) => c.assigned_user_id).filter(Boolean))] as string[]
 
   // Wave 2: each only needs fanIds/conversationIds/assignedUserIds from
   // wave 1, not each other's results.
@@ -75,7 +86,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   const lastMessageByConv = new Map<string, { text: string; sent_at: string }>()
   const messageCountByConv = new Map<string, number>()
-  const convToFan = new Map((conversations ?? []).map((c) => [c.id, c.fan_id as string]))
+  const convToFan = new Map(conversations.map((c) => [c.id, c.fan_id as string]))
   const totalSpentByFan = new Map<string, number>()
 
   for (const m of allMessages ?? []) {
@@ -93,7 +104,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   const purchaseIntentByFan = new Map((scoresRows ?? []).map((s) => [s.fan_id as string, s.purchase_intent as number]))
   const userNameById = new Map((assignedUsers ?? []).map((u) => [u.id as string, (u.display_name as string) || (u.email as string)]))
 
-  const rows: InboxRow[] = (conversations ?? []).map((c) => {
+  const rows: InboxRow[] = conversations.map((c) => {
     const fanId = c.fan_id as string
     const lastInbound = c.last_inbound_at as string | null
     const lastOutbound = c.last_outbound_at as string | null

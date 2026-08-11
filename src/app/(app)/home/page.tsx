@@ -49,11 +49,12 @@ export default async function HomePage() {
     { data: convRows },
     { data: brokenConnections },
     { data: notifications },
+    { data: platforms },
   ] = await Promise.all([
     getRevenueMetrics(supabase, agencyId, range),
     getCreatorComparison(supabase, agencyId, range),
     getFanSegments(supabase, agencyId),
-    supabase.from('conversations').select('id, last_inbound_at, last_outbound_at'),
+    supabase.from('conversations').select('id, platform_id, last_inbound_at, last_outbound_at'),
     supabase
       .from('platform_connections')
       .select('creator_id, platform_credentials(last_error), creators(display_name)')
@@ -65,13 +66,20 @@ export default async function HomePage() {
       .is('read_at', null)
       .order('created_at', { ascending: false })
       .limit(5),
+    supabase.from('platforms').select('id, code'),
   ])
 
-  const awaitingReplyCount = (convRows ?? []).filter((c) => {
-    const lastInbound = c.last_inbound_at as string | null
-    const lastOutbound = c.last_outbound_at as string | null
-    return !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
-  }).length
+  // Test/simulation conversations never count as "needs your attention" —
+  // see src/lib/analytics/metrics.ts's getMockConversationIds for the same
+  // rule applied to revenue.
+  const mockPlatformId = (platforms ?? []).find((p) => p.code === 'MOCK')?.id
+  const awaitingReplyCount = (convRows ?? [])
+    .filter((c) => c.platform_id !== mockPlatformId)
+    .filter((c) => {
+      const lastInbound = c.last_inbound_at as string | null
+      const lastOutbound = c.last_outbound_at as string | null
+      return !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
+    }).length
 
   const connectionIssues = (brokenConnections ?? []).map((c) => {
     const creator = c.creators as unknown as { display_name: string } | null
