@@ -3,7 +3,11 @@
 Requirements extracted from the 46 available spec parts, organized by domain. This is not exhaustive at the level of every individual rule (the spec contains several thousand atomic statements) — it captures every **requirement cluster** at a granularity useful for planning and tracking. The full detail for any row lives in its Source Part(s).
 
 Priority: `P0` mandatory for a safe core, `P1` required for a strong V1, `P2` after core, `P3` future.
-Status: all rows are `NOT_STARTED` — nothing in the current repo implements the new architecture (see `CURRENT_STATE_AUDIT.md`).
+Status: corrected 2026-08-11 against the actual codebase (was left at 100% `NOT_STARTED` since before Phase 1, despite ~29 phases having since shipped). Rows not individually annotated below inherit `DONE` if their whole domain section is marked done, else assume `NOT_STARTED`. See `BUILD_PROGRESS.md` for the narrative and `TECH_DEBT.md` for known partial gaps.
+
+**Real gaps (P0, not done)**: #29 Sales Strategy/Negotiation Engine (Full AI sells at listed price, doesn't negotiate), #38 Negotiation Engine, #41 idempotency keys (present in a few spots, not systematic), #45 kill switch (Global scope is SQL-only, no admin UI), #25 AI structured-output server-side schema validation, #66-70 benchmark/Golden Set harness + gates, #74 admin backoffice (doesn't exist in the new app), #75-79 automated testing pyramid. Rows #74-84 (admin backoffice, testing, benchmark gates, legal/compliance review) are pre-production gates the roadmap always scheduled for later — not oversights, just not started yet.
+**Also not started (P1)**: #31 Commercial Fatigue tracking, #40 Smart Follow-ups, #39 custom-content config, #82 separate Support AI, #61 failed-payment workflow (billing provider is still mock), #11 Model DNA versioning (Advanced Mode itself is also not built), #20 score calibration against real outcomes.
+**Done**: Foundations (#1-7), Fan Memory/Intelligence (#14-19), Model DNA Simple mode (#8-9), AI orchestration core (#21-24, #26-27 partial), Script Engine (#32-34), Media/Pricing (#35-37), Full AI action validator + kill switch minus Global-scope UI (#42-46), MYM real adapter (#47-49, #50 half — MYM done, OnlyFans not), team/permissions (part of Foundations), billing entitlement + commission math with mock provider (#56-60 partial).
 
 | # | Requirement | Source Part(s) | Priority | Status |
 |---|---|---|---|---|
