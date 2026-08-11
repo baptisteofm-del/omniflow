@@ -6,16 +6,16 @@ Format per spec 47.155: Question / Why it matters / Blocking? / Recommended opti
 
 ### Q1 — OnlyFans authorized integration path
 - **Why it matters**: spec 19.110/47.110 requires confirming a legitimate, technically-verified integration method before building the real connector. No unofficial/scraping-style access is acceptable (spec 3.13, 19, 47.112).
-- **Blocking?**: Blocks Phase 14 only. Does **not** block Phases 1–13 (Mock Connector unblocks all core development).
-- **Recommended option**: research OnlyFans' official API/partner program status; if none exists, plan V1 pilot entirely on Mock Connector + manual/semi-manual workflow until access is confirmed.
+- **Research finding (2026-08-11, live web search)**: no public official OnlyFans API exists. The entire "OF agency CRM" market (Infloww, this product's own pre-rebuild codebase, and dedicated infrastructure providers like OFAuth/OnlyFansAPI.com/OFMAPI) runs on reverse-engineered session-token access — there is no other technical path found. **Separately, and more consequentially**: OnlyFans' 2026 policy explicitly prohibits autonomous AI from sending DMs (human-must-send + mandatory AI-disclosure labeling, ban penalty ladder for violations), per multiple independent third-party sources — not verified against OnlyFans' own primary ToS directly (egress-blocked from the build sandbox). This caps what Full AI can ever do on real OnlyFans conversations regardless of integration method: Copilot-only.
+- **Blocking?**: Owner overrode the spec's caution (2026-08-11): "n'écoute pas ma spec sur ce point là, on doit réussir à les connecter et c'est tout." Decision: connect via a third-party provider (OFAuth or OnlyFansAPI.com) rather than in-house reverse-engineering, Copilot-only (no autonomous Full AI sends) to respect the AI-sending policy finding above. Sequenced **after** MYM per owner's explicit choice.
 - **Owner**: Baptiste
-- **Status**: OPEN
+- **Status**: OVERRIDDEN — proceeding, MYM first. Owner should independently verify the AI-sending-ban finding against OnlyFans' current official Terms/Acceptable Use policy before Full AI (even attempted) touches a real OnlyFans account, and should set up an OFAuth/OnlyFansAPI.com account before that connector can be built.
 
 ### Q2 — MYM authorized integration path
-- Same shape as Q1, for MYM.
-- **Blocking?**: Blocks Phase 14 only.
+- Same shape as Q1. **Research finding**: no public MYM chat API found (only a limited accounting API for top creators); no MYM-specific policy restriction on AI-assisted/autonomous sending was found in research (absence of evidence, not confirmed permission).
+- **Blocking?**: Owner overrode the spec's caution (2026-08-11), same as Q1 — MYM goes first specifically because no usage restriction was found for it. Read-only connector (`0019_mym_real_connector.sql`, `src/lib/platforms/mymAdapter.ts`) built reusing the pre-rebuild codebase's already-working reverse-engineered MYM client. Real *sending* (Copilot/Full AI/human replies actually reaching MYM) is a deliberately separate, not-yet-started follow-up — see `BUILD_PROGRESS.md`.
 - **Owner**: Baptiste
-- **Status**: OPEN
+- **Status**: OVERRIDDEN — in progress. Owner should verify MYM's own terms regarding AI-assisted/autonomous messaging before Full AI is enabled on a real MYM conversation, since no explicit permission was found (only no explicit ban).
 
 ### Q3 — Final subscription prices
 - **Why it matters**: spec Part 1 gives "99€/mo Copilot, 199€/mo + 2.5% Full AI" as an explicit **starting point, not a locked final price** ("Les montants d'abonnement pourront être modifiés avant le lancement commercial... ils ne doivent donc pas être codés en dur").
