@@ -1,4 +1,4 @@
-import { FAN_FLOW_LABELS, type FanFlowStage } from '@/lib/fans/fanFlow'
+import { FAN_FLOW_LABELS, FAN_FLOW_BG_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 
 const STAGES: FanFlowStage[] = ['new', 'connaissance', 'pret', 'spender']
 
@@ -9,13 +9,6 @@ const STAGE_DESCRIPTIONS: Record<FanFlowStage, string> = {
   spender: 'A déjà dépensé — acheteur à fidéliser.',
 }
 
-const STAGE_COLORS: Record<FanFlowStage, string> = {
-  new: 'bg-white/15',
-  connaissance: 'bg-[color:var(--cyan)]',
-  pret: 'bg-[color:var(--violet)]',
-  spender: 'bg-[color:var(--success)]',
-}
-
 export function FanFlowBar({ stage, totalSpent }: { stage: FanFlowStage; totalSpent: number }) {
   const currentIndex = STAGES.indexOf(stage)
 
@@ -24,7 +17,7 @@ export function FanFlowBar({ stage, totalSpent }: { stage: FanFlowStage; totalSp
       <div className="mb-2 flex gap-1">
         {STAGES.map((s, i) => (
           <div key={s} className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-            {i <= currentIndex && <div className={`h-full w-full ${STAGE_COLORS[stage]}`} />}
+            {i <= currentIndex && <div className={`h-full w-full ${FAN_FLOW_BG_CLASSES[stage]}`} />}
           </div>
         ))}
       </div>
