@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertTriangle, Bell, MessageSquareWarning, PlugZap, ArrowRight, Sparkles } from 'lucide-react'
+import { AlertTriangle, Bell, MessageSquareWarning, PlugZap, ArrowRight, Sparkles, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { resolveRange } from '@/lib/analytics/dateRange'
-import { getRevenueMetrics, getCreatorComparison, getFanSegments } from '@/lib/analytics/metrics'
+import { getRevenueMetrics, getRevenueTimeSeries, getCreatorComparison, getFanSegments } from '@/lib/analytics/metrics'
+import { DASHBOARD_RANGE_LABELS, resolveDashboardRange, type DashboardRangeKey } from '@/lib/analytics/dashboardRange'
+import { RevenueChart } from '@/components/app/dashboard/RevenueChart'
 import { FAN_FLOW_LABELS, FAN_FLOW_BG_CLASSES } from '@/lib/fans/fanFlow'
 import { formatEuro, formatPercent, formatRelativeTime } from '@/lib/format'
 
@@ -12,9 +13,14 @@ import { formatEuro, formatPercent, formatRelativeTime } from '@/lib/format'
 // as a grid of link cards (that's what the previous version of this page
 // was, and the owner correctly flagged it as not earning its place). What
 // it adds instead: what needs a human right now, and how the agency is
-// doing this week, both computed from the same metric functions Analytics
+// doing right now, both computed from the same metric functions Analytics
 // uses (src/lib/analytics/metrics.ts) — never a second, drifting definition.
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; from?: string; to?: string }>
+}) {
+  const { range: rangeParam, from: fromParam, to: toParam } = await searchParams
   const supabase = await createClient()
   const {
     data: { user: authUser },
@@ -40,18 +46,21 @@ export default async function HomePage() {
   const role = membership?.roles as unknown as { name: string } | null
   const agencyId = (membership?.agency_id as string | undefined) ?? ''
 
-  const range = resolveRange('7d')
+  const { key: rangeKey, range, customFrom, customTo } = resolveDashboardRange(rangeParam, fromParam, toParam)
 
   const [
     revenue,
+    revenueSeries,
     topCreators,
     fanSegments,
     { data: convRows },
     { data: brokenConnections },
     { data: notifications },
     { data: platforms },
+    { count: activeScriptsCount },
   ] = await Promise.all([
     getRevenueMetrics(supabase, agencyId, range),
+    getRevenueTimeSeries(supabase, agencyId, range),
     getCreatorComparison(supabase, agencyId, range),
     getFanSegments(supabase, agencyId),
     supabase.from('conversations').select('id, platform_id, last_inbound_at, last_outbound_at'),
@@ -67,19 +76,20 @@ export default async function HomePage() {
       .order('created_at', { ascending: false })
       .limit(5),
     supabase.from('platforms').select('id, code'),
+    supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('status', 'active'),
   ])
 
   // Test/simulation conversations never count as "needs your attention" —
   // see src/lib/analytics/metrics.ts's getMockConversationIds for the same
   // rule applied to revenue.
   const mockPlatformId = (platforms ?? []).find((p) => p.code === 'MOCK')?.id
-  const awaitingReplyCount = (convRows ?? [])
-    .filter((c) => c.platform_id !== mockPlatformId)
-    .filter((c) => {
-      const lastInbound = c.last_inbound_at as string | null
-      const lastOutbound = c.last_outbound_at as string | null
-      return !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
-    }).length
+  const realConversations = (convRows ?? []).filter((c) => c.platform_id !== mockPlatformId)
+  const activeConversationsCount = realConversations.length
+  const awaitingReplyCount = realConversations.filter((c) => {
+    const lastInbound = c.last_inbound_at as string | null
+    const lastOutbound = c.last_outbound_at as string | null
+    return !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
+  }).length
 
   const connectionIssues = (brokenConnections ?? []).map((c) => {
     const creator = c.creators as unknown as { display_name: string } | null
@@ -155,8 +165,77 @@ export default async function HomePage() {
         )}
       </div>
 
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          <TrendingUp className="h-4 w-4 text-[color:var(--violet)]" />
+          <h2 className="text-sm font-semibold">Chiffre d&apos;affaires</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {(Object.keys(DASHBOARD_RANGE_LABELS) as DashboardRangeKey[])
+            .filter((key) => key !== 'custom')
+            .map((key) => (
+              <Link
+                key={key}
+                href={`/home?range=${key}`}
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  rangeKey === key
+                    ? 'border-[color:var(--border-strong)] bg-white/10'
+                    : 'border-[color:var(--border)] text-[color:var(--foreground-muted)]'
+                }`}
+              >
+                {DASHBOARD_RANGE_LABELS[key]}
+              </Link>
+            ))}
+          <details className="relative">
+            <summary
+              className={`cursor-pointer list-none rounded-full border px-3 py-1 text-xs ${
+                rangeKey === 'custom'
+                  ? 'border-[color:var(--border-strong)] bg-white/10'
+                  : 'border-[color:var(--border)] text-[color:var(--foreground-muted)]'
+              }`}
+            >
+              {rangeKey === 'custom' && customFrom && customTo ? `${customFrom} → ${customTo}` : 'Personnalisé'}
+            </summary>
+            <form
+              action="/home"
+              className="glass absolute right-0 top-8 z-10 flex flex-col gap-2 rounded-xl p-3"
+              style={{ width: 220 }}
+            >
+              <input type="hidden" name="range" value="custom" />
+              <label className="text-[10px] text-[color:var(--foreground-muted)]">
+                Du
+                <input
+                  type="date"
+                  name="from"
+                  defaultValue={customFrom}
+                  className="mt-0.5 w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+              </label>
+              <label className="text-[10px] text-[color:var(--foreground-muted)]">
+                Au
+                <input
+                  type="date"
+                  name="to"
+                  defaultValue={customTo}
+                  className="mt-0.5 w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+              </label>
+              <button type="submit" className="gradient-bg-signature rounded-lg py-1.5 text-xs font-medium text-white">
+                Appliquer
+              </button>
+            </form>
+          </details>
+        </div>
+      </div>
+
+      <div className="glass mb-8 rounded-2xl p-5">
+        <RevenueChart points={revenueSeries} />
+      </div>
+
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[color:var(--foreground-muted)]">Cette semaine</h2>
+        <h2 className="text-sm font-semibold text-[color:var(--foreground-muted)]">
+          Indicateurs — {DASHBOARD_RANGE_LABELS[rangeKey]}
+        </h2>
         <Link href="/analytics" className="text-xs text-[color:var(--cyan)] hover:underline">
           Voir tout l&apos;Analytics →
         </Link>
@@ -173,14 +252,14 @@ export default async function HomePage() {
           value={formatPercent(revenue.conversionRate)}
           sub={`${revenue.offersPurchasedCount}/${revenue.offersSentCount} offres`}
         />
-        <KpiCard label="Ventes" value={String(revenue.salesCount)} sub="7 derniers jours" />
+        <KpiCard label="Conversations actives" value={String(activeConversationsCount)} sub={`${activeScriptsCount ?? 0} script(s) actif(s)`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="glass rounded-2xl p-5">
-          <h2 className="mb-3 text-sm font-semibold">Top créatrices (7 jours)</h2>
+          <h2 className="mb-3 text-sm font-semibold">Top créatrices — {DASHBOARD_RANGE_LABELS[rangeKey]}</h2>
           {topCreators.every((c) => c.revenue === 0) ? (
-            <p className="text-xs text-[color:var(--foreground-muted)]">Aucune vente cette semaine.</p>
+            <p className="text-xs text-[color:var(--foreground-muted)]">Aucune vente sur cette période.</p>
           ) : (
             <div className="space-y-2">
               {topCreators.slice(0, 5).map((c) => (

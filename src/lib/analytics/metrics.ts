@@ -103,6 +103,76 @@ export async function getRevenueMetrics(supabase: AnySupabaseClient, agencyId: s
 }
 
 // ---------------------------------------------------------------------------
+// REVENUE TIME SERIES — backs the Dashboard's central chart. Buckets by hour
+// when the range spans a single day (Today/Yesterday), by day otherwise —
+// a single-point-per-day chart for "Aujourd'hui" would just be a dot.
+// ---------------------------------------------------------------------------
+export interface RevenuePoint {
+  bucketStart: string
+  label: string
+  revenue: number
+}
+
+export async function getRevenueTimeSeries(supabase: AnySupabaseClient, agencyId: string, range: DateRange): Promise<RevenuePoint[]> {
+  const mockConversationIds = await getMockConversationIds(supabase, agencyId)
+
+  const { data: purchaseRows } = await supabase
+    .from('messages')
+    .select('conversation_id, price_amount, sent_at')
+    .eq('agency_id', agencyId)
+    .eq('message_type', 'purchase_confirmation')
+    .gte('sent_at', range.from)
+    .lte('sent_at', range.to)
+    .order('sent_at', { ascending: true })
+
+  const purchases = (purchaseRows ?? []).filter((p: { conversation_id: string }) => !mockConversationIds.has(p.conversation_id))
+
+  const from = new Date(range.from)
+  const to = new Date(range.to)
+  const spanMs = to.getTime() - from.getTime()
+  const hourly = spanMs <= 26 * 60 * 60 * 1000 // ~1 day or less, with slack for "today"/"yesterday" edges
+
+  const bucketKey = (iso: string) => {
+    const d = new Date(iso)
+    if (hourly) {
+      d.setMinutes(0, 0, 0)
+    } else {
+      d.setHours(0, 0, 0, 0)
+    }
+    return d.toISOString()
+  }
+
+  const revenueByBucket = new Map<string, number>()
+  for (const p of purchases) {
+    const key = bucketKey(p.sent_at as string)
+    revenueByBucket.set(key, (revenueByBucket.get(key) ?? 0) + ((p.price_amount as number) ?? 0))
+  }
+
+  // Always emit every bucket in range, even at 0 — a flat line at 0 is
+  // honest; a chart that only plots the buckets with sales would look like
+  // it's missing data instead of showing "no sales that hour/day".
+  const points: RevenuePoint[] = []
+  const cursor = new Date(from)
+  if (hourly) cursor.setMinutes(0, 0, 0)
+  else cursor.setHours(0, 0, 0, 0)
+
+  while (cursor.getTime() <= to.getTime()) {
+    const key = cursor.toISOString()
+    points.push({
+      bucketStart: key,
+      label: hourly
+        ? cursor.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        : cursor.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+      revenue: revenueByBucket.get(key) ?? 0,
+    })
+    if (hourly) cursor.setHours(cursor.getHours() + 1)
+    else cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return points
+}
+
+// ---------------------------------------------------------------------------
 // CREATOR COMPARISON (spec 44.20-44.21)
 // ---------------------------------------------------------------------------
 export interface CreatorComparisonRow {
