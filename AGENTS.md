@@ -1,63 +1,66 @@
 # OmniFlow — Instructions pour les agents IA
 
-## Règles ABSOLUES
+## Contexte projet
+OmniFlow est un SaaS B2B pour les agences gérant des créatrices OnlyFans/MYM.
+Reconstruction complète pilotée par le cahier des charges en 48 parties dans
+`docs/specification/`. L'utilisateur est Baptiste, fondateur, non-technique.
 
-### 🚨 Ne jamais faire ça
-- Ne PAS marquer une tâche "✅ Complete" ou "Verified & Complete" si tu n'as fait AUCUNE modification de fichier
-- Ne PAS committer si tu n'as rien changé (git diff doit montrer des changements)
-- Ne PAS dire "c'est déjà correct" sans avoir vérifié visuellement le comportement
+Ce dépôt contient aussi l'ancienne version de l'app (avant reconstruction) au
+moment de la rédaction de ce fichier — elle a été retirée du dépôt le jour où
+ce fichier a été réécrit. Si du code, une route ou un composant semble ne
+correspondre à rien dans `docs/specification/`, ce n'est probablement pas
+censé exister : vérifier avant de s'appuyer dessus.
 
-### ✅ Toujours faire ça
-1. **Lire le fichier** avec `read` ou `exec cat` avant toute modification
-2. **Modifier réellement** avec `edit` ou `write`
-3. **Vérifier le diff** avec `git diff` avant de committer
-4. **TypeScript check** : `npx tsc --noEmit` avant commit
-5. **Committer** uniquement si git diff non vide
-6. **Pusher** sur `origin/clean-main`
-
----
+## Règles absolues
+- Ne jamais réutiliser, stocker ou committer un secret réel (clé API, clé de
+  chiffrement, token de session) collé dans la conversation.
+- Ne jamais modifier une partie du code sans lien avec la tâche en cours sans
+  le signaler d'abord.
+- Construire par petites étapes : livrer le code → donner le SQL exact à
+  appliquer → attendre un retour réel du propriétaire → corriger/avancer.
+- Tenir à jour `docs/implementation/BUILD_PROGRESS.md` et
+  `docs/implementation/TECH_DEBT.md` après chaque phase ou correctif.
+- La commission OmniFlow est fixée à 2.5% (verrouillée).
+- OnlyFans interdit l'envoi de DM Full AI autonome — seul le Copilot (assisté
+  humain) est autorisé sur cette plateforme.
 
 ## Stack technique
-- Next.js 14 (App Router)
-- TypeScript strict
-- Supabase (auth + DB)
-- Tailwind CSS
-- Framer Motion pour les animations
-- Lucide React pour les icônes
+- Next.js (App Router, Turbopack), React, TypeScript strict
+- Supabase (Auth + Postgres + RLS + Storage + Realtime)
+- Tailwind CSS v4
+- Vercel (Preview = staging sur la branche de travail ; Production = ancienne
+  app, ne pas y toucher sans consigne explicite)
 
 ## Conventions
-- Dark theme : bg principal `#080810` ou `#0c0b18`
-- Glass effect : classe `glass`
-- Gradient texte : classe `gradient-text`
-- Plans : `starter`, `pro`, `agency`
+- Design tokens dans `src/app/globals.css` : dégradé signature
+  violet/bleu/cyan, classes `.glass`, `.gradient-bg-signature`,
+  `.gradient-text`, `.glow`.
+- Toute requête métier doit être filtrée par `agency_id`, jamais fait
+  confiance à une valeur envoyée par le client — RLS via `is_agency_member()`
+  et `has_permission()` (`supabase/migrations/0001_foundation.sql`) côté DB,
+  et les mêmes vérifications côté code applicatif
+  (`src/lib/permissions/check.ts`).
 
 ## Structure des fichiers importants
 ```
 src/
   app/
     (marketing)/        → landing page publique
-      page.tsx          → home (Hero + Features + Demos + Pricing)
-    (dashboard)/        → espace membre connecté
-      content/veille/   → Veille Trends
-      telegram/         → Bot Telegram
-    api/                → routes API
-  components/
-    marketing/
-      demos/            → composants démos landing page
-      pricing/          → section pricing
-      hero/             → hero section
-    dashboard/
-      trends/           → TrendCard, TrendFilters
+    (auth)/              → login / register / join (invitation)
+    (app)/                → espace de travail connecté (créatrices, inbox,
+                             scripts, médias, analytics, paramètres)
   lib/
-    plans.ts            → définition plans + features
+    platforms/            → adaptateurs plateformes (MYM réel, etc.)
+    permissions/           → vérifications de permissions (RLS + code)
+    ai/                     → moteur IA (Copilot, Full AI, scoring)
+docs/
+  specification/           → cahier des charges source (48 parties)
+  implementation/           → suivi réel (BUILD_PROGRESS, TECH_DEBT,
+                              REQUIREMENTS_MATRIX)
 ```
 
-## Plans et features
-- **Starter (99€/mois)** : Dashboard Financier, Rapport Chatting, Édition & Spoof, Auto-Posting, Banque de Médias, Bot Telegram
-- **Pro (199€/mois)** : Starter + Veille Trends + Génération IA
-- **Agency (349€/mois)** : Tout inclus (+ Prospection de Modèles + Chatting IA)
-
-## Contexte projet
-OmniFlow est un SaaS B2B pour les agences OnlyFans.
-L'utilisateur est Baptiste, fondateur.
-Il veut du code fonctionnel et visible — pas des audits.
+## Git
+- Développer sur la branche de travail en cours, jamais directement sur
+  `main`/production sans consigne explicite.
+- Toujours lancer `npx tsc --noEmit -p tsconfig.json` et `npx next build`
+  avant de considérer une tâche terminée.
