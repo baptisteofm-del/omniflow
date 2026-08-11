@@ -13,6 +13,8 @@ export interface AdapterConversation {
   externalConversationId: string
   externalFanId: string
   fanDisplayName: string
+  fanAvatarUrl?: string | null
+  fanIsSubscriber?: boolean
   lastMessageAt: string | null
 }
 

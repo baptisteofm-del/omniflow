@@ -33,6 +33,8 @@ export const mymAdapter: PlatformAdapter<MYMCredentials> = {
       externalConversationId: c.id,
       externalFanId: c.userId,
       fanDisplayName: c.userName || 'Fan MYM',
+      fanAvatarUrl: c.avatar ?? null,
+      fanIsSubscriber: c.isSubscriber,
       lastMessageAt: c.lastMessageAt || null,
     }))
   },

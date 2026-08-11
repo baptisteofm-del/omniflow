@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { MessageSquare, Tag, Plus } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { MessageSquare, Tag, Plus, ArrowRight } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { NewConversationModal } from '@/components/app/inbox/NewConversationModal'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
@@ -13,6 +13,8 @@ export interface InboxRow {
   id: string
   fanId: string
   fanName: string
+  fanAvatarUrl: string | null
+  isSubscriber: boolean
   creatorName: string
   fanTags: string[]
   lastMessage: { text: string; sent_at: string } | null
@@ -42,6 +44,7 @@ export function InboxSidebar({
   creators: { id: string; display_name: string }[]
   currentUserId: string | null
 }) {
+  const router = useRouter()
   const pathname = usePathname()
   const selectedId = pathname?.startsWith('/inbox/') ? pathname.split('/')[2] : null
 
@@ -76,6 +79,19 @@ export function InboxSidebar({
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
+
+        {toReplyCount > 0 && !selectedId && (
+          <button
+            onClick={() => {
+              const first = rows.find((r) => r.awaitingReply)
+              if (first) router.push(`/inbox/${first.id}`)
+            }}
+            className="gradient-bg-signature flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium text-white shadow-[0_2px_12px_rgba(124,58,237,0.3)] transition-transform hover:scale-[1.02]"
+          >
+            Ouvrir la première à répondre
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        )}
 
         <div className="flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
@@ -148,7 +164,7 @@ export function InboxSidebar({
               }`}
             >
               {selectedId === r.id && <span className="gradient-bg-signature absolute inset-y-0 left-0 w-0.5" />}
-              <FanAvatar name={r.fanName} size={36} />
+              <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
                   <p className="truncate text-xs font-medium">{r.fanName}</p>
@@ -165,6 +181,11 @@ export function InboxSidebar({
                   <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${FAN_FLOW_BADGE_CLASSES[r.flowStage]}`}>
                     {FAN_FLOW_LABELS[r.flowStage]}
                   </span>
+                  {r.isSubscriber && (
+                    <span className="rounded-full bg-[color:var(--violet)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--violet)]">
+                      ABO
+                    </span>
+                  )}
                   {r.totalSpent > 0 && (
                     <span className="rounded-full bg-[color:var(--success)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--success)]">
                       {r.totalSpent}€

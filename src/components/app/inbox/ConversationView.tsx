@@ -125,7 +125,10 @@ export function ConversationView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="glass mb-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl p-5">
+      <div className="glass mb-4 min-h-0 flex-1 overflow-y-auto rounded-2xl p-5">
+        {/* Short conversations should anchor near the composer, like every
+            real chat app — not float at the top with dead space below. */}
+        <div className="flex min-h-full flex-col justify-end space-y-3">
         {initialMessages.length === 0 && (
           <p className="text-center text-sm text-[color:var(--foreground-muted)]">Aucun message pour l&apos;instant.</p>
         )}
@@ -161,6 +164,7 @@ export function ConversationView({
             </div>
           )
         })}
+        </div>
       </div>
 
       {isCopilot && pendingSuggestion && (

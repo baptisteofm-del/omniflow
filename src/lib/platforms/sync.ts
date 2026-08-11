@@ -90,6 +90,8 @@ export async function syncMymCreator(creatorId: string) {
             platform_id: mymPlatform.id,
             external_fan_id: remoteConv.externalFanId,
             display_name: remoteConv.fanDisplayName,
+            avatar_url: remoteConv.fanAvatarUrl ?? null,
+            is_subscriber: remoteConv.fanIsSubscriber ?? false,
           },
           { onConflict: 'creator_id,platform_id,external_fan_id' }
         )

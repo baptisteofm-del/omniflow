@@ -30,6 +30,7 @@ export interface MYMConversation {
   userId: string
   userName: string
   avatar?: string
+  isSubscriber: boolean
   lastMessage: string
   lastMessageAt: string
   unreadCount: number
@@ -157,6 +158,7 @@ export async function getConversations(
         userId: fanId,
         userName: row.user?.nickname || row.user?.username || '',
         avatar: row.user?.avatar_url || undefined,
+        isSubscriber: !!row.user?.is_subscriber,
         // The `last_message_opts=light` response doesn't include message
         // text, only its date/read state — getMessages() is the source of
         // truth for actual content.

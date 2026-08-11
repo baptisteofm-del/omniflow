@@ -17,27 +17,41 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
-  const { data: appUser } = authUser
-    ? await supabase.from('users').select('id').eq('auth_user_id', authUser.id).single()
-    : { data: null }
 
-  const { data: creators } = await supabase.from('creators').select('id, display_name').order('created_at')
-
-  const { data: conversations } = await supabase
-    .from('conversations')
-    .select(
-      'id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name)'
-    )
-    .order('last_message_at', { ascending: false, nullsFirst: false })
-
-  const { data: allTags } = await supabase.from('tags').select('id, name').order('name')
+  // Wave 1: nothing here depends on anything else — was 3+ sequential
+  // round-trips, now one.
+  const [{ data: appUser }, { data: creators }, { data: conversations }, { data: allTags }] = await Promise.all([
+    authUser ? supabase.from('users').select('id').eq('auth_user_id', authUser.id).single() : Promise.resolve({ data: null }),
+    supabase.from('creators').select('id, display_name').order('created_at'),
+    supabase
+      .from('conversations')
+      .select(
+        'id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name, avatar_url, is_subscriber)'
+      )
+      .order('last_message_at', { ascending: false, nullsFirst: false }),
+    supabase.from('tags').select('id, name').order('name'),
+  ])
 
   const fanIds = (conversations ?? []).map((c) => c.fan_id)
   const conversationIds = (conversations ?? []).map((c) => c.id)
+  const assignedUserIds = [...new Set((conversations ?? []).map((c) => c.assigned_user_id).filter(Boolean))] as string[]
 
-  const { data: fanTagRows } = fanIds.length
-    ? await supabase.from('fan_tags').select('fan_id, tags(name)').in('fan_id', fanIds)
-    : { data: [] }
+  // Wave 2: each only needs fanIds/conversationIds/assignedUserIds from
+  // wave 1, not each other's results.
+  const [{ data: fanTagRows }, { data: allMessages }, { data: scoresRows }, { data: assignedUsers }] = await Promise.all([
+    fanIds.length ? supabase.from('fan_tags').select('fan_id, tags(name)').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+    conversationIds.length
+      ? supabase
+          .from('messages')
+          .select('conversation_id, text, message_type, price_amount, sent_at')
+          .in('conversation_id', conversationIds)
+          .order('sent_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+    fanIds.length ? supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+    assignedUserIds.length
+      ? supabase.from('users').select('id, display_name, email').in('id', assignedUserIds)
+      : Promise.resolve({ data: [] }),
+  ])
 
   const tagsByFan = new Map<string, string[]>()
   for (const row of fanTagRows ?? []) {
@@ -47,14 +61,6 @@ export default async function InboxLayout({ children }: { children: React.ReactN
     list.push(name)
     tagsByFan.set(row.fan_id as string, list)
   }
-
-  const { data: allMessages } = conversationIds.length
-    ? await supabase
-        .from('messages')
-        .select('conversation_id, text, message_type, price_amount, sent_at')
-        .in('conversation_id', conversationIds)
-        .order('sent_at', { ascending: false })
-    : { data: [] }
 
   const lastMessageByConv = new Map<string, { text: string; sent_at: string }>()
   const messageCountByConv = new Map<string, number>()
@@ -73,15 +79,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
     }
   }
 
-  const { data: scoresRows } = fanIds.length
-    ? await supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds)
-    : { data: [] }
   const purchaseIntentByFan = new Map((scoresRows ?? []).map((s) => [s.fan_id as string, s.purchase_intent as number]))
-
-  const assignedUserIds = [...new Set((conversations ?? []).map((c) => c.assigned_user_id).filter(Boolean))] as string[]
-  const { data: assignedUsers } = assignedUserIds.length
-    ? await supabase.from('users').select('id, display_name, email').in('id', assignedUserIds)
-    : { data: [] }
   const userNameById = new Map((assignedUsers ?? []).map((u) => [u.id as string, (u.display_name as string) || (u.email as string)]))
 
   const rows: InboxRow[] = (conversations ?? []).map((c) => {
@@ -95,11 +93,13 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       purchaseIntent: purchaseIntentByFan.get(fanId) ?? null,
     })
     const creator = c.creators as unknown as { display_name: string } | null
-    const fan = c.fans as unknown as { display_name: string } | null
+    const fan = c.fans as unknown as { display_name: string; avatar_url: string | null; is_subscriber: boolean } | null
     return {
       id: c.id as string,
       fanId,
       fanName: fan?.display_name ?? 'Fan',
+      fanAvatarUrl: fan?.avatar_url ?? null,
+      isSubscriber: fan?.is_subscriber ?? false,
       creatorName: creator?.display_name ?? '',
       fanTags: tagsByFan.get(fanId) ?? [],
       lastMessage: lastMessageByConv.get(c.id) ?? null,
@@ -112,7 +112,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   })
 
   return (
-    <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[340px_1fr]">
+    <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[300px_1fr]">
       <InboxSidebar rows={rows} allTags={allTags ?? []} creators={creators ?? []} currentUserId={appUser?.id ?? null} />
       <div className="min-h-0 min-w-0">{children}</div>
     </div>
