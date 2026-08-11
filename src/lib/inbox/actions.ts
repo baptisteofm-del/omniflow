@@ -10,6 +10,7 @@ import { resolveScriptOffer, resumeScriptRunAfterFanReply } from '@/lib/scripts/
 import { runFullAiDecision } from '@/lib/ai/fullAi'
 import { recordTransactionAndCommission } from '@/lib/billing/ledger'
 import { deliverOutboundMessage } from '@/lib/platforms/deliver'
+import { requirePermission } from '@/lib/permissions/check'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -67,6 +68,8 @@ async function getAgencyAndUser() {
 export async function sendHumanMessage(conversationId: string, text: string) {
   const { supabase, agencyId, appUser } = await getAgencyAndUser()
   if (!text.trim()) return
+
+  await requirePermission(supabase, agencyId, 'inbox.send', "Votre rôle ne permet pas d'envoyer des messages")
 
   const delivery = await deliverOutboundMessage(supabase, conversationId, text.trim())
 

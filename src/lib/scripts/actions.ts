@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { advanceScriptRun } from '@/lib/scripts/engine'
 import { validatePrice } from '@/lib/pricing/validator'
+import { requirePermission } from '@/lib/permissions/check'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -75,6 +76,7 @@ async function rewireAlwaysEdges(supabase: SupabaseClient<any, any, any>, agency
 
 export async function createScript(formData: FormData) {
   const { supabase, appUser, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
 
   const name = String(formData.get('name') || '').trim()
   const description = String(formData.get('description') || '').trim()
@@ -121,6 +123,7 @@ export async function createScript(formData: FormData) {
 
 export async function addScriptNode(scriptId: string, formData: FormData) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
   const versionId = await getDraftVersionId(supabase, scriptId)
 
   const nodeType = String(formData.get('node_type') || 'message')
@@ -181,7 +184,8 @@ export async function addScriptNode(scriptId: string, formData: FormData) {
 }
 
 export async function updateScriptNode(scriptId: string, nodeId: string, formData: FormData) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
   await getDraftVersionId(supabase, scriptId)
 
   const { data: existing } = await supabase.from('script_nodes').select('node_type').eq('id', nodeId).single()
@@ -230,6 +234,7 @@ export async function updateScriptNode(scriptId: string, nodeId: string, formDat
 
 export async function deleteScriptNode(scriptId: string, nodeId: string) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
   const versionId = await getDraftVersionId(supabase, scriptId)
 
   await supabase.from('script_nodes').delete().eq('id', nodeId).eq('script_version_id', versionId)
@@ -239,6 +244,7 @@ export async function deleteScriptNode(scriptId: string, nodeId: string) {
 
 export async function setScriptBranch(scriptId: string, formData: FormData) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
   const versionId = await getDraftVersionId(supabase, scriptId)
 
   const nodeId = String(formData.get('node_id') || '')
@@ -277,6 +283,7 @@ export async function setScriptBranch(scriptId: string, formData: FormData) {
 
 export async function publishScript(scriptId: string) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
   const versionId = await getDraftVersionId(supabase, scriptId)
 
   // Validation du graphe (spec 13.38), minimal subset for this vertical slice.
@@ -304,6 +311,7 @@ export async function publishScript(scriptId: string) {
 
 export async function createNewDraftVersion(scriptId: string) {
   const { supabase, appUser, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'scripts.manage')
 
   const { data: latest } = await supabase
     .from('script_versions')

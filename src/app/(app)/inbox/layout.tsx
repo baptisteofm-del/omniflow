@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
 import { InboxSidebar, type InboxRow } from '@/components/app/inbox/InboxSidebar'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 // Master-detail layout (owner request: "je dois voir toute les conv sur la
 // colonne de gauche... au milieu la conv sélectionnée") — the conversation
@@ -12,20 +13,24 @@ import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 // list). Filtering itself is client-side (InboxSidebar) since Next.js
 // layouts don't receive searchParams as a prop.
 export default async function InboxLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
+  const { supabase, userId, allowed } = await checkPageAccess('inbox.view')
 
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
+  if (!allowed) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <AccessRestricted feature="l'Inbox" />
+      </div>
+    )
+  }
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
   // Wave 1: nothing here depends on anything else — was 3+ sequential
-  // round-trips, now one.
-  const [{ data: appUser }, { data: conversations }, { data: allTags }, { data: todaysTransactions }] =
+  // round-trips, now one. (appUser was already fetched above, for the
+  // permission check.)
+  const [{ data: conversations }, { data: allTags }, { data: todaysTransactions }] =
     await Promise.all([
-      authUser ? supabase.from('users').select('id').eq('auth_user_id', authUser.id).single() : Promise.resolve({ data: null }),
       supabase
         .from('conversations')
         .select(
@@ -130,7 +135,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   return (
     <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[300px_1fr]">
-      <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={appUser?.id ?? null} salesToday={salesToday} />
+      <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
       <div className="min-h-0 min-w-0">{children}</div>
     </div>
   )

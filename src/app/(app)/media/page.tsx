@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { Plus, ImageIcon, FolderPlus } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { MediaCard } from '@/components/app/media/MediaCard'
 import { createMediaFolder } from '@/lib/media/actions'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 export default async function MediaPage({ searchParams }: { searchParams: Promise<{ folder?: string }> }) {
   const { folder } = await searchParams
-  const supabase = await createClient()
+  const { supabase, allowed } = await checkPageAccess('media.manage')
+  if (!allowed) return <AccessRestricted feature="les Médias" />
 
   const { data: folders } = await supabase.from('media_folders').select('id, name').order('name', { ascending: true })
 

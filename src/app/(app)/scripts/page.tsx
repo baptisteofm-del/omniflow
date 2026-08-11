@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Plus, Workflow } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Brouillon',
@@ -10,7 +11,9 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export default async function ScriptsPage() {
-  const supabase = await createClient()
+  const { supabase, allowed } = await checkPageAccess('scripts.manage')
+  if (!allowed) return <AccessRestricted feature="les Scripts" />
+
   const { data: scripts } = await supabase
     .from('scripts')
     .select('id, name, description, status, creators(display_name)')

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/permissions/check'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -44,6 +45,7 @@ function mediaTypeFromMime(mime: string): 'image' | 'video' | 'audio' | null {
 // records the row once the bytes are already safely in the bucket.
 export async function createMediaAsset(input: { creator_id: string; storage_key: string; mime: string; title: string }) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'media.manage')
 
   if (!input.creator_id) throw new Error('Sélectionnez une créatrice')
   if (!input.storage_key.startsWith(`${agencyId}/`)) throw new Error('Chemin de stockage invalide')
@@ -73,7 +75,8 @@ export async function createMediaAsset(input: { creator_id: string; storage_key:
 // optional (empty = not priced yet), folder is optional, and a media can be
 // marked not-for-sale (free content) which clears any price.
 export async function updateMediaAsset(mediaId: string, formData: FormData) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'media.manage')
 
   const title = String(formData.get('title') || '').trim()
   const description = String(formData.get('description') || '').trim()

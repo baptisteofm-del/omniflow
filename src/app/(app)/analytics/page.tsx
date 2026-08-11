@@ -10,6 +10,8 @@ import {
   getFanSegments,
 } from '@/lib/analytics/metrics'
 import { FAN_FLOW_LABELS } from '@/lib/fans/fanFlow'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 function formatEuro(n: number) {
   return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}€`
@@ -23,6 +25,10 @@ function formatPercent(n: number | null) {
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const { range: rangeParam } = await searchParams
   const range = resolveRange(rangeParam)
+
+  const { allowed } = await checkPageAccess('analytics.view')
+  if (!allowed) return <AccessRestricted feature="Analytics" />
+
   const supabase = await createClient()
 
   const {

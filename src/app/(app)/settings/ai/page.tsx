@@ -1,6 +1,7 @@
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { AiSettingsPanel } from '@/components/app/settings/AiSettingsPanel'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 // Agency Settings — AI Control Center (spec Part 10): where an agency turns
 // Full AI on per creator, and where the Kill Switch (spec 10.29/4.29) lives —
@@ -8,7 +9,8 @@ import { AiSettingsPanel } from '@/components/app/settings/AiSettingsPanel'
 // (that level is internal-OmniFlow only); a global row is still surfaced
 // read-only if one ever exists, via the banner below.
 export default async function AiSettingsPage() {
-  const supabase = await createClient()
+  const { supabase, allowed } = await checkPageAccess('ai_settings.manage')
+  if (!allowed) return <AccessRestricted feature="les Paramètres IA" />
 
   const { data: creators } = await supabase
     .from('creators')

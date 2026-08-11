@@ -13,6 +13,7 @@ import {
 } from '@/lib/ai/tasks'
 import { levenshtein } from '@/lib/utils/levenshtein'
 import { deliverOutboundMessage } from '@/lib/platforms/deliver'
+import { requirePermission } from '@/lib/permissions/check'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -156,6 +157,8 @@ export async function sendCopilotSuggestion(conversationId: string, suggestionId
     .eq('id', suggestionId)
     .single()
   if (!suggestion) throw new Error('Suggestion introuvable')
+
+  await requirePermission(supabase, agencyId, 'inbox.send', "Votre rôle ne permet pas d'envoyer des messages")
 
   const delivery = await deliverOutboundMessage(supabase, conversationId, trimmed)
 
