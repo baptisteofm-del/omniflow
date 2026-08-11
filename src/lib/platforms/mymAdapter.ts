@@ -35,6 +35,8 @@ export const mymAdapter: PlatformAdapter<MYMCredentials> = {
       fanDisplayName: c.userName || 'Fan MYM',
       fanAvatarUrl: c.avatar ?? null,
       fanIsSubscriber: c.isSubscriber,
+      fanIsOnline: c.isOnline,
+      fanLastSeenAt: c.lastSeenAt,
       lastMessageAt: c.lastMessageAt || null,
     }))
   },

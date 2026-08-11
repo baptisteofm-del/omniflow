@@ -3,9 +3,8 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { MessageSquare, Tag, Plus, ArrowRight } from 'lucide-react'
+import { MessageSquare, Tag, ArrowRight } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
-import { NewConversationModal } from '@/components/app/inbox/NewConversationModal'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
 
@@ -15,6 +14,7 @@ export interface InboxRow {
   fanName: string
   fanAvatarUrl: string | null
   isSubscriber: boolean
+  isRecentlyOnline: boolean
   creatorName: string
   fanTags: string[]
   lastMessage: { text: string; sent_at: string } | null
@@ -36,13 +36,13 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 export function InboxSidebar({
   rows,
   allTags,
-  creators,
   currentUserId,
+  salesToday,
 }: {
   rows: InboxRow[]
   allTags: { id: string; name: string }[]
-  creators: { id: string; display_name: string }[]
   currentUserId: string | null
+  salesToday: number
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -50,7 +50,6 @@ export function InboxSidebar({
 
   const [filter, setFilter] = useState<FilterKey>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
-  const [showNewModal, setShowNewModal] = useState(false)
 
   const toReplyCount = useMemo(() => rows.filter((r) => r.awaitingReply).length, [rows])
 
@@ -69,16 +68,7 @@ export function InboxSidebar({
   return (
     <div className="glass flex h-full flex-col overflow-hidden rounded-2xl">
       <div className="shrink-0 space-y-3 border-b border-[color:var(--border)] p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-sm font-semibold">Inbox</h1>
-          <button
-            onClick={() => setShowNewModal(true)}
-            title="Nouvelle conversation de test"
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-[color:var(--border-strong)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <h1 className="text-sm font-semibold">Inbox</h1>
 
         {toReplyCount > 0 && !selectedId && (
           <button
@@ -164,7 +154,7 @@ export function InboxSidebar({
               }`}
             >
               {selectedId === r.id && <span className="gradient-bg-signature absolute inset-y-0 left-0 w-0.5" />}
-              <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} size={36} />
+              <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} online={r.isRecentlyOnline} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
                   <p className="truncate text-xs font-medium">{r.fanName}</p>
@@ -204,13 +194,9 @@ export function InboxSidebar({
       </div>
 
       <div className="flex shrink-0 items-center justify-between border-t border-[color:var(--border)] px-4 py-2 text-[10px] text-[color:var(--foreground-muted)]">
-        <span>{rows.length} conversation{rows.length !== 1 ? 's' : ''}</span>
-        <span>
-          <span className={toReplyCount > 0 ? 'text-[color:var(--danger)]' : ''}>{toReplyCount}</span> à répondre
-        </span>
+        <span className={salesToday > 0 ? 'text-[color:var(--success)]' : ''}>{salesToday}€ aujourd&apos;hui</span>
+        <span>{rows.length} conv. · <span className={toReplyCount > 0 ? 'text-[color:var(--danger)]' : ''}>{toReplyCount}</span> à répondre</span>
       </div>
-
-      {showNewModal && <NewConversationModal creators={creators} onClose={() => setShowNewModal(false)} />}
     </div>
   )
 }

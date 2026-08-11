@@ -15,6 +15,8 @@ export interface AdapterConversation {
   fanDisplayName: string
   fanAvatarUrl?: string | null
   fanIsSubscriber?: boolean
+  fanIsOnline?: boolean
+  fanLastSeenAt?: string | null
   lastMessageAt: string | null
 }
 

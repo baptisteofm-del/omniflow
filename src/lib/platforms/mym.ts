@@ -31,6 +31,8 @@ export interface MYMConversation {
   userName: string
   avatar?: string
   isSubscriber: boolean
+  isOnline: boolean
+  lastSeenAt: string | null
   lastMessage: string
   lastMessageAt: string
   unreadCount: number
@@ -159,6 +161,8 @@ export async function getConversations(
         userName: row.user?.nickname || row.user?.username || '',
         avatar: row.user?.avatar_url || undefined,
         isSubscriber: !!row.user?.is_subscriber,
+        isOnline: !!row.user?.is_online,
+        lastSeenAt: row.user?.last_seen_at || null,
         // The `last_message_opts=light` response doesn't include message
         // text, only its date/read state — getMessages() is the source of
         // truth for actual content.

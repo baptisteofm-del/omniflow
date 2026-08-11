@@ -18,19 +18,25 @@ export default async function InboxLayout({ children }: { children: React.ReactN
     data: { user: authUser },
   } = await supabase.auth.getUser()
 
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
   // Wave 1: nothing here depends on anything else — was 3+ sequential
   // round-trips, now one.
-  const [{ data: appUser }, { data: creators }, { data: conversations }, { data: allTags }] = await Promise.all([
-    authUser ? supabase.from('users').select('id').eq('auth_user_id', authUser.id).single() : Promise.resolve({ data: null }),
-    supabase.from('creators').select('id, display_name').order('created_at'),
-    supabase
-      .from('conversations')
-      .select(
-        'id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name, avatar_url, is_subscriber)'
-      )
-      .order('last_message_at', { ascending: false, nullsFirst: false }),
-    supabase.from('tags').select('id, name').order('name'),
-  ])
+  const [{ data: appUser }, { data: conversations }, { data: allTags }, { data: todaysTransactions }] =
+    await Promise.all([
+      authUser ? supabase.from('users').select('id').eq('auth_user_id', authUser.id).single() : Promise.resolve({ data: null }),
+      supabase
+        .from('conversations')
+        .select(
+          'id, ai_mode, fan_id, assigned_user_id, last_message_at, last_inbound_at, last_outbound_at, creators(display_name), fans(display_name, avatar_url, is_subscriber, last_seen_at)'
+        )
+        .order('last_message_at', { ascending: false, nullsFirst: false }),
+      supabase.from('tags').select('id, name').order('name'),
+      supabase.from('transactions').select('gross_amount').eq('status', 'confirmed').gte('occurred_at', todayStart.toISOString()),
+    ])
+
+  const salesToday = (todaysTransactions ?? []).reduce((sum, t) => sum + (t.gross_amount as number), 0)
 
   const fanIds = (conversations ?? []).map((c) => c.fan_id)
   const conversationIds = (conversations ?? []).map((c) => c.id)
@@ -93,13 +99,24 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       purchaseIntent: purchaseIntentByFan.get(fanId) ?? null,
     })
     const creator = c.creators as unknown as { display_name: string } | null
-    const fan = c.fans as unknown as { display_name: string; avatar_url: string | null; is_subscriber: boolean } | null
+    const fan = c.fans as unknown as {
+      display_name: string
+      avatar_url: string | null
+      is_subscriber: boolean
+      last_seen_at: string | null
+    } | null
+    // "Recently online" is derived from last_seen_at at render time, not
+    // from MYM's own is_online flag — that flag is only as fresh as our
+    // last manual sync, while last_seen_at stays accurate regardless of
+    // when we last synced (see 0023_fan_presence.sql).
+    const isRecentlyOnline = !!fan?.last_seen_at && Date.now() - new Date(fan.last_seen_at).getTime() < 15 * 60 * 1000
     return {
       id: c.id as string,
       fanId,
       fanName: fan?.display_name ?? 'Fan',
       fanAvatarUrl: fan?.avatar_url ?? null,
       isSubscriber: fan?.is_subscriber ?? false,
+      isRecentlyOnline,
       creatorName: creator?.display_name ?? '',
       fanTags: tagsByFan.get(fanId) ?? [],
       lastMessage: lastMessageByConv.get(c.id) ?? null,
@@ -113,7 +130,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   return (
     <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[300px_1fr]">
-      <InboxSidebar rows={rows} allTags={allTags ?? []} creators={creators ?? []} currentUserId={appUser?.id ?? null} />
+      <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={appUser?.id ?? null} salesToday={salesToday} />
       <div className="min-h-0 min-w-0">{children}</div>
     </div>
   )

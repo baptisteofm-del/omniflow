@@ -63,51 +63,6 @@ async function getAgencyAndUser() {
   return { supabase, appUser, agencyId: membership.agency_id as string }
 }
 
-export async function startMockConversation(formData: FormData) {
-  const { supabase, agencyId } = await getAgencyAndUser()
-
-  const creatorId = String(formData.get('creator_id') || '')
-  const fanName = String(formData.get('fan_name') || '').trim()
-  if (!creatorId) throw new Error('Sélectionnez une créatrice')
-  if (!fanName) throw new Error('Le nom du fan est requis')
-
-  const { data: mockPlatform, error: platformError } = await supabase
-    .from('platforms')
-    .select('id')
-    .eq('code', 'MOCK')
-    .single()
-  if (platformError || !mockPlatform) throw new Error('Plateforme Mock introuvable')
-
-  await supabase
-    .from('platform_connections')
-    .upsert(
-      { agency_id: agencyId, creator_id: creatorId, platform_id: mockPlatform.id, status: 'connected' },
-      { onConflict: 'creator_id,platform_id' }
-    )
-
-  const { data: fan, error: fanError } = await supabase
-    .from('fans')
-    .insert({ agency_id: agencyId, creator_id: creatorId, platform_id: mockPlatform.id, display_name: fanName })
-    .select('id')
-    .single()
-  if (fanError || !fan) throw new Error(fanError?.message || 'Échec de la création du fan')
-
-  const { data: conversation, error: convError } = await supabase
-    .from('conversations')
-    .insert({
-      agency_id: agencyId,
-      creator_id: creatorId,
-      fan_id: fan.id,
-      platform_id: mockPlatform.id,
-      ai_mode: 'human_takeover',
-    })
-    .select('id')
-    .single()
-  if (convError || !conversation) throw new Error(convError?.message || 'Échec de la création de la conversation')
-
-  redirect(`/inbox/${conversation.id}`)
-}
-
 export async function sendHumanMessage(conversationId: string, text: string) {
   const { supabase, agencyId, appUser } = await getAgencyAndUser()
   if (!text.trim()) return

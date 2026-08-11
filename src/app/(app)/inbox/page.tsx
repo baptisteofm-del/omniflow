@@ -11,7 +11,7 @@ export default function InboxEmptyState() {
       </div>
       <h2 className="gradient-text text-lg font-semibold">Sélectionnez une conversation</h2>
       <p className="mt-1.5 max-w-sm text-sm text-[color:var(--foreground-muted)]">
-        Choisissez une conversation à gauche, ou démarrez-en une nouvelle avec le bouton + en haut de la liste.
+        Choisissez une conversation dans la liste à gauche.
       </p>
     </div>
   )
