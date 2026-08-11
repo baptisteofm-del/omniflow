@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ConversationView } from '@/components/app/inbox/ConversationView'
-import { FanIntelligencePanel } from '@/components/app/inbox/FanIntelligencePanel'
-import { FanProfileCard } from '@/components/app/inbox/FanProfileCard'
+import { FanPanel } from '@/components/app/inbox/FanPanel'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
 import { ScriptRunPanel } from '@/components/app/inbox/ScriptRunPanel'
 import { checkDueScriptRuns } from '@/lib/scripts/engine'
@@ -192,19 +191,16 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         />
         <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <ScriptRunPanel conversationId={id} activeRun={activeRun} availableScripts={availableScripts} />
-          <FanIntelligencePanel
-            conversationId={id}
-            fanId={fanId}
-            memories={memories ?? []}
-            scores={scores ?? null}
-          />
           {fan && (
-            <FanProfileCard
+            <FanPanel
               conversationId={id}
+              fanId={fanId}
               fan={fan}
               flowStage={flowStage}
               totalSpent={totalSpent}
               purchaseCount={purchaseCount}
+              memories={memories ?? []}
+              scores={scores ?? null}
               notes={notes ?? []}
               tags={tags}
             />
