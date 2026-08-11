@@ -43,9 +43,10 @@ export default async function IntegrationsPage() {
       <div className="glass mb-6 flex items-start gap-3 rounded-2xl p-5 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--cyan)]" />
         <p className="text-[color:var(--foreground-muted)]">
-          MYM n&apos;a pas d&apos;API officielle publique — cette connexion utilise le token de session de la créatrice. Pour
-          l&apos;instant, seule la <span className="text-[color:var(--foreground)]">lecture</span> des conversations/messages
-          réels est branchée ; l&apos;envoi automatique (Copilot, Full AI) reste une étape séparée à venir.
+          MYM n&apos;a pas d&apos;API officielle publique — cette connexion se fait avec l&apos;email et le mot de passe MYM de
+          la créatrice, chiffrés dès leur enregistrement. Pour l&apos;instant, seule la{' '}
+          <span className="text-[color:var(--foreground)]">lecture</span> des conversations/messages réels est branchée ;
+          l&apos;envoi automatique (Copilot, Full AI) reste une étape séparée à venir.
         </p>
       </div>
 

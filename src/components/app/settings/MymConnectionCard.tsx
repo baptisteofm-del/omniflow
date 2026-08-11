@@ -88,7 +88,7 @@ export function MymConnectionCard({ creatorId, creatorName, status, lastError, l
 
       {status === 'connected' && !showForm ? (
         <button onClick={() => setShowForm(true)} className="text-[10px] text-[color:var(--foreground-muted)] underline">
-          Remplacer le token
+          Remplacer les identifiants
         </button>
       ) : (
         <form
@@ -100,19 +100,28 @@ export function MymConnectionCard({ creatorId, creatorName, status, lastError, l
               setShowForm(false)
             })
           }}
-          className="flex gap-2"
+          className="space-y-2"
         >
-          <input
-            name="bearer_token"
-            type="password"
-            required
-            placeholder="Bearer token MYM"
-            className="flex-1 rounded-lg border border-[color:var(--border)] bg-white/5 px-3 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-          />
+          <div className="flex gap-2">
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="Email MYM de la créatrice"
+              className="flex-1 rounded-lg border border-[color:var(--border)] bg-white/5 px-3 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+            />
+            <input
+              name="password"
+              type="password"
+              required
+              placeholder="Mot de passe MYM"
+              className="flex-1 rounded-lg border border-[color:var(--border)] bg-white/5 px-3 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+            />
+          </div>
           <button
             type="submit"
             disabled={isPending}
-            className="gradient-bg-signature rounded-lg px-4 py-1.5 text-xs text-white disabled:opacity-50"
+            className="gradient-bg-signature flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs text-white disabled:opacity-50"
           >
             {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Connecter'}
           </button>
