@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -12,6 +12,7 @@ import {
   discardCopilotSuggestion,
 } from '@/lib/copilot/actions'
 import type { QuickAction } from '@/lib/ai/tasks'
+import { playNotificationSound } from '@/lib/utils/notificationSound'
 
 interface Message {
   id: string
@@ -54,6 +55,17 @@ export function ConversationView({
   const isCopilot = aiMode === 'copilot'
   const isFullAi = aiMode === 'full_ai'
 
+  // Only newly-arrived messages get the entrance animation — not the whole
+  // history on first open. null on first render means "don't know yet,
+  // animate nothing"; populated after that render commits.
+  const prevMessageIdsRef = useRef<Set<string> | null>(null)
+  const currentMessageIds = new Set(initialMessages.map((m) => m.id))
+  const isNewMessage = (id: string) => prevMessageIdsRef.current !== null && !prevMessageIdsRef.current.has(id)
+  useEffect(() => {
+    prevMessageIdsRef.current = currentMessageIds
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessages])
+
   useEffect(() => {
     if (pendingSuggestion) setReply(pendingSuggestion.suggested_text)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,7 +96,10 @@ export function ConversationView({
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-          () => router.refresh()
+          (payload) => {
+            if ((payload.new as { direction?: string } | undefined)?.direction === 'inbound') playNotificationSound()
+            router.refresh()
+          }
         )
         .on(
           'postgres_changes',
@@ -109,15 +124,16 @@ export function ConversationView({
   }
 
   return (
-    <div>
-      <div className="glass mb-4 max-h-[50vh] space-y-3 overflow-y-auto rounded-2xl p-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="glass mb-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl p-5">
         {initialMessages.length === 0 && (
           <p className="text-center text-sm text-[color:var(--foreground-muted)]">Aucun message pour l&apos;instant.</p>
         )}
         {initialMessages.map((m) => {
+          const animClass = isNewMessage(m.id) ? 'message-in' : ''
           if (m.message_type === 'purchase_confirmation') {
             return (
-              <div key={m.id} className="flex justify-center">
+              <div key={m.id} className={`flex justify-center ${animClass}`}>
                 <span className="rounded-full border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 px-3 py-1 text-xs text-[color:var(--success)]">
                   {m.text} {m.price_amount ? `— ${m.price_amount}€` : ''}
                 </span>
@@ -126,10 +142,12 @@ export function ConversationView({
           }
           const isOutbound = m.direction === 'outbound'
           return (
-            <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+            <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} ${animClass}`}>
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-                  isOutbound ? 'gradient-bg-signature rounded-br-sm text-white' : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
+                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm transition-shadow ${
+                  isOutbound
+                    ? 'gradient-bg-signature rounded-br-sm text-white shadow-[0_4px_20px_rgba(124,58,237,0.25)]'
+                    : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
                 }`}
               >
                 {m.is_paid && m.price_amount && (
@@ -146,7 +164,7 @@ export function ConversationView({
       </div>
 
       {isCopilot && pendingSuggestion && (
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">
           <span className="flex items-center gap-1 text-[10px] text-[color:var(--foreground-muted)]">
             <Sparkles className="h-3 w-3" />
             Suggestion IA
@@ -189,7 +207,7 @@ export function ConversationView({
       )}
 
       {isFullAi ? (
-        <div className="glass mb-2 flex items-center gap-2 rounded-xl px-4 py-3 text-xs text-[color:var(--foreground-muted)]">
+        <div className="glass mb-2 flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-xs text-[color:var(--foreground-muted)]">
           <Bot className="h-4 w-4 shrink-0" />
           Mode Full AI actif — l&apos;IA répond automatiquement. Utilisez « Prendre le contrôle » en haut pour écrire vous-même.
         </div>
@@ -206,18 +224,18 @@ export function ConversationView({
               runAction(() => sendHumanMessage(conversationId, text))
             }
           }}
-          className="mb-2 flex gap-2"
+          className="mb-2 flex shrink-0 gap-2"
         >
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Écrire une réponse..."
-            className="flex-1 rounded-xl border border-[color:var(--border)] bg-white/5 px-4 py-2.5 text-sm focus:border-[color:var(--border-strong)] focus:outline-none"
+            className="flex-1 rounded-xl border border-[color:var(--border)] bg-white/5 px-4 py-2.5 text-sm transition-colors focus:border-[color:var(--violet)] focus:outline-none"
           />
           <button
             type="submit"
             disabled={isPending}
-            className="gradient-bg-signature flex items-center justify-center rounded-xl px-4 disabled:opacity-50"
+            className="gradient-bg-signature flex items-center justify-center rounded-xl px-4 shadow-[0_4px_16px_rgba(124,58,237,0.3)] transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -229,7 +247,7 @@ export function ConversationView({
           type="button"
           disabled={isPending}
           onClick={() => runAction(() => generateCopilotSuggestion(conversationId))}
-          className="mb-4 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+          className="mb-4 flex shrink-0 items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
         >
           {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
           Générer une suggestion
@@ -238,14 +256,14 @@ export function ConversationView({
 
       <button
         onClick={() => setShowMockPanel((v) => !v)}
-        className="mb-2 mt-2 flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+        className="mb-2 mt-2 flex shrink-0 items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
       >
         <FlaskConical className="h-3.5 w-3.5" />
         Outils de test (MOCK)
       </button>
 
       {showMockPanel && (
-        <div className="glass space-y-3 rounded-2xl p-4">
+        <div className="glass shrink-0 space-y-3 rounded-2xl p-4">
           <div className="flex gap-2">
             <input
               value={fanDraft}

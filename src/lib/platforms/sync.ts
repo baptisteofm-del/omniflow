@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { mymAdapter } from '@/lib/platforms/mymAdapter'
 import { getMymCredentialsForCreator } from '@/lib/platforms/credentialsActions'
+import { analyzeConversationWithAI } from '@/lib/ai/actions'
 
 // A full sync (list + per-conversation messages, all serial network calls
 // to styx.mym.fans) can run well past Vercel's default Server Action
@@ -62,6 +64,12 @@ export async function syncMymCreator(creatorId: string) {
 
   let conversationsSynced = 0
   let messagesSynced = 0
+  // Fan Intelligence (fan_scores/fan_memories) only ever auto-runs from the
+  // Mock-conversation send paths (src/lib/inbox/actions.ts) — a synced MYM
+  // conversation never triggered it, so real fans never got scored/analyzed.
+  // Track which conversations actually received a new message this sync and
+  // schedule analysis for exactly those, once, at the end.
+  const touchedConversationIds = new Set<string>()
 
   try {
     await setProgress({ sync_status: 'syncing', sync_total: null, sync_done: 0, sync_current_label: null })
@@ -132,7 +140,10 @@ export async function syncMymCreator(creatorId: string) {
           external_message_id: remoteMessage.externalMessageId,
           sent_at: remoteMessage.sentAt,
         })
-        if (!msgError) messagesSynced += 1
+        if (!msgError) {
+          messagesSynced += 1
+          touchedConversationIds.add(conversation.id as string)
+        }
       }
 
       processed += 1
@@ -147,6 +158,24 @@ export async function syncMymCreator(creatorId: string) {
   } catch (err) {
     await setProgress({ sync_status: 'error' })
     throw err
+  }
+
+  // Non-blocking — the sync's own response returns immediately, analysis
+  // continues in the background (same after() pattern as inbox/actions.ts).
+  // Note: a large first-time backfill can touch many conversations at once,
+  // which means many sequential AI calls here — no budget cap yet, same
+  // accepted gap already flagged for Copilot/Full AI in TECH_DEBT.md.
+  if (touchedConversationIds.size > 0) {
+    const ids = [...touchedConversationIds]
+    after(async () => {
+      for (const convId of ids) {
+        try {
+          await analyzeConversationWithAI(convId)
+        } catch (err) {
+          console.error(`[fan-intelligence] analysis failed for synced conversation ${convId}:`, err)
+        }
+      }
+    })
   }
 
   revalidatePath('/inbox')

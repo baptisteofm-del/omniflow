@@ -1,6 +1,4 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanPanel } from '@/components/app/inbox/FanPanel'
@@ -163,13 +161,8 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <Link href="/inbox" className="mb-6 inline-flex items-center gap-1.5 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
-        <ArrowLeft className="h-4 w-4" />
-        Inbox
-      </Link>
-
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">{fan?.display_name ?? 'Fan'}</h1>
           <p className="text-sm text-[color:var(--foreground-muted)]">{creator?.display_name}</p>
@@ -182,14 +175,16 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <ConversationView
-          conversationId={id}
-          initialMessages={messages ?? []}
-          aiMode={conversation.ai_mode}
-          pendingSuggestion={pendingSuggestion ?? null}
-        />
-        <div className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="min-h-0">
+          <ConversationView
+            conversationId={id}
+            initialMessages={messages ?? []}
+            aiMode={conversation.ai_mode}
+            pendingSuggestion={pendingSuggestion ?? null}
+          />
+        </div>
+        <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
           <ScriptRunPanel conversationId={id} activeRun={activeRun} availableScripts={availableScripts} />
           {fan && (
             <FanPanel
