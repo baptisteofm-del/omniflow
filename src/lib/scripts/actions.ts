@@ -373,6 +373,10 @@ export async function createNewDraftVersion(scriptId: string) {
 
 export async function startScriptRun(conversationId: string, scriptId: string) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  // Launching a script on a conversation is a chatter-level action (same
+  // permission as sending a message), not script *authoring* — a Chatter
+  // should be able to run an already-built script without scripts.manage.
+  await requirePermission(supabase, agencyId, 'inbox.send')
 
   const { data: existingActive } = await supabase
     .from('script_runs')
@@ -428,7 +432,8 @@ export async function startScriptRun(conversationId: string, scriptId: string) {
 }
 
 export async function stopScriptRun(conversationId: string, runId: string) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'inbox.send')
 
   const { error } = await supabase
     .from('script_runs')

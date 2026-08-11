@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/permissions/check'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -34,7 +35,8 @@ async function getAgencyAndUser() {
 // this on per creator before any conversation for that creator can even be
 // switched to full_ai mode (checked again in setConversationAiMode).
 export async function setCreatorFullAiEnabled(creatorId: string, enabled: boolean) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'ai_settings.manage')
 
   const { error } = await supabase
     .from('creator_commercial_settings')
@@ -47,6 +49,7 @@ export async function setCreatorFullAiEnabled(creatorId: string, enabled: boolea
 
 export async function createKillSwitch(formData: FormData) {
   const { supabase, agencyId, appUser } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'ai_settings.manage')
 
   const scope = String(formData.get('scope') || '')
   const creatorId = String(formData.get('creator_id') || '') || null
@@ -71,7 +74,8 @@ export async function createKillSwitch(formData: FormData) {
 }
 
 export async function deleteKillSwitch(id: string) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'ai_settings.manage')
 
   const { error } = await supabase.from('ai_kill_switches').delete().eq('id', id)
   if (error) throw new Error(error.message)

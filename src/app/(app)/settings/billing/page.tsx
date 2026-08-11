@@ -1,6 +1,8 @@
 import { CreditCard, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { PlanSwitcher } from '@/components/app/settings/PlanSwitcher'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 function formatEuro(n: number) {
   return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€`
@@ -11,6 +13,9 @@ function formatEuro(n: number) {
 // Mock billing provider (spec 22.61) — agencies.billing_provider stays
 // 'mock' here; no real payment is processed.
 export default async function BillingPage() {
+  const { allowed } = await checkPageAccess('billing.view')
+  if (!allowed) return <AccessRestricted feature="la Facturation" />
+
   const supabase = await createClient()
 
   const {

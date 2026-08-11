@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/permissions/check'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -37,6 +38,7 @@ async function getAgencyAndUser() {
 // the mock call site later without touching the entitlement model itself.
 export async function changePlan(planId: 'copilot' | 'full_ai') {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'billing.manage')
   if (!['copilot', 'full_ai'].includes(planId)) throw new Error('Offre invalide')
 
   const { error } = await supabase

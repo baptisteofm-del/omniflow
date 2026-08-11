@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { encrypt, decrypt } from '@/lib/crypto/encrypt'
 import { mymAdapter } from '@/lib/platforms/mymAdapter'
 import { loginAndGetToken, type MYMCredentials } from '@/lib/platforms/mym'
+import { requirePermission } from '@/lib/permissions/check'
 
 // What's actually stored: email/password, not a raw session token. MYM
 // session tokens expire; storing the login instead lets every sync/send
@@ -72,6 +73,7 @@ async function getOrCreateMymConnection(supabase: Awaited<ReturnType<typeof crea
 // production) and only ever decrypted server-side inside a Server Action.
 export async function connectMymCreator(creatorId: string, formData: FormData) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'creator.manage')
 
   const email = String(formData.get('email') || '').trim()
   const password = String(formData.get('password') || '')
@@ -117,7 +119,8 @@ export async function connectMymCreator(creatorId: string, formData: FormData) {
 }
 
 export async function disconnectMymCreator(creatorId: string) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'creator.manage')
 
   const { data: mymPlatform } = await supabase.from('platforms').select('id').eq('code', 'MYM').single()
   if (!mymPlatform) return

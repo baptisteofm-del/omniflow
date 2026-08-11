@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/permissions/check'
 
 export async function createCreator(formData: FormData) {
   const supabase = await createClient()
@@ -38,6 +39,7 @@ export async function createCreator(formData: FormData) {
   }
 
   const agencyId = membership.agency_id as string
+  await requirePermission(supabase, agencyId, 'creator.manage')
 
   const displayName = String(formData.get('display_name') || '').trim()
   const defaultLanguage = String(formData.get('default_language') || 'fr')
@@ -115,7 +117,8 @@ async function getAgencyAndUser() {
 }
 
 export async function updateCreator(creatorId: string, formData: FormData) {
-  const { supabase } = await getAgencyAndUser()
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'creator.manage')
 
   const displayName = String(formData.get('display_name') || '').trim()
   if (!displayName) throw new Error('Le nom de la créatrice est requis')
@@ -148,6 +151,7 @@ export async function updateCreator(creatorId: string, formData: FormData) {
 // (0021_creator_avatars.sql), this only persists the resulting public URL.
 export async function updateCreatorAvatar(creatorId: string, avatarUrl: string) {
   const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'creator.manage')
 
   // The upload itself already went through the bucket's agency-scoped RLS
   // policy (0021_creator_avatars.sql) — this is a sanity check, not the

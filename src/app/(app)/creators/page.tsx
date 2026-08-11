@@ -1,9 +1,12 @@
 import Link from 'next/link'
 import { Plus, UserRound } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 export default async function CreatorsPage() {
-  const supabase = await createClient()
+  const { supabase, allowed } = await checkPageAccess('creator.view')
+  if (!allowed) return <AccessRestricted feature="les Créatrices" />
+
   const { data: creators } = await supabase
     .from('creators')
     .select('id, display_name, status, default_language, avatar_url, created_at')

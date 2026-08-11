@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { CreatorAvatarUpload } from '@/components/app/creators/CreatorAvatarUpload'
 import { CreatorIdentityForm } from '@/components/app/creators/CreatorIdentityForm'
 import { MymConnectionCard } from '@/components/app/settings/MymConnectionCard'
+import { checkPageAccess } from '@/lib/permissions/check'
+import { AccessRestricted } from '@/components/app/AccessRestricted'
 
 // See settings/integrations/page.tsx — same reason (syncMymCreator can run
 // long for a large account).
@@ -12,6 +14,9 @@ export const maxDuration = 300
 
 export default async function CreatorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const { allowed } = await checkPageAccess('creator.view')
+  if (!allowed) return <AccessRestricted feature="cette créatrice" />
+
   const supabase = await createClient()
 
   const { data: creator } = await supabase
