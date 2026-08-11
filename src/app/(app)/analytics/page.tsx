@@ -12,15 +12,7 @@ import {
 import { FAN_FLOW_LABELS } from '@/lib/fans/fanFlow'
 import { checkPageAccess } from '@/lib/permissions/check'
 import { AccessRestricted } from '@/components/app/AccessRestricted'
-
-function formatEuro(n: number) {
-  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}€`
-}
-
-function formatPercent(n: number | null) {
-  if (n === null) return '—'
-  return `${Math.round(n * 100)}%`
-}
+import { formatEuro, formatPercent } from '@/lib/format'
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const { range: rangeParam } = await searchParams

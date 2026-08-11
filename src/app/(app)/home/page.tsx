@@ -1,29 +1,36 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { AlertTriangle, Bell, MessageSquareWarning, PlugZap, ArrowRight, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { CheckCircle2, Construction, ArrowRight } from 'lucide-react'
+import { resolveRange } from '@/lib/analytics/dateRange'
+import { getRevenueMetrics, getCreatorComparison, getFanSegments } from '@/lib/analytics/metrics'
+import { FAN_FLOW_LABELS, FAN_FLOW_BG_CLASSES } from '@/lib/fans/fanFlow'
+import { formatEuro, formatPercent, formatRelativeTime } from '@/lib/format'
 
-const UPCOMING = ['Fans', 'Relances', 'Équipe', 'Intégrations', 'Facturation']
-
+// The Dashboard's job is signal, not navigation — every other tool is
+// already one click away in the Sidebar, so this page doesn't repeat that
+// as a grid of link cards (that's what the previous version of this page
+// was, and the owner correctly flagged it as not earning its place). What
+// it adds instead: what needs a human right now, and how the agency is
+// doing this week, both computed from the same metric functions Analytics
+// uses (src/lib/analytics/metrics.ts) — never a second, drifting definition.
 export default async function HomePage() {
   const supabase = await createClient()
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
 
-  if (!authUser) {
-    redirect('/login')
-  }
+  if (!authUser) redirect('/login')
 
   const { data: appUser } = await supabase
     .from('users')
     .select('id, display_name')
-    .eq('auth_user_id', authUser!.id)
+    .eq('auth_user_id', authUser.id)
     .single()
 
   const { data: membership } = await supabase
     .from('agency_memberships')
-    .select('role_id, agencies(name, plan_id), roles(name)')
+    .select('agency_id, agencies(name, plan_id), roles(name)')
     .eq('user_id', appUser?.id)
     .eq('status', 'active')
     .limit(1)
@@ -31,94 +38,202 @@ export default async function HomePage() {
 
   const agency = membership?.agencies as unknown as { name: string; plan_id: string } | null
   const role = membership?.roles as unknown as { name: string } | null
+  const agencyId = (membership?.agency_id as string | undefined) ?? ''
+
+  const range = resolveRange('7d')
+
+  const [
+    revenue,
+    topCreators,
+    fanSegments,
+    { data: convRows },
+    { data: brokenConnections },
+    { data: notifications },
+  ] = await Promise.all([
+    getRevenueMetrics(supabase, agencyId, range),
+    getCreatorComparison(supabase, agencyId, range),
+    getFanSegments(supabase, agencyId),
+    supabase.from('conversations').select('id, last_inbound_at, last_outbound_at'),
+    supabase
+      .from('platform_connections')
+      .select('creator_id, platform_credentials(last_error), creators(display_name)')
+      .eq('status', 'error'),
+    supabase
+      .from('agency_notifications')
+      .select('id, type, title, body, conversation_id, read_at, created_at')
+      .eq('agency_id', agencyId)
+      .is('read_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ])
+
+  const awaitingReplyCount = (convRows ?? []).filter((c) => {
+    const lastInbound = c.last_inbound_at as string | null
+    const lastOutbound = c.last_outbound_at as string | null
+    return !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
+  }).length
+
+  const connectionIssues = (brokenConnections ?? []).map((c) => {
+    const creator = c.creators as unknown as { display_name: string } | null
+    const credRow = c.platform_credentials as unknown as { last_error: string | null }[] | { last_error: string | null } | null
+    const lastError = (Array.isArray(credRow) ? credRow[0] : credRow)?.last_error ?? null
+    return { creatorId: c.creator_id as string, creatorName: creator?.display_name ?? '—', lastError }
+  })
+
+  const hasAlerts = awaitingReplyCount > 0 || connectionIssues.length > 0 || (notifications ?? []).length > 0
+  const totalFanSegments = Object.values(fanSegments).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="glass mb-8 flex items-start gap-3 rounded-2xl p-6">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--success)]" />
+    <div>
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Bienvenue{appUser?.display_name ? `, ${appUser.display_name}` : ''}</h1>
+          <h1 className="text-xl font-semibold">
+            Bonjour{appUser?.display_name ? `, ${appUser.display_name}` : ''}
+          </h1>
           <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">
-            Votre compte et votre agence <span className="text-[color:var(--foreground)]">{agency?.name ?? '—'}</span> sont
-            créés. Plan : <span className="text-[color:var(--foreground)]">{agency?.plan_id === 'full_ai' ? 'Full AI' : 'Copilot'}</span> ·
-            Rôle : <span className="text-[color:var(--foreground)]">{role?.name ?? '—'}</span>
+            {agency?.name ?? '—'} · Plan {agency?.plan_id === 'full_ai' ? 'Full AI' : 'Copilot'} · {role?.name ?? '—'}
           </p>
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/creators"
-          className="glass gradient-bg-signature flex items-center justify-between rounded-2xl p-6 text-white transition-transform hover:scale-[1.01]"
-        >
-          <div>
-            <h2 className="font-semibold">Créatrices</h2>
-            <p className="mt-1 text-sm text-white/80">Identité, Model DNA, réglages commerciaux.</p>
+      <div className="mb-8 glass rounded-2xl p-5">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <AlertTriangle className="h-4 w-4 text-[color:var(--cyan)]" />À traiter
+        </div>
+        {!hasAlerts ? (
+          <p className="text-sm text-[color:var(--foreground-muted)]">Rien qui attend une action de votre part pour l&apos;instant.</p>
+        ) : (
+          <div className="space-y-2">
+            {awaitingReplyCount > 0 && (
+              <Link
+                href="/inbox"
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <MessageSquareWarning className="h-4 w-4 text-[color:var(--cyan)]" />
+                  {awaitingReplyCount} conversation{awaitingReplyCount > 1 ? 's' : ''} en attente de réponse
+                </span>
+                <ArrowRight className="h-4 w-4 text-[color:var(--foreground-muted)]" />
+              </Link>
+            )}
+            {connectionIssues.map((c) => (
+              <Link
+                key={c.creatorId}
+                href={`/creators/${c.creatorId}`}
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <PlugZap className="h-4 w-4 text-[color:var(--danger)]" />
+                  Connexion MYM en erreur — {c.creatorName}
+                  {c.lastError && <span className="text-[color:var(--foreground-muted)]">({c.lastError})</span>}
+                </span>
+                <ArrowRight className="h-4 w-4 text-[color:var(--foreground-muted)]" />
+              </Link>
+            ))}
+            {(notifications ?? []).map((n) => (
+              <Link
+                key={n.id}
+                href={n.conversation_id ? `/inbox/${n.conversation_id}` : '/inbox'}
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-[color:var(--violet)]" />
+                  {n.title}
+                </span>
+                <span className="shrink-0 text-xs text-[color:var(--foreground-muted)]">{formatRelativeTime(n.created_at as string)}</span>
+              </Link>
+            ))}
           </div>
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/inbox"
-          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
-        >
-          <div>
-            <h2 className="font-semibold">Inbox</h2>
-            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Conversations (environnement Mock).</p>
-          </div>
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/scripts"
-          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
-        >
-          <div>
-            <h2 className="font-semibold">Scripts</h2>
-            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Scénarios de vente, branches achat / non-achat.</p>
-          </div>
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/media"
-          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
-        >
-          <div>
-            <h2 className="font-semibold">Médias</h2>
-            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Contenus vendables, prix cible et minimum garanti.</p>
-          </div>
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <Link
-          href="/analytics"
-          className="glass flex items-center justify-between rounded-2xl p-6 transition-transform hover:scale-[1.01]"
-        >
-          <div>
-            <h2 className="font-semibold">Analytics</h2>
-            <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">Revenu, conversion, scripts, Copilot, Full AI.</p>
-          </div>
-          <ArrowRight className="h-5 w-5" />
-        </Link>
+        )}
       </div>
 
-      <div className="glass rounded-2xl p-6">
-        <div className="mb-3 flex items-center gap-2 text-sm text-[color:var(--foreground-muted)]">
-          <Construction className="h-4 w-4" />
-          En construction
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[color:var(--foreground-muted)]">Cette semaine</h2>
+        <Link href="/analytics" className="text-xs text-[color:var(--cyan)] hover:underline">
+          Voir tout l&apos;Analytics →
+        </Link>
+      </div>
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Revenu" value={formatEuro(revenue.totalRevenue)} sub={`${revenue.salesCount} vente(s)`} />
+        <KpiCard
+          label="Revenu attribué à l'IA"
+          value={formatEuro(revenue.aiAttributedRevenue)}
+          sub={revenue.totalRevenue > 0 ? `${Math.round((revenue.aiAttributedRevenue / revenue.totalRevenue) * 100)}% du revenu` : '—'}
+        />
+        <KpiCard
+          label="Conversion offres"
+          value={formatPercent(revenue.conversionRate)}
+          sub={`${revenue.offersPurchasedCount}/${revenue.offersSentCount} offres`}
+        />
+        <KpiCard label="Ventes" value={String(revenue.salesCount)} sub="7 derniers jours" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="glass rounded-2xl p-5">
+          <h2 className="mb-3 text-sm font-semibold">Top créatrices (7 jours)</h2>
+          {topCreators.every((c) => c.revenue === 0) ? (
+            <p className="text-xs text-[color:var(--foreground-muted)]">Aucune vente cette semaine.</p>
+          ) : (
+            <div className="space-y-2">
+              {topCreators.slice(0, 5).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/creators/${c.id}`}
+                  className="flex items-center justify-between rounded-xl px-2 py-1.5 text-sm transition-colors hover:bg-white/5"
+                >
+                  <span>{c.displayName}</span>
+                  <span className="font-medium">{formatEuro(c.revenue)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-        <p className="text-sm text-[color:var(--foreground-muted)]">
-          Le reste de l&apos;espace de travail arrive dans les prochaines étapes : chatting
-          Copilot/Full AI, scripts, analytics...
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {UPCOMING.map((item) => (
-            <span
-              key={item}
-              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs text-[color:var(--foreground-muted)]"
-            >
-              {item}
-            </span>
-          ))}
+
+        <div className="glass rounded-2xl p-5">
+          <h2 className="mb-3 text-sm font-semibold">Segments fans</h2>
+          {totalFanSegments === 0 ? (
+            <p className="text-xs text-[color:var(--foreground-muted)]">Aucun fan pour l&apos;instant.</p>
+          ) : (
+            <div className="space-y-2">
+              {(Object.keys(FAN_FLOW_LABELS) as (keyof typeof FAN_FLOW_LABELS)[]).map((stage) => {
+                const count = fanSegments[stage]
+                const pct = totalFanSegments > 0 ? Math.round((count / totalFanSegments) * 100) : 0
+                return (
+                  <div key={stage} className="flex items-center gap-3 text-xs">
+                    <span className="w-24 shrink-0 text-[color:var(--foreground-muted)]">{FAN_FLOW_LABELS[stage]}</span>
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                      <div className={`h-full rounded-full ${FAN_FLOW_BG_CLASSES[stage]}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="w-10 shrink-0 text-right font-medium">{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
+
+      {agency?.plan_id !== 'full_ai' && (
+        <div className="mt-8 glass gradient-bg-signature flex items-center justify-between rounded-2xl p-5 text-white">
+          <div className="flex items-center gap-2 text-sm">
+            <Sparkles className="h-4 w-4" />
+            Passez au plan Full AI pour laisser l&apos;IA vendre en autonomie sur les conversations que vous lui confiez.
+          </div>
+          <Link href="/settings/billing" className="shrink-0 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium hover:bg-white/25">
+            Voir les plans
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KpiCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="glass rounded-2xl p-5">
+      <p className="text-xs text-[color:var(--foreground-muted)]">{label}</p>
+      <p className="gradient-text mt-1 text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-[10px] text-[color:var(--foreground-muted)]">{sub}</p>
     </div>
   )
 }
