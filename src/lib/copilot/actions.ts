@@ -12,6 +12,7 @@ import {
   type QuickAction,
 } from '@/lib/ai/tasks'
 import { levenshtein } from '@/lib/utils/levenshtein'
+import { deliverOutboundMessage } from '@/lib/platforms/deliver'
 
 async function getAgencyAndUser() {
   const supabase = await createClient()
@@ -156,6 +157,8 @@ export async function sendCopilotSuggestion(conversationId: string, suggestionId
     .single()
   if (!suggestion) throw new Error('Suggestion introuvable')
 
+  const delivery = await deliverOutboundMessage(supabase, conversationId, trimmed)
+
   const { data: message, error } = await supabase
     .from('messages')
     .insert({
@@ -165,6 +168,7 @@ export async function sendCopilotSuggestion(conversationId: string, suggestionId
       sender_type: 'human',
       sender_user_id: appUser.id,
       text: trimmed,
+      external_message_id: delivery.externalMessageId,
     })
     .select('id')
     .single()

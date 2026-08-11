@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { runAiTask } from '@/lib/ai/gateway'
 import { buildScriptMessagePrompt, SCRIPT_MESSAGE_PROMPT_VERSION, type ScriptMessageResult } from '@/lib/ai/tasks'
 import { validatePrice, PricingViolationError, PricingNotConfiguredError } from '@/lib/pricing/validator'
+import { deliverOutboundMessage } from '@/lib/platforms/deliver'
 
 // Loop Protection (spec 13.39): a broken graph (e.g. a cycle of 'always'
 // edges) must never spin forever.
@@ -181,12 +182,14 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
 
     if (node.node_type === 'message' && node.message_template) {
       const text = await resolveMessageText(supabase, agencyId, run, node)
+      const delivery = await deliverOutboundMessage(supabase, run.conversation_id, text)
       await supabase.from('messages').insert({
         agency_id: agencyId,
         conversation_id: run.conversation_id,
         direction: 'outbound',
         sender_type: 'ai',
         text,
+        external_message_id: delivery.externalMessageId,
       })
       await supabase
         .from('script_run_events')
@@ -244,6 +247,7 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
       }
 
       const text = await resolveMessageText(supabase, agencyId, run, node)
+      const delivery = await deliverOutboundMessage(supabase, run.conversation_id, text)
       const { data: sentMessage } = await supabase
         .from('messages')
         .insert({
@@ -255,6 +259,7 @@ export async function advanceScriptRun(supabase: AnySupabaseClient, agencyId: st
           is_paid: true,
           price_amount: node.price_amount,
           currency: node.currency ?? 'EUR',
+          external_message_id: delivery.externalMessageId,
         })
         .select('id')
         .single()

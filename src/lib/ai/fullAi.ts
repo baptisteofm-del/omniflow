@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { runAiTask } from '@/lib/ai/gateway'
 import { buildFullAiDecisionPrompt, FULL_AI_DECISION_PROMPT_VERSION, type FullAiDecisionResult } from '@/lib/ai/tasks'
 import { validateReply, validateOffer } from '@/lib/ai/actionValidator'
+import { deliverOutboundMessage } from '@/lib/platforms/deliver'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabaseClient = SupabaseClient<any, any, any>
@@ -160,9 +161,17 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
 
     let firstMessageId: string | null = null
     for (const segment of segments) {
+      const delivery = await deliverOutboundMessage(supabase, conversationId, segment)
       const { data: message } = await supabase
         .from('messages')
-        .insert({ agency_id: agencyId, conversation_id: conversationId, direction: 'outbound', sender_type: 'ai', text: segment })
+        .insert({
+          agency_id: agencyId,
+          conversation_id: conversationId,
+          direction: 'outbound',
+          sender_type: 'ai',
+          text: segment,
+          external_message_id: delivery.externalMessageId,
+        })
         .select('id')
         .single()
       if (!firstMessageId) firstMessageId = message?.id ?? null
@@ -203,9 +212,18 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
       return
     }
 
+    const deflectionDelivery = await deliverOutboundMessage(supabase, conversationId, text)
+
     const { data: message } = await supabase
       .from('messages')
-      .insert({ agency_id: agencyId, conversation_id: conversationId, direction: 'outbound', sender_type: 'ai', text })
+      .insert({
+        agency_id: agencyId,
+        conversation_id: conversationId,
+        direction: 'outbound',
+        sender_type: 'ai',
+        text,
+        external_message_id: deflectionDelivery.externalMessageId,
+      })
       .select('id')
       .single()
 
@@ -245,6 +263,11 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
       return
     }
 
+    // Text only — the MYM adapter doesn't support attaching real paid media
+    // yet (capabilities.media = false, see mymAdapter.ts), so a real-platform
+    // offer today only delivers the pitch text, not a sellable attachment.
+    const offerDelivery = await deliverOutboundMessage(supabase, conversationId, text)
+
     const { data: message } = await supabase
       .from('messages')
       .insert({
@@ -256,6 +279,7 @@ export async function runFullAiDecision(supabase: AnySupabaseClient, agencyId: s
         is_paid: true,
         price_amount: check.media.target_price,
         currency: 'EUR',
+        external_message_id: offerDelivery.externalMessageId,
       })
       .select('id')
       .single()

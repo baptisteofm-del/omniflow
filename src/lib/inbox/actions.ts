@@ -9,6 +9,7 @@ import { generateCopilotSuggestion } from '@/lib/copilot/actions'
 import { resolveScriptOffer, resumeScriptRunAfterFanReply } from '@/lib/scripts/engine'
 import { runFullAiDecision } from '@/lib/ai/fullAi'
 import { recordTransactionAndCommission } from '@/lib/billing/ledger'
+import { deliverOutboundMessage } from '@/lib/platforms/deliver'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -67,6 +68,8 @@ export async function sendHumanMessage(conversationId: string, text: string) {
   const { supabase, agencyId, appUser } = await getAgencyAndUser()
   if (!text.trim()) return
 
+  const delivery = await deliverOutboundMessage(supabase, conversationId, text.trim())
+
   const { error } = await supabase.from('messages').insert({
     agency_id: agencyId,
     conversation_id: conversationId,
@@ -74,6 +77,7 @@ export async function sendHumanMessage(conversationId: string, text: string) {
     sender_type: 'human',
     sender_user_id: appUser.id,
     text: text.trim(),
+    external_message_id: delivery.externalMessageId,
   })
   if (error) throw new Error(error.message)
 
