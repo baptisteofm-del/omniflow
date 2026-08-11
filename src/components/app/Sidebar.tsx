@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck, BarChart3, CreditCard, Plug } from 'lucide-react'
+import { Home, UserRound, MessageSquare, Workflow, ImageIcon, ShieldCheck, BarChart3, CreditCard, Plug, ChevronsLeft } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
 import { NotificationBell } from '@/components/app/NotificationBell'
 
@@ -29,6 +30,8 @@ const NAV_ITEMS = [
   { href: '/settings/integrations', label: 'Intégrations', icon: Plug },
 ]
 
+const STORAGE_KEY = 'omniflow_sidebar_collapsed'
+
 export function Sidebar({
   agencyName,
   agencyId,
@@ -39,42 +42,101 @@ export function Sidebar({
   initialNotifications: Notification[]
 }) {
   const pathname = usePathname()
+  // Starts expanded to match server-rendered HTML (no window on the
+  // server) — the saved preference is applied right after mount, in the
+  // same frame as the rest of the page's first paint.
+  const [collapsed, setCollapsed] = useState(false)
+  const [hovering, setHovering] = useState(false)
+
+  useEffect(() => {
+    if (localStorage.getItem(STORAGE_KEY) === '1') setCollapsed(true)
+  }, [])
+
+  const toggle = () => {
+    setCollapsed((c) => {
+      const next = !c
+      localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
+      return next
+    })
+  }
+
+  // Locked-collapsed state reserves only the narrow rail's width in the
+  // page's flex layout, so the rest of the app gets that space back
+  // permanently. Hovering over the narrow rail temporarily widens it back
+  // out as an overlay (doesn't reflow the page) — closes automatically the
+  // moment the mouse leaves.
+  const expanded = !collapsed || hovering
 
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-[color:var(--border)] px-4 py-6">
-      <Link href="/home" className="mb-1 flex items-center gap-2 px-2">
-        <Image src="/logo-mark.png" alt="" width={24} height={24} className="h-6 w-6 rounded-full" />
-        <span className="font-semibold">
-          Omni<span className="gradient-text">Flow</span>
-        </span>
-      </Link>
-      {agencyName && <p className="mb-6 px-2 text-xs text-[color:var(--foreground-muted)]">{agencyName}</p>}
-
-      <nav className="flex-1 space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
-                  : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
-              }`}
+    <>
+      <div className={`${collapsed ? 'w-16' : 'w-56'} shrink-0 transition-[width] duration-200`} />
+      <aside
+        onMouseEnter={() => collapsed && setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--background)] px-4 py-6 transition-[width] duration-200 ${
+          expanded ? 'w-56' : 'w-16'
+        } ${collapsed && hovering ? 'shadow-[8px_0_32px_rgba(0,0,0,0.5)]' : ''}`}
+      >
+        <div className="mb-1 flex items-center justify-between px-2">
+          <Link href="/home" className="flex items-center gap-2">
+            <Image src="/logo-mark.png" alt="" width={24} height={24} className="h-6 w-6 shrink-0 rounded-full" />
+            {expanded && (
+              <span className="whitespace-nowrap font-semibold">
+                Omni<span className="gradient-text">Flow</span>
+              </span>
+            )}
+          </Link>
+          {!collapsed && (
+            <button
+              onClick={toggle}
+              title="Réduire la barre latérale"
+              className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          )
-        })}
-      </nav>
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {expanded && agencyName && (
+          <p className="mb-6 truncate whitespace-nowrap px-2 text-xs text-[color:var(--foreground-muted)]">{agencyName}</p>
+        )}
+        {!expanded && <div className="mb-6" />}
 
-      <div className="space-y-1 border-t border-[color:var(--border)] px-2 pt-4">
-        {agencyId && <NotificationBell agencyId={agencyId} initialNotifications={initialNotifications} />}
-        <SignOutButton />
-      </div>
-    </aside>
+        <nav className="flex-1 space-y-1 overflow-hidden">
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={expanded ? undefined : item.label}
+                className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
+                    : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {expanded && item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="space-y-1 overflow-hidden border-t border-[color:var(--border)] px-2 pt-4">
+          {collapsed && !hovering && (
+            <button
+              onClick={toggle}
+              title="Ouvrir la barre latérale"
+              className="flex w-full items-center justify-center rounded-xl py-2 text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]"
+            >
+              <ChevronsLeft className="h-4 w-4 rotate-180" />
+            </button>
+          )}
+          {agencyId && <NotificationBell agencyId={agencyId} initialNotifications={initialNotifications} />}
+          <SignOutButton />
+        </div>
+      </aside>
+    </>
   )
 }

@@ -41,11 +41,13 @@ export function ConversationView({
   initialMessages,
   aiMode,
   pendingSuggestion,
+  isMockConversation,
 }: {
   conversationId: string
   initialMessages: Message[]
   aiMode: string
   pendingSuggestion: PendingSuggestion | null
+  isMockConversation: boolean
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -258,6 +260,7 @@ export function ConversationView({
         </button>
       )}
 
+      {isMockConversation && (
       <button
         onClick={() => setShowMockPanel((v) => !v)}
         className="mb-2 mt-2 flex shrink-0 items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
@@ -265,8 +268,9 @@ export function ConversationView({
         <FlaskConical className="h-3.5 w-3.5" />
         Outils de test (MOCK)
       </button>
+      )}
 
-      {showMockPanel && (
+      {isMockConversation && showMockPanel && (
         <div className="glass shrink-0 space-y-3 rounded-2xl p-4">
           <div className="flex gap-2">
             <input

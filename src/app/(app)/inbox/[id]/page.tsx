@@ -15,12 +15,18 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const { data: conversation } = await supabase
     .from('conversations')
     .select(
-      'id, agency_id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source, avatar_url)'
+      'id, agency_id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source, avatar_url), platforms(code)'
     )
     .eq('id', id)
     .single()
 
   if (!conversation) notFound()
+
+  // The "Outils de test (MOCK)" panel (simulate a fan reply/purchase) only
+  // makes sense on Mock conversations — showing it on a real synced MYM
+  // conversation is confusing clutter, not a testing tool.
+  const platformCode = (conversation.platforms as unknown as { code: string } | null)?.code ?? 'MOCK'
+  const isMockConversation = platformCode === 'MOCK'
 
   const fanId = conversation.fan_id as string
   const creatorId = conversation.creator_id as string
@@ -183,6 +189,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             initialMessages={messages ?? []}
             aiMode={conversation.ai_mode}
             pendingSuggestion={pendingSuggestion ?? null}
+            isMockConversation={isMockConversation}
           />
         </div>
         <div className="min-h-0 space-y-6 overflow-y-auto pr-1">

@@ -70,6 +70,13 @@ export async function syncMymCreator(creatorId: string) {
   // Track which conversations actually received a new message this sync and
   // schedule analysis for exactly those, once, at the end.
   const touchedConversationIds = new Set<string>()
+  // Separately: conversations synced *before* the fix above existed have
+  // messages but were never analyzed even once, and a re-sync alone won't
+  // touch them again (their messages already exist, deduped by
+  // external_message_id — nothing "new" to trigger analysis on). Track
+  // every conversation this sync actually processed so we can backfill
+  // any fan still missing a fan_scores row entirely, once, below.
+  const fanIdByConversationId = new Map<string, string>()
 
   try {
     await setProgress({ sync_status: 'syncing', sync_total: null, sync_done: 0, sync_current_label: null })
@@ -122,6 +129,7 @@ export async function syncMymCreator(creatorId: string) {
         continue
       }
       conversationsSynced += 1
+      fanIdByConversationId.set(conversation.id as string, fanId)
 
       const remoteMessages = await mymAdapter.fetchMessages(credentials, remoteConv.externalConversationId)
       for (const remoteMessage of remoteMessages) {
@@ -160,6 +168,19 @@ export async function syncMymCreator(creatorId: string) {
   } catch (err) {
     await setProgress({ sync_status: 'error' })
     throw err
+  }
+
+  // Backfill: any fan processed this sync that still has zero fan_scores
+  // rows never got analyzed at all (pre-dates the fix, or every message
+  // was already synced before). Catch those up alongside the "genuinely
+  // new message" set above, deduped via the Set.
+  if (fanIdByConversationId.size > 0) {
+    const allFanIds = [...new Set(fanIdByConversationId.values())]
+    const { data: scoredFans } = await supabase.from('fan_scores').select('fan_id').in('fan_id', allFanIds)
+    const scoredFanIds = new Set((scoredFans ?? []).map((s) => s.fan_id as string))
+    for (const [convId, fanId] of fanIdByConversationId) {
+      if (!scoredFanIds.has(fanId)) touchedConversationIds.add(convId)
+    }
   }
 
   // Non-blocking — the sync's own response returns immediately, analysis
