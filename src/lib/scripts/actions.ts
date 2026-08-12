@@ -306,7 +306,7 @@ export async function publishScript(scriptId: string) {
   await supabase.from('scripts').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', scriptId)
 
   revalidatePath(`/scripts/${scriptId}`)
-  revalidatePath('/scripts')
+  revalidatePath('/library')
 }
 
 export async function createNewDraftVersion(scriptId: string) {

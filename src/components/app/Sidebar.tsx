@@ -4,16 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import {
-  Home,
-  UserRound,
-  MessageSquare,
-  LibraryBig,
-  BarChart3,
-  Settings,
-  ChevronsLeft,
-  ChevronDown,
-} from 'lucide-react'
+import { Home, UserRound, MessageSquare, LibraryBig, BarChart3, Settings, ChevronsLeft } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
 import { NotificationBell } from '@/components/app/NotificationBell'
 
@@ -27,44 +18,20 @@ interface Notification {
   created_at: string
 }
 
-type NavItem =
-  | { type: 'link'; href: string; label: string; icon: typeof Home }
-  | { type: 'group'; id: string; label: string; icon: typeof Home; children: { href: string; label: string }[] }
-
-// "Paramétrer" and "Scripts"/"Médias" are deliberately not top-level
-// categories (owner request: too many separate categories) — grouped here
-// instead, so the sidebar names 6 things, not 9.
-const NAV_ITEMS: NavItem[] = [
-  { type: 'link', href: '/home', label: 'Dashboard', icon: Home },
-  { type: 'link', href: '/creators', label: 'Créatrices', icon: UserRound },
-  { type: 'link', href: '/inbox', label: 'Inbox', icon: MessageSquare },
-  {
-    type: 'group',
-    id: 'library',
-    label: 'Bibliothèque',
-    icon: LibraryBig,
-    children: [
-      { href: '/media', label: 'Médias' },
-      { href: '/scripts', label: 'Scripts' },
-    ],
-  },
-  { type: 'link', href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  {
-    type: 'group',
-    id: 'settings',
-    label: 'Paramètres',
-    icon: Settings,
-    children: [
-      { href: '/settings/ai', label: 'IA' },
-      { href: '/settings/billing', label: 'Facturation' },
-      { href: '/settings/team', label: 'Équipe' },
-    ],
-  },
+// "Paramétrer" and "Scripts"/"Médias" are not top-level categories anymore
+// (owner request) — each is one real page with tabs inside it now
+// (/library, /settings), not a sidebar dropdown over the old separate
+// routes. The sidebar just links straight to each merged page.
+const NAV_ITEMS = [
+  { href: '/home', label: 'Dashboard', icon: Home, alsoActiveOn: [] as string[] },
+  { href: '/creators', label: 'Créatrices', icon: UserRound, alsoActiveOn: [] as string[] },
+  { href: '/inbox', label: 'Inbox', icon: MessageSquare, alsoActiveOn: [] as string[] },
+  // /scripts/[id] and /media/new stay their own routes (see library/page.tsx)
+  // but should still highlight Bibliothèque as the active section.
+  { href: '/library', label: 'Bibliothèque', icon: LibraryBig, alsoActiveOn: ['/scripts', '/media'] },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, alsoActiveOn: [] as string[] },
+  { href: '/settings', label: 'Paramètres', icon: Settings, alsoActiveOn: [] as string[] },
 ]
-
-function isChildActive(pathname: string, children: { href: string }[]) {
-  return children.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`))
-}
 
 const STORAGE_KEY = 'omniflow_sidebar_collapsed'
 
@@ -83,20 +50,6 @@ export function Sidebar({
   // same frame as the rest of the page's first paint.
   const [collapsed, setCollapsed] = useState(false)
   const [hovering, setHovering] = useState(false)
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
-    const initial = new Set<string>()
-    for (const item of NAV_ITEMS) {
-      if (item.type === 'group' && isChildActive(pathname, item.children)) initial.add(item.id)
-    }
-    return initial
-  })
-  const toggleGroup = (id: string) =>
-    setOpenGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY) === '1') setCollapsed(true)
@@ -153,82 +106,25 @@ export function Sidebar({
 
         <nav className="flex-1 space-y-1 overflow-hidden">
           {NAV_ITEMS.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              pathname.startsWith(`${item.href}/`) ||
+              item.alsoActiveOn.some((p) => pathname === p || pathname.startsWith(`${p}/`))
             const Icon = item.icon
-
-            if (item.type === 'link') {
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={expanded ? undefined : item.label}
-                  className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${
-                    isActive
-                      ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
-                      : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {expanded && item.label}
-                </Link>
-              )
-            }
-
-            // Group: in the narrow icon rail, clicking jumps straight to the
-            // first child (no room for a flyout there) — expanded mode gets
-            // a real accordion instead.
-            const groupActive = isChildActive(pathname, item.children)
-            const isOpen = expanded && openGroups.has(item.id)
             return (
-              <div key={item.id}>
-                {expanded ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(item.id)}
-                    className={`flex w-full items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                      groupActive
-                        ? 'text-[color:var(--foreground)]'
-                        : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="flex-1">{item.label}</span>
-                    <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                ) : (
-                  <Link
-                    href={item.children[0].href}
-                    title={item.label}
-                    className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${
-                      groupActive
-                        ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
-                        : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                  </Link>
-                )}
-                {isOpen && (
-                  <div className="ml-4 space-y-0.5 border-l border-[color:var(--border)] pl-3">
-                    {item.children.map((child) => {
-                      const isActive = pathname === child.href || pathname.startsWith(`${child.href}/`)
-                      return (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          className={`block overflow-hidden whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
-                            isActive
-                              ? 'text-[color:var(--foreground)]'
-                              : 'text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
-                          }`}
-                        >
-                          {child.label}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <Link
+                key={item.href}
+                href={item.href}
+                title={expanded ? undefined : item.label}
+                className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
+                    : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {expanded && item.label}
+              </Link>
             )
           })}
         </nav>

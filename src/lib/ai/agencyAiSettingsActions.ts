@@ -44,7 +44,7 @@ export async function setCreatorFullAiEnabled(creatorId: string, enabled: boolea
     .eq('creator_id', creatorId)
   if (error) throw new Error(error.message)
 
-  revalidatePath('/settings/ai')
+  revalidatePath('/settings')
 }
 
 export async function createKillSwitch(formData: FormData) {
@@ -70,7 +70,7 @@ export async function createKillSwitch(formData: FormData) {
   })
   if (error) throw new Error(error.message)
 
-  revalidatePath('/settings/ai')
+  revalidatePath('/settings')
 }
 
 export async function deleteKillSwitch(id: string) {
@@ -80,5 +80,5 @@ export async function deleteKillSwitch(id: string) {
   const { error } = await supabase.from('ai_kill_switches').delete().eq('id', id)
   if (error) throw new Error(error.message)
 
-  revalidatePath('/settings/ai')
+  revalidatePath('/settings')
 }

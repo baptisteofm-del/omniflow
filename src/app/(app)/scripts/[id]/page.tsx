@@ -74,7 +74,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link href="/scripts" className="mb-6 inline-flex items-center gap-1.5 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
+      <Link href="/library?tab=scripts" className="mb-6 inline-flex items-center gap-1.5 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]">
         <ArrowLeft className="h-4 w-4" />
         Scripts
       </Link>

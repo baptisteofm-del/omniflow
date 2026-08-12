@@ -47,6 +47,6 @@ export async function changePlan(planId: 'copilot' | 'full_ai') {
     .eq('id', agencyId)
   if (error) throw new Error(error.message)
 
-  revalidatePath('/settings/billing')
+  revalidatePath('/settings')
   revalidatePath('/home')
 }

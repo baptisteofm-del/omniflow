@@ -67,7 +67,7 @@ export function NewMediaForm({ creators }: { creators: { id: string; display_nam
         title: title.trim() || file.name,
       })
 
-      router.push('/media')
+      router.push('/library?tab=media')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue')

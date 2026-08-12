@@ -68,7 +68,7 @@ export async function createMediaAsset(input: { creator_id: string; storage_key:
     throw new Error(error.message)
   }
 
-  revalidatePath('/media')
+  revalidatePath('/library')
 }
 
 // Step 2: configure (or reconfigure) a media already deposited — price is
@@ -123,7 +123,7 @@ export async function updateMediaAsset(mediaId: string, formData: FormData) {
     .eq('id', mediaId)
   if (error) throw new Error(error.message)
 
-  revalidatePath('/media')
+  revalidatePath('/library')
 }
 
 export async function createMediaFolder(formData: FormData) {
@@ -138,7 +138,7 @@ export async function createMediaFolder(formData: FormData) {
     throw new Error(error.message)
   }
 
-  revalidatePath('/media')
+  revalidatePath('/library')
 }
 
 export async function addMediaTag(mediaId: string, formData: FormData) {
@@ -159,7 +159,7 @@ export async function addMediaTag(mediaId: string, formData: FormData) {
     .upsert({ agency_id: agencyId, media_asset_id: mediaId, media_tag_id: tag.id }, { onConflict: 'media_asset_id,media_tag_id' })
   if (error) throw new Error(error.message)
 
-  revalidatePath('/media')
+  revalidatePath('/library')
 }
 
 export async function removeMediaTag(mediaId: string, tagId: string) {
@@ -168,5 +168,5 @@ export async function removeMediaTag(mediaId: string, tagId: string) {
   const { error } = await supabase.from('media_asset_tags').delete().eq('media_asset_id', mediaId).eq('media_tag_id', tagId)
   if (error) throw new Error(error.message)
 
-  revalidatePath('/media')
+  revalidatePath('/library')
 }

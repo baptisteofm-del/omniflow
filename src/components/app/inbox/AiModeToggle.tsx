@@ -79,7 +79,7 @@ export function AiModeToggle({
         {fullAiEnabled && <option value="full_ai">{MODE_LABELS.full_ai}</option>}
       </select>
       {!fullAiEnabled && (
-        <a href="/settings/ai" className="text-[10px] text-[color:var(--foreground-muted)] underline">
+        <a href="/settings?tab=ai" className="text-[10px] text-[color:var(--foreground-muted)] underline">
           Activer Full AI
         </a>
       )}

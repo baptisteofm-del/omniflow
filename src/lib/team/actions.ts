@@ -63,14 +63,14 @@ export async function inviteTeamMember(formData: FormData) {
     throw new Error(error.message)
   }
 
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 export async function revokeInvitation(invitationId: string) {
   const { supabase } = await getAgencyAndUser()
   const { error } = await supabase.from('agency_invitations').update({ status: 'revoked' }).eq('id', invitationId)
   if (error) throw new Error(error.message)
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 export async function changeMemberRole(membershipId: string, roleId: string) {
@@ -80,7 +80,7 @@ export async function changeMemberRole(membershipId: string, roleId: string) {
     .update({ role_id: roleId, updated_at: new Date().toISOString() })
     .eq('id', membershipId)
   if (error) throw new Error(error.message)
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 export async function removeMember(membershipId: string) {
@@ -94,7 +94,7 @@ export async function removeMember(membershipId: string) {
     .update({ status: 'removed', updated_at: new Date().toISOString() })
     .eq('id', membershipId)
   if (error) throw new Error(error.message)
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 export async function createCustomRole(formData: FormData) {
@@ -123,7 +123,7 @@ export async function createCustomRole(formData: FormData) {
     if (linkError) throw new Error(linkError.message)
   }
 
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 export async function deleteCustomRole(roleId: string) {
@@ -137,7 +137,7 @@ export async function deleteCustomRole(roleId: string) {
 
   const { error } = await supabase.from('roles').delete().eq('id', roleId).eq('is_system', false)
   if (error) throw new Error(error.message)
-  revalidatePath('/settings/team')
+  revalidatePath('/settings')
 }
 
 // Public, pre-auth lookup for the /join page — the invite token itself is
