@@ -4,7 +4,6 @@ import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanPanel } from '@/components/app/inbox/FanPanel'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
-import { ScriptRunPanel } from '@/components/app/inbox/ScriptRunPanel'
 import { checkDueScriptRuns } from '@/lib/scripts/engine'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
@@ -15,7 +14,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const { data: conversation } = await supabase
     .from('conversations')
     .select(
-      'id, agency_id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source, avatar_url), platforms(code)'
+      'id, agency_id, ai_mode, fan_id, creator_id, creators(display_name), fans(id, display_name, birthday, location, income_amount, income_frequency, subscription_status, source, avatar_url, is_subscriber, last_seen_at), platforms(code)'
     )
     .eq('id', id)
     .single()
@@ -55,6 +54,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     { data: commercialSettings },
     { data: activeRunRow },
     { data: lastEscalation },
+    { data: offerRows },
   ] = await Promise.all([
     supabase
       .from('messages')
@@ -103,6 +103,14 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Offer status per message (spec brief: PPV must show its real status —
+    // sent/purchased/declined/expired — never simulated). Matched to the
+    // message that announced it via offers.sent_message_id.
+    supabase
+      .from('offers')
+      .select('sent_message_id, status, final_price, initial_price')
+      .eq('conversation_id', id)
+      .not('sent_message_id', 'is', null),
   ])
 
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
@@ -145,7 +153,17 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     subscription_status: string
     source: string | null
     avatar_url: string | null
+    is_subscriber: boolean
+    last_seen_at: string | null
   } | null
+  const isRecentlyOnline = !!fan?.last_seen_at && Date.now() - new Date(fan.last_seen_at).getTime() < 15 * 60 * 1000
+
+  const offersByMessageId = new Map(
+    (offerRows ?? []).map((o) => [
+      o.sent_message_id as string,
+      { status: o.status as string, price: (o.final_price as number | null) ?? (o.initial_price as number) },
+    ])
+  )
 
   const flowStage = computeFanFlowStage({
     totalSpent,
@@ -168,17 +186,32 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   // just the generic "human" sender_type.
   const messagesWithSender = (messages ?? []).map((m) => {
     const sender = m.users as unknown as { display_name: string | null; email: string } | null
-    return { ...m, senderName: sender?.display_name || sender?.email || null }
+    const offer = offersByMessageId.get(m.id as string) ?? null
+    return { ...m, senderName: sender?.display_name || sender?.email || null, offer }
   })
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex shrink-0 items-center justify-between">
+      <div className="glass mb-4 flex shrink-0 items-center justify-between rounded-2xl px-5 py-3.5">
         <div className="flex items-center gap-3">
-          <FanAvatar name={fan?.display_name ?? 'Fan'} avatarUrl={fan?.avatar_url} size={40} />
+          <FanAvatar name={fan?.display_name ?? 'Fan'} avatarUrl={fan?.avatar_url} online={isRecentlyOnline} size={42} />
           <div>
-            <h1 className="text-lg font-semibold">{fan?.display_name ?? 'Fan'}</h1>
-            <p className="text-sm text-[color:var(--foreground-muted)]">{creator?.display_name}</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold">{fan?.display_name ?? 'Fan'}</h1>
+              {fan?.is_subscriber && (
+                <span className="rounded-full bg-[color:var(--violet)]/15 px-1.5 py-0.5 text-[9px] font-medium text-[color:var(--violet)]">
+                  ABONNÉ
+                </span>
+              )}
+              {totalSpent > 0 && (
+                <span className="rounded-full bg-[color:var(--success)]/15 px-1.5 py-0.5 text-[9px] font-medium text-[color:var(--success)]">
+                  {totalSpent}€ dépensé
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[color:var(--foreground-muted)]">
+              {creator?.display_name} {isRecentlyOnline && <span className="text-[color:var(--success)]">· en ligne</span>}
+            </p>
           </div>
         </div>
         <AiModeToggle
@@ -197,10 +230,11 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             aiMode={conversation.ai_mode}
             pendingSuggestion={pendingSuggestion ?? null}
             isMockConversation={isMockConversation}
+            activeScriptRun={activeRun}
+            availableScripts={availableScripts}
           />
         </div>
         <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
-          <ScriptRunPanel conversationId={id} activeRun={activeRun} availableScripts={availableScripts} />
           {fan && (
             <FanPanel
               conversationId={id}

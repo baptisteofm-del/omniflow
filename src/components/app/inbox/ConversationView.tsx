@@ -12,7 +12,14 @@ import {
   discardCopilotSuggestion,
 } from '@/lib/copilot/actions'
 import type { QuickAction } from '@/lib/ai/tasks'
-import { playNotificationSound } from '@/lib/utils/notificationSound'
+import { playNotificationSound, playSaleSound } from '@/lib/utils/notificationSound'
+import { formatMessageTime, formatDaySeparator } from '@/lib/utils/relativeTime'
+import { ScriptRunPanel, type ActiveRun, type AvailableScript } from '@/components/app/inbox/ScriptRunPanel'
+
+interface Offer {
+  status: string
+  price: number
+}
 
 interface Message {
   id: string
@@ -24,6 +31,7 @@ interface Message {
   price_amount: number | null
   message_type: string
   sent_at: string
+  offer?: Offer | null
 }
 
 interface PendingSuggestion {
@@ -47,18 +55,69 @@ function senderLabel(m: Message): string {
   return 'Système'
 }
 
+// Real statuses only (offers.status check constraint) — never a simulated
+// "opened"/"read" state the MYM integration doesn't actually provide (spec
+// brief: "ne jamais simuler une donnée que l'intégration ne fournit pas").
+const OFFER_STATUS: Record<string, { label: string; className: string }> = {
+  draft: { label: 'Brouillon', className: 'bg-white/10 text-[color:var(--foreground-muted)]' },
+  sent: { label: 'Envoyée', className: 'bg-[color:var(--warning)]/20 text-[color:var(--warning)]' },
+  purchased: { label: 'Achetée', className: 'bg-[color:var(--success)]/20 text-[color:var(--success)]' },
+  declined: { label: 'Refusée', className: 'bg-[color:var(--danger)]/20 text-[color:var(--danger)]' },
+  expired: { label: 'Sans réponse', className: 'bg-white/10 text-[color:var(--foreground-muted)]' },
+  canceled: { label: 'Annulée', className: 'bg-white/10 text-[color:var(--foreground-muted)]' },
+  failed: { label: 'Échouée', className: 'bg-[color:var(--danger)]/20 text-[color:var(--danger)]' },
+}
+
+// Groups messages into same-sender clusters (tighter spacing, sender label
+// only once per cluster — repeating "Équipe" under every bubble is noise,
+// not information) with day separators between them, MyFeed-style density.
+type ThreadItem =
+  | { kind: 'day'; key: string; label: string }
+  | { kind: 'message'; key: string; message: Message; isClusterStart: boolean; isClusterEnd: boolean }
+
+function buildThread(messages: Message[]): ThreadItem[] {
+  const items: ThreadItem[] = []
+  let lastDay: string | null = null
+  let lastClusterKey: string | null = null
+
+  messages.forEach((m, i) => {
+    const day = new Date(m.sent_at).toDateString()
+    if (day !== lastDay) {
+      items.push({ kind: 'day', key: `day-${m.id}`, label: formatDaySeparator(m.sent_at) })
+      lastDay = day
+      lastClusterKey = null
+    }
+
+    const clusterKey = m.message_type === 'purchase_confirmation' ? null : `${m.sender_type}:${m.senderName ?? ''}`
+    const isClusterStart = clusterKey === null || clusterKey !== lastClusterKey
+    const next = messages[i + 1]
+    const nextClusterKey =
+      next && next.message_type !== 'purchase_confirmation' ? `${next.sender_type}:${next.senderName ?? ''}` : null
+    const isClusterEnd = clusterKey === null || new Date(next?.sent_at ?? 0).toDateString() !== day || nextClusterKey !== clusterKey
+
+    items.push({ kind: 'message', key: m.id, message: m, isClusterStart, isClusterEnd })
+    lastClusterKey = clusterKey
+  })
+
+  return items
+}
+
 export function ConversationView({
   conversationId,
   initialMessages,
   aiMode,
   pendingSuggestion,
   isMockConversation,
+  activeScriptRun,
+  availableScripts,
 }: {
   conversationId: string
   initialMessages: Message[]
   aiMode: string
   pendingSuggestion: PendingSuggestion | null
   isMockConversation: boolean
+  activeScriptRun: ActiveRun | null
+  availableScripts: AvailableScript[]
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -110,7 +169,11 @@ export function ConversationView({
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
           (payload) => {
-            if ((payload.new as { direction?: string } | undefined)?.direction === 'inbound') playNotificationSound()
+            const inserted = payload.new as { direction?: string; message_type?: string } | undefined
+            // A sale gets its own, more celebratory sound (brief: distinct
+            // from a plain new-message ping) regardless of direction.
+            if (inserted?.message_type === 'purchase_confirmation') playSaleSound()
+            else if (inserted?.direction === 'inbound') playNotificationSound()
             router.refresh()
           }
         )
@@ -136,49 +199,102 @@ export function ConversationView({
     })
   }
 
+  const thread = buildThread(initialMessages)
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="glass mb-4 min-h-0 flex-1 overflow-y-auto rounded-2xl p-5">
         {/* Short conversations should anchor near the composer, like every
             real chat app — not float at the top with dead space below. */}
-        <div className="flex min-h-full flex-col justify-end space-y-3">
+        <div className="flex min-h-full flex-col justify-end">
         {initialMessages.length === 0 && (
           <p className="text-center text-sm text-[color:var(--foreground-muted)]">Aucun message pour l&apos;instant.</p>
         )}
-        {initialMessages.map((m) => {
+        {thread.map((item) => {
+          if (item.kind === 'day') {
+            return (
+              <div key={item.key} className="my-4 flex items-center gap-3 first:mt-0">
+                <div className="h-px flex-1 bg-[color:var(--border)]" />
+                <span className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--foreground-muted)]">
+                  {item.label}
+                </span>
+                <div className="h-px flex-1 bg-[color:var(--border)]" />
+              </div>
+            )
+          }
+
+          const m = item.message
           const animClass = isNewMessage(m.id) ? 'message-in' : ''
+
           if (m.message_type === 'purchase_confirmation') {
             return (
-              <div key={m.id} className={`flex justify-center ${animClass}`}>
-                <span className="rounded-full border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 px-3 py-1 text-xs text-[color:var(--success)]">
-                  {m.text} {m.price_amount ? `— ${m.price_amount}€` : ''}
+              <div key={m.id} className={`my-2 flex justify-center ${animClass}`}>
+                <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 px-3 py-1 text-xs text-[color:var(--success)]">
+                  💸 {m.text} {m.price_amount ? `— ${m.price_amount}€` : ''}
                 </span>
               </div>
             )
           }
+
           const isOutbound = m.direction === 'outbound'
+          const isAi = m.sender_type === 'ai'
+          const clusterMargin = item.isClusterStart ? 'mt-3' : 'mt-0.5'
+          const offerStatus = m.offer ? OFFER_STATUS[m.offer.status] : null
+
           return (
-            <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} ${animClass}`}>
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm transition-shadow ${
-                  isOutbound
-                    ? 'gradient-bg-signature rounded-br-sm text-white shadow-[0_4px_20px_rgba(124,58,237,0.25)]'
-                    : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
-                }`}
-              >
-                {m.is_paid && m.price_amount && (
-                  <span className="mb-1 inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
-                    💰 {m.price_amount}€
-                  </span>
+            <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} ${clusterMargin} ${animClass}`}>
+              <div className={`flex max-w-[75%] flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
+                {item.isClusterStart && m.sender_type === 'human' && (
+                  <span className="mb-1 px-1 text-[10px] font-medium text-[color:var(--foreground-muted)]">{senderLabel(m)}</span>
                 )}
-                <p>{m.text}</p>
-                <span className="mt-1 block text-[10px] opacity-60">{senderLabel(m)}</span>
+                <div
+                  className={`rounded-2xl px-4 py-2.5 text-sm transition-shadow ${
+                    isOutbound
+                      ? isAi
+                        ? 'border border-[color:var(--cyan)]/30 bg-[color:var(--cyan)]/10 rounded-br-sm text-[color:var(--foreground)] shadow-[0_4px_16px_rgba(34,211,238,0.12)]'
+                        : 'gradient-bg-signature rounded-br-sm text-white shadow-[0_4px_20px_rgba(124,58,237,0.25)]'
+                      : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
+                  }`}
+                >
+                  {isAi && isOutbound && (
+                    <span className="mb-1 flex items-center gap-1 text-[10px] font-medium text-[color:var(--cyan)]">
+                      <Bot className="h-3 w-3" />
+                      IA
+                    </span>
+                  )}
+                  {m.is_paid && m.price_amount && (
+                    <span className="mb-1 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
+                        💰 {m.price_amount}€
+                      </span>
+                      {offerStatus && (
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${offerStatus.className}`}>
+                          {offerStatus.label}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  <p>{m.text}</p>
+                </div>
+                {item.isClusterEnd && (
+                  <span className="mt-1 px-1 text-[10px] text-[color:var(--foreground-muted)]">{formatMessageTime(m.sent_at)}</span>
+                )}
               </div>
             </div>
           )
         })}
         </div>
       </div>
+
+      {/* Scripts/Médias/Copilot all live in the operational zone around the
+          composer (brief §17: "tout ce qui sert directement à construire ou
+          envoyer un message") — not tucked away in the right-hand fan panel,
+          which is reserved for understanding the fan, not sending to them. */}
+      {(activeScriptRun || availableScripts.length > 0) && (
+        <div className="mb-2 shrink-0">
+          <ScriptRunPanel conversationId={conversationId} activeRun={activeScriptRun} availableScripts={availableScripts} />
+        </div>
+      )}
 
       {isCopilot && pendingSuggestion && (
         <div className="mb-2 flex shrink-0 flex-wrap items-center gap-1.5">

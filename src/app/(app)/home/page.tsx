@@ -306,7 +306,7 @@ export default async function HomePage({
             <Sparkles className="h-4 w-4" />
             Passez au plan Full AI pour laisser l&apos;IA vendre en autonomie sur les conversations que vous lui confiez.
           </div>
-          <Link href="/settings/billing" className="shrink-0 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium hover:bg-white/25">
+          <Link href="/settings?tab=billing" className="shrink-0 rounded-full bg-white/15 px-4 py-1.5 text-xs font-medium hover:bg-white/25">
             Voir les plans
           </Link>
         </div>

@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Workflow, Square, Loader2, Clock } from 'lucide-react'
 import { startScriptRun, stopScriptRun } from '@/lib/scripts/actions'
 
-interface ActiveRun {
+export interface ActiveRun {
   id: string
   scriptName: string
   currentNodeTitle: string | null
   scheduledAt: string | null
 }
 
-interface AvailableScript {
+export interface AvailableScript {
   id: string
   name: string
 }

@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { MessageSquare, Tag, ArrowRight } from 'lucide-react'
+import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
+import { isSoundMuted, setSoundMuted } from '@/lib/utils/notificationSound'
 
 export interface InboxRow {
   id: string
@@ -21,6 +22,7 @@ export interface InboxRow {
   totalSpent: number
   flowStage: FanFlowStage
   awaitingReply: boolean
+  hasPendingOffer: boolean
   assignedUserId: string | null
   assignedName: string | null
 }
@@ -50,6 +52,18 @@ export function InboxSidebar({
 
   const [filter, setFilter] = useState<FilterKey>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [muted, setMuted] = useState(false)
+
+  useEffect(() => {
+    setMuted(isSoundMuted())
+  }, [])
+
+  const toggleMute = () => {
+    setMuted((m) => {
+      setSoundMuted(!m)
+      return !m
+    })
+  }
 
   const toReplyCount = useMemo(() => rows.filter((r) => r.awaitingReply).length, [rows])
 
@@ -68,7 +82,16 @@ export function InboxSidebar({
   return (
     <div className="glass flex h-full flex-col overflow-hidden rounded-2xl">
       <div className="shrink-0 space-y-3 border-b border-[color:var(--border)] p-4">
-        <h1 className="text-sm font-semibold">Inbox</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-sm font-semibold">Inbox</h1>
+          <button
+            onClick={toggleMute}
+            title={muted ? 'Activer les sons' : 'Couper les sons'}
+            className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+          >
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+        </div>
 
         {toReplyCount > 0 && !selectedId && (
           <button
@@ -157,20 +180,40 @@ export function InboxSidebar({
               <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} online={r.isRecentlyOnline} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <p className="truncate text-xs font-medium">{r.fanName}</p>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {r.awaitingReply && (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--cyan)]" title="En attente de réponse" />
+                    )}
+                    <p className={`truncate text-xs ${r.awaitingReply ? 'font-semibold text-[color:var(--foreground)]' : 'font-medium'}`}>
+                      {r.fanName}
+                    </p>
+                  </span>
                   {r.lastMessage && (
                     <span className="shrink-0 text-[9px] text-[color:var(--foreground-muted)]">
                       {relativeTimeFr(r.lastMessage.sent_at)}
                     </span>
                   )}
                 </div>
-                <p className="truncate text-[11px] text-[color:var(--foreground-muted)]">
+                <p
+                  className={`truncate text-[11px] ${
+                    r.awaitingReply ? 'text-[color:var(--foreground)]' : 'text-[color:var(--foreground-muted)]'
+                  }`}
+                >
                   {r.lastMessage?.text || 'Aucun message'}
                 </p>
                 <div className="mt-1 flex items-center gap-1">
                   <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${FAN_FLOW_BADGE_CLASSES[r.flowStage]}`}>
                     {FAN_FLOW_LABELS[r.flowStage]}
                   </span>
+                  {r.hasPendingOffer && (
+                    <span
+                      title="Offre envoyée, en attente de réponse"
+                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--warning)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--warning)]"
+                    >
+                      <Clock3 className="h-2.5 w-2.5" />
+                      PPV
+                    </span>
+                  )}
                   {r.isSubscriber && (
                     <span className="rounded-full bg-[color:var(--violet)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--violet)]">
                       ABO

@@ -66,20 +66,27 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   // Wave 2: each only needs fanIds/conversationIds/assignedUserIds from
   // wave 1, not each other's results.
-  const [{ data: fanTagRows }, { data: allMessages }, { data: scoresRows }, { data: assignedUsers }] = await Promise.all([
-    fanIds.length ? supabase.from('fan_tags').select('fan_id, tags(name)').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
-    conversationIds.length
-      ? supabase
-          .from('messages')
-          .select('conversation_id, text, message_type, price_amount, sent_at')
-          .in('conversation_id', conversationIds)
-          .order('sent_at', { ascending: false })
-      : Promise.resolve({ data: [] }),
-    fanIds.length ? supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
-    assignedUserIds.length
-      ? supabase.from('users').select('id, display_name, email').in('id', assignedUserIds)
-      : Promise.resolve({ data: [] }),
-  ])
+  const [{ data: fanTagRows }, { data: allMessages }, { data: scoresRows }, { data: assignedUsers }, { data: pendingOfferRows }] =
+    await Promise.all([
+      fanIds.length ? supabase.from('fan_tags').select('fan_id, tags(name)').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+      conversationIds.length
+        ? supabase
+            .from('messages')
+            .select('conversation_id, text, message_type, price_amount, sent_at')
+            .in('conversation_id', conversationIds)
+            .order('sent_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      fanIds.length ? supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+      assignedUserIds.length
+        ? supabase.from('users').select('id, display_name, email').in('id', assignedUserIds)
+        : Promise.resolve({ data: [] }),
+      // PPV waiting on the fan (spec brief §10/§15): shown as a badge on the
+      // conversation row so an agency can see "an offer is out there" without
+      // opening every conversation.
+      conversationIds.length
+        ? supabase.from('offers').select('conversation_id').eq('status', 'sent').in('conversation_id', conversationIds)
+        : Promise.resolve({ data: [] }),
+    ])
 
   const tagsByFan = new Map<string, string[]>()
   for (const row of fanTagRows ?? []) {
@@ -109,6 +116,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   const purchaseIntentByFan = new Map((scoresRows ?? []).map((s) => [s.fan_id as string, s.purchase_intent as number]))
   const userNameById = new Map((assignedUsers ?? []).map((u) => [u.id as string, (u.display_name as string) || (u.email as string)]))
+  const conversationsWithPendingOffer = new Set((pendingOfferRows ?? []).map((o) => o.conversation_id as string))
 
   const rows: InboxRow[] = conversations.map((c) => {
     const fanId = c.fan_id as string
@@ -145,13 +153,14 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       totalSpent: totalSpentByFan.get(fanId) ?? 0,
       flowStage,
       awaitingReply,
+      hasPendingOffer: conversationsWithPendingOffer.has(c.id as string),
       assignedUserId: (c.assigned_user_id as string | null) ?? null,
       assignedName: c.assigned_user_id ? (userNameById.get(c.assigned_user_id as string) ?? null) : null,
     }
   })
 
   return (
-    <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[300px_1fr]">
+    <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
       <InboxAutoSync />
       <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
       <div className="min-h-0 min-w-0">{children}</div>
