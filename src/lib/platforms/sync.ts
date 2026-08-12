@@ -125,7 +125,7 @@ export async function syncMymCreator(creatorId: string) {
           },
           { onConflict: 'creator_id,external_conversation_id' }
         )
-        .select('id')
+        .select('id, last_message_at')
         .single()
       if (convError || !conversation) {
         processed += 1
@@ -133,6 +133,23 @@ export async function syncMymCreator(creatorId: string) {
       }
       conversationsSynced += 1
       fanIdByConversationId.set(conversation.id as string, fanId)
+
+      // Cheap skip for repeat/background syncs (see syncAllConnectedMymCreators,
+      // polled automatically while the Inbox is open): fetchConversations
+      // already tells us each conversation's remote last-message time, so a
+      // conversation with no new activity since our last sync doesn't need
+      // its (expensive, one-request-per-message-history) fetchMessages call
+      // at all. This is what makes polling every ~45s viable instead of
+      // hammering MYM's API with a full per-conversation refetch every tick.
+      const localLastMessageAt = conversation.last_message_at as string | null
+      if (
+        remoteConv.lastMessageAt &&
+        localLastMessageAt &&
+        new Date(remoteConv.lastMessageAt).getTime() <= new Date(localLastMessageAt).getTime()
+      ) {
+        processed += 1
+        continue
+      }
 
       const remoteMessages = await mymAdapter.fetchMessages(credentials, remoteConv.externalConversationId)
       for (const remoteMessage of remoteMessages) {
@@ -206,6 +223,41 @@ export async function syncMymCreator(creatorId: string) {
 
   revalidatePath('/inbox')
   return { conversationsSynced, messagesSynced }
+}
+
+// Polled automatically every ~45s while the Inbox is open (see
+// InboxAutoSync, mounted in inbox/layout.tsx) — this is the actual fix for
+// "messages don't refresh": MYM has no webhook/push API to notify us of new
+// activity, so the only way a real fan's message ever reaches OmniFlow is a
+// sync like this one running periodically. Sequential per creator (not
+// Promise.all) — deliberately not hammering MYM with parallel logins for
+// every connected creator at once.
+export async function syncAllConnectedMymCreators() {
+  const { supabase, agencyId } = await getAgencyAndUser()
+
+  const { data: mymPlatform } = await supabase.from('platforms').select('id').eq('code', 'MYM').single()
+  if (!mymPlatform) return { synced: 0 }
+
+  const { data: connections } = await supabase
+    .from('platform_connections')
+    .select('creator_id')
+    .eq('agency_id', agencyId)
+    .eq('platform_id', mymPlatform.id)
+    .eq('status', 'connected')
+
+  let synced = 0
+  for (const conn of connections ?? []) {
+    try {
+      await syncMymCreator(conn.creator_id as string)
+      synced += 1
+    } catch (err) {
+      // One creator's expired session (or a transient MYM error) shouldn't
+      // stop the rest of the agency's connections from syncing — same
+      // reasoning as the per-conversation try/catch above.
+      console.error(`[mym-autosync] failed for creator ${conn.creator_id}:`, err)
+    }
+  }
+  return { synced }
 }
 
 // Lightweight read the client polls while a sync is in flight (see

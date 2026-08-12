@@ -1,7 +1,13 @@
 import { InboxSidebar, type InboxRow } from '@/components/app/inbox/InboxSidebar'
+import { InboxAutoSync } from '@/components/app/inbox/InboxAutoSync'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 import { checkPageAccess } from '@/lib/permissions/check'
 import { AccessRestricted } from '@/components/app/AccessRestricted'
+
+// A background sync tick (InboxAutoSync, polled every ~45s) can take longer
+// than Vercel's default Server Action timeout once there's real activity to
+// pull — same reasoning as creators/[id]/page.tsx's maxDuration.
+export const maxDuration = 60
 
 // Master-detail layout (owner request: "je dois voir toute les conv sur la
 // colonne de gauche... au milieu la conv sélectionnée") — the conversation
@@ -146,6 +152,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   return (
     <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[300px_1fr]">
+      <InboxAutoSync />
       <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
       <div className="min-h-0 min-w-0">{children}</div>
     </div>
