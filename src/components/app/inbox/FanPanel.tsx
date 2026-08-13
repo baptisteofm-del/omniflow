@@ -18,6 +18,10 @@ import {
   UserRound,
   CheckCircle2,
   Clock,
+  ShoppingCart,
+  Heart,
+  Flame,
+  ShieldAlert,
 } from 'lucide-react'
 import {
   addFanMemory,
@@ -95,12 +99,40 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const SCORES = [
-  { key: 'purchase_intent', label: "Intention d'achat" },
-  { key: 'relationship_score', label: 'Relation' },
-  { key: 'spending_potential', label: "Potentiel d'achat" },
-  { key: 'engagement_score', label: 'Engagement' },
-  { key: 'churn_risk', label: 'Risque de churn' },
+  { key: 'purchase_intent', label: "Intention d'achat", icon: ShoppingCart },
+  { key: 'relationship_score', label: 'Score relationnel', icon: Heart },
+  { key: 'spending_potential', label: 'Potentiel de dépense', icon: Wallet },
+  { key: 'engagement_score', label: 'Engagement', icon: Flame },
+  { key: 'churn_risk', label: 'Risque de churn', icon: ShieldAlert },
 ] as const
+
+// A high churn_risk is bad (danger), a high value on every other score is
+// good (success) — this table encodes that inversion once instead of
+// scattering a `key === 'churn_risk' ? ... : ...` check through the JSX.
+const SCORE_QUALITATIVE: Record<(typeof SCORES)[number]['key'], Record<'high' | 'mid' | 'low', string>> = {
+  purchase_intent: { high: 'Élevée', mid: 'Modérée', low: 'Faible' },
+  relationship_score: { high: 'Excellent', mid: 'Bon', low: 'Faible' },
+  spending_potential: { high: 'Très élevé', mid: 'Modéré', low: 'Faible' },
+  engagement_score: { high: 'Très engagé', mid: 'Engagé', low: 'Peu engagé' },
+  churn_risk: { high: 'Élevé', mid: 'Modéré', low: 'Faible' },
+}
+
+const TONE_CLASSES = {
+  success: 'text-[color:var(--success)]',
+  warning: 'text-[color:var(--warning)]',
+  danger: 'text-[color:var(--danger)]',
+} as const
+
+function scoreTone(key: (typeof SCORES)[number]['key'], value: number): keyof typeof TONE_CLASSES {
+  const bucket = value >= 70 ? 'high' : value >= 40 ? 'mid' : 'low'
+  if (key === 'churn_risk') return bucket === 'high' ? 'danger' : bucket === 'mid' ? 'warning' : 'success'
+  return bucket === 'high' ? 'success' : bucket === 'mid' ? 'warning' : 'danger'
+}
+
+function scoreLabel(key: (typeof SCORES)[number]['key'], value: number): string {
+  const bucket = value >= 70 ? 'high' : value >= 40 ? 'mid' : 'low'
+  return SCORE_QUALITATIVE[key][bucket]
+}
 
 const INCOME_FREQUENCY_LABELS: Record<string, string> = {
   weekly: '/ semaine',
@@ -108,14 +140,18 @@ const INCOME_FREQUENCY_LABELS: Record<string, string> = {
   yearly: '/ an',
 }
 
-type FanPanelTab = 'overview' | 'memory' | 'ai' | 'notes'
+type FanPanelTab = 'profile' | 'memory' | 'flow' | 'notes'
 
-// Inbox V2 spec §20: "structurée en onglets/sections plutôt qu'en une très
-// longue page" — replaces the old flat stack of collapsible sections.
+// Design handoff: "Onglets principaux: Profil, Mémoire et Fan Flow" — scores
+// and value now live together under Profil (matching the reference's single
+// dense view) instead of a separate "IA" tab; Notes stays as a 4th tab
+// beyond the three named ones (the spec calls those "principaux", not
+// exhaustive, and human notes is real existing functionality worth keeping
+// reachable).
 const TABS: { key: FanPanelTab; label: string; icon: typeof UserRound }[] = [
-  { key: 'overview', label: 'Overview', icon: UserRound },
+  { key: 'profile', label: 'Profil', icon: UserRound },
   { key: 'memory', label: 'Mémoire', icon: Brain },
-  { key: 'ai', label: 'IA', icon: Sparkles },
+  { key: 'flow', label: 'Fan Flow', icon: Sparkles },
   { key: 'notes', label: 'Notes', icon: StickyNote },
 ]
 
@@ -161,7 +197,7 @@ export function FanPanel({
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingNote, setAddingNote] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
-  const [activeTab, setActiveTab] = useState<FanPanelTab>('overview')
+  const [activeTab, setActiveTab] = useState<FanPanelTab>('profile')
 
   const runAction = (fn: () => Promise<void>) => {
     startTransition(async () => {
@@ -213,162 +249,340 @@ export function FanPanel({
         ))}
       </div>
 
-      {activeTab === 'overview' && (
+      {activeTab === 'profile' && (
         <div className="space-y-5">
-      {/* Valeur Fan — grille dense façon MyFeed : dépense totale, nombre
-          d'achats, puis répartition réelle par type de transaction (schéma
-          transactions.transaction_type), plus la date du dernier achat. */}
-      <CollapsibleSection icon={<Wallet className="h-4 w-4" />} title="Valeur Fan">
-        <div className="grid grid-cols-2 gap-2 text-center">
-          <div className="col-span-2 rounded-xl border border-[color:var(--border-strong)] bg-white/[0.03] py-3">
-            <p className="text-xl font-semibold gradient-text">{totalSpent}€</p>
-            <p className="text-[10px] text-[color:var(--foreground-muted)]">Dépensé au total</p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
-            <p className="text-sm font-semibold">{purchaseCount}</p>
-            <p className="text-[9px] text-[color:var(--foreground-muted)]">Achats</p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
-            <p className="text-sm font-semibold">{lastPurchaseAt ? relativeTimeFr(lastPurchaseAt) : 'Jamais'}</p>
-            <p className="text-[9px] text-[color:var(--foreground-muted)]">Dernier achat</p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
-            <p className="text-sm font-semibold">{mediaSpend}€</p>
-            <p className="text-[9px] text-[color:var(--foreground-muted)]">Média / PPV</p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
-            <p className="text-sm font-semibold">{tipsSpend}€</p>
-            <p className="text-[9px] text-[color:var(--foreground-muted)]">Tips</p>
-          </div>
-          <div className="col-span-2 rounded-xl border border-[color:var(--border)] py-2.5">
-            <p className="text-sm font-semibold">{subscriptionSpend}€</p>
-            <p className="text-[9px] text-[color:var(--foreground-muted)]">Abonnement</p>
-          </div>
-        </div>
-      </CollapsibleSection>
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              {/* Design handoff: "ne jamais simuler indéfiniment une
+                  analyse en cours" — say plainly whether these numbers
+                  reflect the fan's latest message or predate it, instead
+                  of presenting them as always-current. */}
+              {!scores ? (
+                <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--foreground-muted)]">
+                  <Clock className="h-3 w-3" />
+                  Pas encore analysé
+                </p>
+              ) : scoresAreStale ? (
+                <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--warning)]">
+                  <Clock className="h-3 w-3" />
+                  Nouveau message depuis la dernière analyse
+                </p>
+              ) : (
+                <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--success)]">
+                  <CheckCircle2 className="h-3 w-3" />
+                  À jour
+                </p>
+              )}
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                title="Se met à jour automatiquement après chaque message — force une ré-analyse immédiate"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+              >
+                {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                Ré-analyser
+              </button>
+            </div>
+            {analyzeError && <p className="mb-3 text-xs text-[color:var(--danger)]">{analyzeError}</p>}
 
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* Fan Flow */}
-      <CollapsibleSection icon={<Sparkles className="h-4 w-4" />} title="Fan Flow">
-        <FanFlowBar stage={flowStage} totalSpent={totalSpent} />
-      </CollapsibleSection>
-        </div>
-      )}
-
-      {activeTab === 'ai' && (
-        <div>
-        <div className="mb-3 flex items-center justify-between">
-          {/* Design handoff: "ne jamais simuler indéfiniment une analyse en
-              cours" — say plainly whether these numbers reflect the fan's
-              latest message or predate it, instead of presenting them as
-              always-current. */}
-          {!scores ? (
-            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--foreground-muted)]">
-              <Clock className="h-3 w-3" />
-              Pas encore analysé
-            </p>
-          ) : scoresAreStale ? (
-            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--warning)]">
-              <Clock className="h-3 w-3" />
-              Nouveau message depuis la dernière analyse
-            </p>
-          ) : (
-            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--success)]">
-              <CheckCircle2 className="h-3 w-3" />
-              À jour
-            </p>
-          )}
-          <button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing}
-            title="Se met à jour automatiquement après chaque message — force une ré-analyse immédiate"
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
-          >
-            {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Ré-analyser
-          </button>
-        </div>
-        {analyzeError && <p className="mb-3 text-xs text-[color:var(--danger)]">{analyzeError}</p>}
-
-        <div className="space-y-2">
-          {!editingScores ? (
-            <>
-              {SCORES.map((s) => (
-                <div key={s.key} className="flex items-center gap-2 text-xs">
-                  <span className="w-32 shrink-0 text-[color:var(--foreground-muted)]">{s.label}</span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                    <div className="gradient-bg-signature h-full" style={{ width: `${scores ? scores[s.key] : 0}%` }} />
-                  </div>
-                  <span className="w-8 text-right text-[color:var(--foreground)]">{scores ? scores[s.key] : '—'}</span>
+            {!editingScores ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {SCORES.map((s) => {
+                    const value = scores ? scores[s.key] : null
+                    const tone = value !== null ? scoreTone(s.key, value) : null
+                    return (
+                      <div key={s.key} className="rounded-xl border border-[color:var(--border)] p-3">
+                        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-[color:var(--foreground-muted)]">
+                          <s.icon className="h-3 w-3 shrink-0" />
+                          {s.label}
+                        </div>
+                        <p className={`text-lg font-semibold ${tone ? TONE_CLASSES[tone] : 'text-[color:var(--foreground-muted)]'}`}>
+                          {value ?? '—'}
+                        </p>
+                        {value !== null && (
+                          <p className={`text-[9px] ${tone ? TONE_CLASSES[tone] : ''}`}>{scoreLabel(s.key, value)}</p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              ))}
-              {scores?.reasons && <p className="mt-2 text-xs text-[color:var(--foreground-muted)]">{scores.reasons}</p>}
-              <div className="mt-2 flex items-center justify-between">
+                {scores?.reasons && <p className="mt-2 text-xs text-[color:var(--foreground-muted)]">{scores.reasons}</p>}
+                <div className="mt-2 flex items-center justify-between">
+                  <button
+                    onClick={() => setEditingScores(true)}
+                    className="flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {scores ? 'Modifier les scores' : 'Renseigner les scores'}
+                  </button>
+                  {scores && (
+                    <span className="text-[10px] text-[color:var(--foreground-muted)]">
+                      {scores.computed_by === 'system' ? 'calculé par l’IA' : 'saisi manuellement'} · v{scores.version}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const formData = new FormData(e.currentTarget)
+                  runAction(() => upsertFanScores(conversationId, formData))
+                  setEditingScores(false)
+                }}
+                className="space-y-2"
+              >
+                <input type="hidden" name="fan_id" value={fanId} />
+                {SCORES.map((s) => (
+                  <div key={s.key} className="flex items-center gap-2 text-xs">
+                    <span className="w-32 shrink-0 text-[color:var(--foreground-muted)]">{s.label}</span>
+                    <input
+                      type="number"
+                      name={s.key}
+                      min={0}
+                      max={100}
+                      defaultValue={scores ? scores[s.key] : 0}
+                      className="w-16 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                    />
+                  </div>
+                ))}
+                <textarea
+                  name="reasons"
+                  defaultValue={scores?.reasons ?? ''}
+                  placeholder="Signaux / raisons (optionnel)"
+                  rows={2}
+                  className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="gradient-bg-signature rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                  >
+                    {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enregistrer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingScores(false)}
+                    className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-xs text-[color:var(--foreground-muted)]"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="h-px bg-[color:var(--border)]" />
+
+          {/* Valeur Fan — grille dense façon MyFeed : dépense totale, nombre
+              d'achats, puis répartition réelle par type de transaction
+              (schéma transactions.transaction_type), plus la date du
+              dernier achat. */}
+          <CollapsibleSection icon={<Wallet className="h-4 w-4" />} title="Valeur Fan">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="col-span-2 rounded-xl border border-[color:var(--border-strong)] bg-white/[0.03] py-3">
+                <p className="text-xl font-semibold gradient-text">{totalSpent}€</p>
+                <p className="text-[10px] text-[color:var(--foreground-muted)]">Dépensé au total</p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{purchaseCount}</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Achats</p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{lastPurchaseAt ? relativeTimeFr(lastPurchaseAt) : 'Jamais'}</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Dernier achat</p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{mediaSpend}€</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Média / PPV</p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{tipsSpend}€</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Tips</p>
+              </div>
+              <div className="col-span-2 rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{subscriptionSpend}€</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Abonnement</p>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <div className="h-px bg-[color:var(--border)]" />
+
+          {/* Profil */}
+          <CollapsibleSection
+            icon={<UserRound className="h-4 w-4" />}
+            title="Profil"
+            right={
+              !editingProfile && (
                 <button
-                  onClick={() => setEditingScores(true)}
-                  className="flex items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+                  onClick={() => setEditingProfile(true)}
+                  className="flex items-center gap-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
                 >
                   <Pencil className="h-3 w-3" />
-                  {scores ? 'Modifier les scores' : 'Renseigner les scores'}
+                  Modifier
                 </button>
-                {scores && (
-                  <span className="text-[10px] text-[color:var(--foreground-muted)]">
-                    {scores.computed_by === 'system' ? 'calculé par l’IA' : 'saisi manuellement'} · v{scores.version}
-                  </span>
-                )}
+              )
+            }
+          >
+            {!editingProfile ? (
+              <div className="space-y-1.5 text-xs text-[color:var(--foreground-muted)]">
+                <p>Anniversaire : {fan.birthday ? new Date(fan.birthday).toLocaleDateString('fr-FR') : '—'}</p>
+                <p>Localisation : {fan.location || '—'}</p>
+                <p>
+                  Revenu :{' '}
+                  {fan.income_amount
+                    ? `${fan.income_amount}€ ${INCOME_FREQUENCY_LABELS[fan.income_frequency ?? ''] ?? ''}`
+                    : '—'}
+                </p>
+                <p>Source : {fan.source || '—'}</p>
               </div>
-            </>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                const formData = new FormData(e.currentTarget)
-                runAction(() => upsertFanScores(conversationId, formData))
-                setEditingScores(false)
-              }}
-              className="space-y-2"
-            >
-              <input type="hidden" name="fan_id" value={fanId} />
-              {SCORES.map((s) => (
-                <div key={s.key} className="flex items-center gap-2 text-xs">
-                  <span className="w-32 shrink-0 text-[color:var(--foreground-muted)]">{s.label}</span>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const formData = new FormData(e.currentTarget)
+                  runAction(() => updateFanProfile(conversationId, formData))
+                  setEditingProfile(false)
+                }}
+                className="space-y-2"
+              >
+                <input type="hidden" name="fan_id" value={fan.id} />
+                <div>
+                  <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Anniversaire</label>
                   <input
-                    type="number"
-                    name={s.key}
-                    min={0}
-                    max={100}
-                    defaultValue={scores ? scores[s.key] : 0}
-                    className="w-16 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                    type="date"
+                    name="birthday"
+                    defaultValue={fan.birthday ?? ''}
+                    className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
                   />
                 </div>
+                <div>
+                  <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Localisation</label>
+                  <input
+                    name="location"
+                    defaultValue={fan.location ?? ''}
+                    placeholder="Paris, Lyon..."
+                    className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    name="income_amount"
+                    defaultValue={fan.income_amount ?? ''}
+                    placeholder="Revenu"
+                    className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  />
+                  <select
+                    name="income_frequency"
+                    defaultValue={fan.income_frequency ?? ''}
+                    className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  >
+                    <option value="">Fréquence</option>
+                    <option value="weekly">Par semaine</option>
+                    <option value="monthly">Par mois</option>
+                    <option value="yearly">Par an</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Source</label>
+                  <input
+                    name="source"
+                    defaultValue={fan.source ?? ''}
+                    placeholder="Bio link, mass DM..."
+                    className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Abonnement</label>
+                  <select
+                    name="subscription_status"
+                    defaultValue={fan.subscription_status}
+                    className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+                  >
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="gradient-bg-signature rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                  >
+                    {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enregistrer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProfile(false)}
+                    className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-xs text-[color:var(--foreground-muted)]"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            )}
+          </CollapsibleSection>
+
+          <div className="h-px bg-[color:var(--border)]" />
+
+          {/* Abonnement */}
+          <CollapsibleSection icon={<CreditCard className="h-4 w-4" />} title="Abonnement">
+            <span
+              className={`inline-block rounded-full border px-2.5 py-1 text-xs font-medium ${
+                fan.subscription_status === 'active'
+                  ? 'border-[color:var(--success)]/40 text-[color:var(--success)]'
+                  : 'border-[color:var(--danger)]/40 text-[color:var(--danger)]'
+              }`}
+            >
+              {fan.subscription_status === 'active' ? 'Abonnement actif' : 'Abonnement inactif'}
+            </span>
+          </CollapsibleSection>
+
+          <div className="h-px bg-[color:var(--border)]" />
+
+          {/* Listes / tags */}
+          <CollapsibleSection icon={<Tag className="h-4 w-4" />} title="Listes">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tags.map((t) => (
+                <span
+                  key={t.id}
+                  className="flex items-center gap-1 rounded-full border border-[color:var(--border-strong)] px-2.5 py-1 text-[10px] text-[color:var(--foreground)]"
+                >
+                  {t.name}
+                  <button
+                    onClick={() => runAction(() => removeFanTag(conversationId, t.id))}
+                    disabled={isPending}
+                    className="text-[color:var(--foreground-muted)] hover:text-[color:var(--danger)]"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
               ))}
-              <textarea
-                name="reasons"
-                defaultValue={scores?.reasons ?? ''}
-                placeholder="Signaux / raisons (optionnel)"
-                rows={2}
-                className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="gradient-bg-signature rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
-                >
-                  {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enregistrer'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingScores(false)}
-                  className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-xs text-[color:var(--foreground-muted)]"
-                >
-                  Annuler
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!tagDraft.trim()) return
+                  const formData = new FormData()
+                  formData.set('fan_id', fan.id)
+                  formData.set('name', tagDraft.trim())
+                  runAction(() => addFanTag(conversationId, formData))
+                  setTagDraft('')
+                }}
+                className="flex items-center gap-1"
+              >
+                <input
+                  value={tagDraft}
+                  onChange={(e) => setTagDraft(e.target.value)}
+                  placeholder="+ liste"
+                  className="w-20 rounded-full border border-dashed border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[10px] focus:border-[color:var(--border-strong)] focus:outline-none"
+                />
+              </form>
+            </div>
+          </CollapsibleSection>
         </div>
       )}
 
@@ -479,182 +693,9 @@ export function FanPanel({
         </div>
       )}
 
-      {activeTab === 'overview' && (
-        <div className="mt-5 space-y-5">
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* Profil */}
-      <CollapsibleSection
-        icon={<UserRound className="h-4 w-4" />}
-        title="Profil"
-        right={
-          !editingProfile && (
-            <button
-              onClick={() => setEditingProfile(true)}
-              className="flex items-center gap-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
-            >
-              <Pencil className="h-3 w-3" />
-              Modifier
-            </button>
-          )
-        }
-      >
-        {!editingProfile ? (
-          <div className="space-y-1.5 text-xs text-[color:var(--foreground-muted)]">
-            <p>Anniversaire : {fan.birthday ? new Date(fan.birthday).toLocaleDateString('fr-FR') : '—'}</p>
-            <p>Localisation : {fan.location || '—'}</p>
-            <p>
-              Revenu :{' '}
-              {fan.income_amount
-                ? `${fan.income_amount}€ ${INCOME_FREQUENCY_LABELS[fan.income_frequency ?? ''] ?? ''}`
-                : '—'}
-            </p>
-            <p>Source : {fan.source || '—'}</p>
-          </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              const formData = new FormData(e.currentTarget)
-              runAction(() => updateFanProfile(conversationId, formData))
-              setEditingProfile(false)
-            }}
-            className="space-y-2"
-          >
-            <input type="hidden" name="fan_id" value={fan.id} />
-            <div>
-              <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Anniversaire</label>
-              <input
-                type="date"
-                name="birthday"
-                defaultValue={fan.birthday ?? ''}
-                className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Localisation</label>
-              <input
-                name="location"
-                defaultValue={fan.location ?? ''}
-                placeholder="Paris, Lyon..."
-                className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                name="income_amount"
-                defaultValue={fan.income_amount ?? ''}
-                placeholder="Revenu"
-                className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-              <select
-                name="income_frequency"
-                defaultValue={fan.income_frequency ?? ''}
-                className="w-1/2 rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              >
-                <option value="">Fréquence</option>
-                <option value="weekly">Par semaine</option>
-                <option value="monthly">Par mois</option>
-                <option value="yearly">Par an</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Source</label>
-              <input
-                name="source"
-                defaultValue={fan.source ?? ''}
-                placeholder="Bio link, mass DM..."
-                className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-[10px] text-[color:var(--foreground-muted)]">Abonnement</label>
-              <select
-                name="subscription_status"
-                defaultValue={fan.subscription_status}
-                className="w-full rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1.5 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
-              >
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="gradient-bg-signature rounded-lg px-3 py-1.5 text-xs text-white disabled:opacity-50"
-              >
-                {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enregistrer'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingProfile(false)}
-                className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-xs text-[color:var(--foreground-muted)]"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        )}
-      </CollapsibleSection>
-
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* Abonnement */}
-      <CollapsibleSection icon={<CreditCard className="h-4 w-4" />} title="Abonnement">
-        <span
-          className={`inline-block rounded-full border px-2.5 py-1 text-xs font-medium ${
-            fan.subscription_status === 'active'
-              ? 'border-[color:var(--success)]/40 text-[color:var(--success)]'
-              : 'border-[color:var(--danger)]/40 text-[color:var(--danger)]'
-          }`}
-        >
-          {fan.subscription_status === 'active' ? 'Abonnement actif' : 'Abonnement inactif'}
-        </span>
-      </CollapsibleSection>
-
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* Listes / tags */}
-      <CollapsibleSection icon={<Tag className="h-4 w-4" />} title="Listes">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {tags.map((t) => (
-            <span
-              key={t.id}
-              className="flex items-center gap-1 rounded-full border border-[color:var(--border-strong)] px-2.5 py-1 text-[10px] text-[color:var(--foreground)]"
-            >
-              {t.name}
-              <button
-                onClick={() => runAction(() => removeFanTag(conversationId, t.id))}
-                disabled={isPending}
-                className="text-[color:var(--foreground-muted)] hover:text-[color:var(--danger)]"
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </span>
-          ))}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!tagDraft.trim()) return
-              const formData = new FormData()
-              formData.set('fan_id', fan.id)
-              formData.set('name', tagDraft.trim())
-              runAction(() => addFanTag(conversationId, formData))
-              setTagDraft('')
-            }}
-            className="flex items-center gap-1"
-          >
-            <input
-              value={tagDraft}
-              onChange={(e) => setTagDraft(e.target.value)}
-              placeholder="+ liste"
-              className="w-20 rounded-full border border-dashed border-[color:var(--border)] bg-transparent px-2.5 py-1 text-[10px] focus:border-[color:var(--border-strong)] focus:outline-none"
-            />
-          </form>
-        </div>
-      </CollapsibleSection>
+      {activeTab === 'flow' && (
+        <div>
+          <FanFlowBar stage={flowStage} totalSpent={totalSpent} />
         </div>
       )}
 
