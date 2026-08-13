@@ -39,7 +39,7 @@ type FilterKey = 'all' | 'to_reply' | 'mine'
 const FILTERS: { key: FilterKey; label: string; icon: typeof MessageSquare | null }[] = [
   { key: 'all', label: 'Toutes', icon: null },
   { key: 'to_reply', label: 'À répondre', icon: MessageSquare },
-  { key: 'mine', label: 'Assignées à moi', icon: UserCheck },
+  { key: 'mine', label: 'À moi', icon: UserCheck },
 ]
 
 export function InboxSidebar({
@@ -97,9 +97,12 @@ export function InboxSidebar({
 
   return (
     <div className="glass flex h-full flex-col overflow-hidden rounded-2xl">
-      <div className="shrink-0 space-y-3 border-b border-[color:var(--border)] p-4">
+      <div className="shrink-0 space-y-2 border-b border-[color:var(--border)] p-3">
         <div className="relative flex items-center justify-between">
-          <h1 className="text-sm font-semibold">Inbox</h1>
+          <h1 className="flex items-center gap-1.5 text-sm font-semibold">
+            Inbox
+            <span className="text-xs font-normal text-[color:var(--foreground-muted)]">{rows.length}</span>
+          </h1>
           <button
             onClick={() => setShowSoundMenu((v) => !v)}
             title="Réglages des sons"
@@ -245,94 +248,84 @@ export function InboxSidebar({
             </p>
           </div>
         ) : (
-          filteredRows.map((r) => (
-            <Link
-              key={r.id}
-              href={`/inbox/${r.id}`}
-              className={`relative flex items-center gap-2.5 px-4 py-3 text-sm transition-colors duration-150 hover:bg-white/5 ${
-                selectedId === r.id ? 'bg-white/[0.07]' : ''
-              }`}
-            >
-              {selectedId === r.id && <span className="gradient-bg-signature absolute inset-y-0 left-0 w-0.5" />}
-              <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} online={r.isRecentlyOnline} size={36} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {r.awaitingReply && (
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--cyan)]" title="En attente de réponse" />
+          filteredRows.map((r) => {
+            // Design handoff reference: one colored status tag per row, not
+            // every real signal stacked at once — still real, just picking
+            // the single most decision-relevant one instead of showing all
+            // of them (risk/opportunity outrank the routine flow stage;
+            // a pending offer outranks "no signal" but not an actual signal).
+            const primaryBadge = r.signal === 'risk'
+              ? { label: 'Risque', icon: ShieldAlert, className: 'bg-[color:var(--danger)]/15 text-[color:var(--danger)]' }
+              : r.signal === 'opportunity'
+                ? { label: 'Opportunité', icon: TrendingUp, className: 'bg-[color:var(--warning)]/15 text-[color:var(--warning)]' }
+                : r.hasPendingOffer
+                  ? { label: 'PPV envoyé', icon: Clock3, className: 'bg-[color:var(--warning)]/15 text-[color:var(--warning)]' }
+                  : { label: FAN_FLOW_LABELS[r.flowStage], icon: null, className: FAN_FLOW_BADGE_CLASSES[r.flowStage] }
+
+            return (
+              <Link
+                key={r.id}
+                href={`/inbox/${r.id}`}
+                className={`relative flex items-center gap-3 px-4 py-3.5 text-sm transition-colors duration-150 hover:bg-white/5 ${
+                  selectedId === r.id ? 'bg-white/[0.07]' : ''
+                }`}
+              >
+                {selectedId === r.id && <span className="gradient-bg-signature absolute inset-y-0 left-0 w-0.5" />}
+                <FanAvatar name={r.fanName} avatarUrl={r.fanAvatarUrl} online={r.isRecentlyOnline} size={44} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {r.awaitingReply && (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--cyan)]" title="En attente de réponse" />
+                      )}
+                      <p className={`truncate text-sm ${r.awaitingReply ? 'font-semibold text-[color:var(--foreground)]' : 'font-medium'}`}>
+                        {r.fanName}
+                      </p>
+                      {r.isSubscriber && (
+                        <span className="shrink-0 text-[10px] font-semibold text-[color:var(--violet)]">VIP</span>
+                      )}
+                    </span>
+                    {r.lastMessage && (
+                      <span className="shrink-0 text-[10px] text-[color:var(--foreground-muted)]">
+                        {relativeTimeFr(r.lastMessage.sent_at)}
+                      </span>
                     )}
-                    <p className={`truncate text-xs ${r.awaitingReply ? 'font-semibold text-[color:var(--foreground)]' : 'font-medium'}`}>
-                      {r.fanName}
-                    </p>
-                  </span>
-                  {r.lastMessage && (
-                    <span className="shrink-0 text-[9px] text-[color:var(--foreground-muted)]">
-                      {relativeTimeFr(r.lastMessage.sent_at)}
+                  </div>
+                  <p
+                    className={`truncate text-xs ${
+                      r.awaitingReply ? 'text-[color:var(--foreground)]' : 'text-[color:var(--foreground-muted)]'
+                    }`}
+                  >
+                    {r.lastMessage?.text || 'Aucun message'}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between gap-1">
+                    <span
+                      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        primaryBadge.className.includes('border') ? `border ${primaryBadge.className}` : primaryBadge.className
+                      }`}
+                    >
+                      {primaryBadge.icon && <primaryBadge.icon className="h-2.5 w-2.5" />}
+                      {primaryBadge.label}
                     </span>
-                  )}
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {r.assignedName && (
+                        <span
+                          title={`Assignée à ${r.assignedName}`}
+                          className="rounded-full bg-[color:var(--cyan)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--cyan)]"
+                        >
+                          {r.assignedName}
+                        </span>
+                      )}
+                      <ConversationViewerBadge conversationId={r.id} />
+                      {r.totalSpent > 0 && (
+                        <span className="text-xs font-semibold text-[color:var(--success)]">{r.totalSpent}€</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <p
-                  className={`truncate text-[11px] ${
-                    r.awaitingReply ? 'text-[color:var(--foreground)]' : 'text-[color:var(--foreground-muted)]'
-                  }`}
-                >
-                  {r.lastMessage?.text || 'Aucun message'}
-                </p>
-                <div className="mt-1 flex items-center gap-1">
-                  <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${FAN_FLOW_BADGE_CLASSES[r.flowStage]}`}>
-                    {FAN_FLOW_LABELS[r.flowStage]}
-                  </span>
-                  {/* Same churn_risk/purchase_intent thresholds that already
-                      drive a real notification (analyzeConversationWithAI) —
-                      surfaced here too so the signal is visible without
-                      opening every conversation. */}
-                  {r.signal === 'risk' && (
-                    <span
-                      title="Risque de churn élevé détecté par l'IA"
-                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--danger)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--danger)]"
-                    >
-                      <ShieldAlert className="h-2.5 w-2.5" />
-                      Risque
-                    </span>
-                  )}
-                  {r.signal === 'opportunity' && (
-                    <span
-                      title="Forte intention d'achat détectée par l'IA"
-                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--warning)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--warning)]"
-                    >
-                      <TrendingUp className="h-2.5 w-2.5" />
-                      Opportunité
-                    </span>
-                  )}
-                  {r.hasPendingOffer && (
-                    <span
-                      title="Offre envoyée, en attente de réponse"
-                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--warning)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--warning)]"
-                    >
-                      <Clock3 className="h-2.5 w-2.5" />
-                      PPV
-                    </span>
-                  )}
-                  {r.isSubscriber && (
-                    <span className="rounded-full bg-[color:var(--violet)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--violet)]">
-                      ABO
-                    </span>
-                  )}
-                  {r.totalSpent > 0 && (
-                    <span className="rounded-full bg-[color:var(--success)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--success)]">
-                      {r.totalSpent}€
-                    </span>
-                  )}
-                  {r.assignedName && (
-                    <span className="rounded-full bg-[color:var(--cyan)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--cyan)]">
-                      {r.assignedName}
-                    </span>
-                  )}
-                  <ConversationViewerBadge conversationId={r.id} />
-                </div>
-              </div>
-            </Link>
-          ))
+              </Link>
+            )
+          })
         )}
       </div>
 
