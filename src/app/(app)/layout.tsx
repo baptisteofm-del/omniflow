@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/app/Sidebar'
 import { TopBar } from '@/components/app/TopBar'
+import { getRevenueMetrics, getRevenueTimeSeries } from '@/lib/analytics/metrics'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -54,6 +55,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const userName = appUser?.display_name || appUser?.email || 'Membre'
 
+  // Sidebar "Revenus (30j)" widget (design handoff reference) — this layout
+  // only re-fetches on a hard reload, not on every client-side navigation
+  // (Next.js keeps a shared layout mounted across routes it wraps), so two
+  // extra real revenue reads here don't repeat per page like a per-route
+  // fetch would.
+  let revenue30d: { total: number; changePercent: number | null; points: { revenue: number }[] } | null = null
+  if (agencyId) {
+    const now = new Date()
+    const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const startPrev30 = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+    const [current, previous, series] = await Promise.all([
+      getRevenueMetrics(supabase, agencyId, { from: start30.toISOString(), to: now.toISOString() }),
+      getRevenueMetrics(supabase, agencyId, { from: startPrev30.toISOString(), to: start30.toISOString() }),
+      getRevenueTimeSeries(supabase, agencyId, { from: start30.toISOString(), to: now.toISOString() }),
+    ])
+    revenue30d = {
+      total: current.totalRevenue,
+      changePercent: previous.totalRevenue > 0 ? ((current.totalRevenue - previous.totalRevenue) / previous.totalRevenue) * 100 : null,
+      points: series.map((p) => ({ revenue: p.revenue })),
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)]">
       <TopBar agencyId={agencyId} initialNotifications={notifications ?? []} userName={userName} userRole={null} />
@@ -61,7 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           top offset reserved in normal flow — Sidebar itself is also
           fixed and starts its own box at top-14 to match. */}
       <div className="flex pt-14">
-        <Sidebar agencyName={agencyName} />
+        <Sidebar agencyName={agencyName} revenue30d={revenue30d} />
         <main className="flex-1 overflow-y-auto px-6 py-10">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>

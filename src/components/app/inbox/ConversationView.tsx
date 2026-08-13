@@ -132,7 +132,13 @@ export function ConversationView({
   const [fanDraft, setFanDraft] = useState('')
   const [showMockPanel, setShowMockPanel] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
-  const [showScripts, setShowScripts] = useState(!!activeScriptRun)
+  // Design handoff reference keeps the thread clean by default — the
+  // Progression Script stepper in the Fan Intelligence panel already shows
+  // where a running script stands. This panel adds real controls (stop the
+  // run, switch step) the read-only stepper doesn't have, so it stays
+  // reachable via the Scripts button instead of auto-opening and eating
+  // space above the composer on every conversation with an active run.
+  const [showScripts, setShowScripts] = useState(false)
   const isCopilot = aiMode === 'copilot'
   const isFullAi = aiMode === 'full_ai'
 

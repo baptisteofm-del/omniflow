@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Fragment, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Wallet,
@@ -433,6 +433,13 @@ export function FanPanel({
                 <p className="text-sm font-semibold">{purchaseCount}</p>
                 <p className="text-[9px] text-[color:var(--foreground-muted)]">Achats</p>
               </div>
+              {/* Panier moyen — derived from the same two real numbers
+                  already shown above (totalSpent / purchaseCount), not a
+                  new data source. */}
+              <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+                <p className="text-sm font-semibold">{purchaseCount > 0 ? Math.round(totalSpent / purchaseCount) : 0}€</p>
+                <p className="text-[9px] text-[color:var(--foreground-muted)]">Panier moyen</p>
+              </div>
               <div className="rounded-xl border border-[color:var(--border)] py-2.5">
                 <p className="text-sm font-semibold">{lastPurchaseAt ? relativeTimeFr(lastPurchaseAt) : 'Jamais'}</p>
                 <p className="text-[9px] text-[color:var(--foreground-muted)]">Dernier achat</p>
@@ -654,28 +661,43 @@ export function FanPanel({
             <>
               <div className="h-px bg-[color:var(--border)]" />
               <CollapsibleSection icon={<Workflow className="h-4 w-4" />} title={`Script — ${scriptProgress.scriptName}`}>
-                <div className="space-y-2">
-                  {scriptProgress.steps.map((step) => (
-                    <div key={step.id} className="flex items-center gap-2 text-xs">
-                      {step.status === 'done' ? (
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[color:var(--success)]" />
-                      ) : step.status === 'current' ? (
-                        <Circle className="h-4 w-4 shrink-0 fill-[color:var(--violet)]/20 text-[color:var(--violet)]" />
-                      ) : (
-                        <Circle className="h-4 w-4 shrink-0 text-[color:var(--border-strong)]" />
+                {/* Horizontal stepper (design handoff reference), not a
+                    vertical checklist — same real step data as before
+                    (script_nodes.sequence_order), just laid out as connected
+                    circles. overflow-x-auto is the safety net if a script
+                    ever has enough steps to not fit the panel width (same
+                    defensive pattern as the 4-tab row above). */}
+                <div className="flex overflow-x-auto pb-1">
+                  {scriptProgress.steps.map((step, i) => (
+                    <Fragment key={step.id}>
+                      <div className="flex w-11 shrink-0 flex-col items-center gap-1.5">
+                        {step.status === 'done' ? (
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-[color:var(--success)]" />
+                        ) : step.status === 'current' ? (
+                          <Circle className="h-4 w-4 shrink-0 fill-[color:var(--violet)]/20 text-[color:var(--violet)]" />
+                        ) : (
+                          <Circle className="h-4 w-4 shrink-0 text-[color:var(--border-strong)]" />
+                        )}
+                        <span
+                          className={`break-words text-center text-[9px] leading-tight ${
+                            step.status === 'current'
+                              ? 'font-medium text-[color:var(--foreground)]'
+                              : step.status === 'done'
+                                ? 'text-[color:var(--foreground)]'
+                                : 'text-[color:var(--foreground-muted)]'
+                          }`}
+                        >
+                          {step.title}
+                        </span>
+                      </div>
+                      {i < scriptProgress.steps.length - 1 && (
+                        <div
+                          className={`mt-2 h-px min-w-1 flex-1 ${
+                            step.status === 'done' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--border)]'
+                          }`}
+                        />
                       )}
-                      <span
-                        className={
-                          step.status === 'current'
-                            ? 'font-medium text-[color:var(--foreground)]'
-                            : step.status === 'done'
-                              ? 'text-[color:var(--foreground)]'
-                              : 'text-[color:var(--foreground-muted)]'
-                        }
-                      >
-                        {step.title}
-                      </span>
-                    </div>
+                    </Fragment>
                   ))}
                 </div>
               </CollapsibleSection>
