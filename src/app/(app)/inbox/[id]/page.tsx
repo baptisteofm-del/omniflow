@@ -341,7 +341,14 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_340px]">
+      {/* BUG FIX (owner report): a bare `1fr` grid track defaults to
+          min-width:auto, so it refuses to shrink below its content's
+          intrinsic width — at viewport widths just past the lg breakpoint,
+          the conversation column wouldn't yield space to the fixed 340px
+          Fan Intelligence column, pushing it off-screen instead of the
+          conversation shrinking. minmax(0,1fr) is the actual fix (same
+          root cause as FanFlowBar's earlier overflow bug). */}
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0">
           <ConversationView
             conversationId={id}

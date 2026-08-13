@@ -192,7 +192,12 @@ export default async function InboxLayout({ children }: { children: React.ReactN
           item and shove the list/detail columns out of place. */}
       <InboxAutoSync />
       <InboxRealtimeSync />
-      <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
+      {/* minmax(0,1fr): same fix as [id]/page.tsx's conversation/Fan
+          Intelligence grid — a bare 1fr won't shrink below its content's
+          intrinsic width, which can push the detail pane off-screen at
+          narrower desktop widths instead of it actually filling the
+          remaining space next to the fixed 320px list. */}
+      <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <InboxListPane>
           <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
         </InboxListPane>
