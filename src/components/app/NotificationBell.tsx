@@ -67,18 +67,18 @@ export function NotificationBell({ agencyId, initialNotifications }: { agencyId:
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]"
+        title="Notifications"
+        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]"
       >
         <Bell className="h-4 w-4" />
-        Notifications
         {unreadCount > 0 && (
-          <span className="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--danger)] px-1 text-[10px] text-white">
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--danger)] px-1 text-[10px] text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-10 mb-2 max-h-96 w-80 overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--background)] p-2 shadow-xl">
+        <div className="absolute right-0 top-full z-10 mt-2 max-h-96 w-80 overflow-y-auto rounded-2xl border border-[color:var(--border)] bg-[color:var(--background)] p-2 shadow-xl">
           <div className="flex items-center justify-between px-2 py-1">
             <span className="text-xs font-medium">Notifications</span>
             {unreadCount > 0 && (

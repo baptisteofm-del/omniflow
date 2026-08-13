@@ -2,52 +2,29 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Home, UserRound, MessageSquare, LibraryBig, BarChart3, Settings, ChevronsLeft } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
-import { NotificationBell } from '@/components/app/NotificationBell'
-
-interface Notification {
-  id: string
-  type: string
-  title: string
-  body: string | null
-  conversation_id: string | null
-  read_at: string | null
-  created_at: string
-}
 
 // "Paramétrer" and "Scripts"/"Médias" are not top-level categories anymore
 // (owner request) — each is one real page with tabs inside it now
 // (/library, /settings), not a sidebar dropdown over the old separate
 // routes. The sidebar just links straight to each merged page.
 //
-// Owner report: the rail read as a flat black slab next to the Inbox's
-// color work — each item now gets its own accent color at rest (not just
-// on the active state) so the whole rail carries color, not only one pill.
 const NAV_ITEMS = [
-  { href: '/home', label: 'Dashboard', icon: Home, alsoActiveOn: [] as string[], color: 'text-[color:var(--cyan)]' },
-  { href: '/creators', label: 'Créatrices', icon: UserRound, alsoActiveOn: [] as string[], color: 'text-[color:var(--violet)]' },
-  { href: '/inbox', label: 'Inbox', icon: MessageSquare, alsoActiveOn: [] as string[], color: 'text-[color:var(--blue)]' },
+  { href: '/home', label: 'Dashboard', icon: Home, alsoActiveOn: [] as string[] },
+  { href: '/creators', label: 'Créatrices', icon: UserRound, alsoActiveOn: [] as string[] },
+  { href: '/inbox', label: 'Inbox', icon: MessageSquare, alsoActiveOn: [] as string[] },
   // /scripts/[id] and /media/new stay their own routes (see library/page.tsx)
   // but should still highlight Bibliothèque as the active section.
-  { href: '/library', label: 'Bibliothèque', icon: LibraryBig, alsoActiveOn: ['/scripts', '/media'], color: 'text-[color:var(--cyan)]' },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3, alsoActiveOn: [] as string[], color: 'text-[color:var(--success)]' },
-  { href: '/settings', label: 'Paramètres', icon: Settings, alsoActiveOn: [] as string[], color: 'text-[color:var(--warning)]' },
+  { href: '/library', label: 'Bibliothèque', icon: LibraryBig, alsoActiveOn: ['/scripts', '/media'] },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, alsoActiveOn: [] as string[] },
+  { href: '/settings', label: 'Paramètres', icon: Settings, alsoActiveOn: [] as string[] },
 ]
 
 const STORAGE_KEY = 'omniflow_sidebar_collapsed'
 
-export function Sidebar({
-  agencyName,
-  agencyId,
-  initialNotifications,
-}: {
-  agencyName: string | null
-  agencyId: string | null
-  initialNotifications: Notification[]
-}) {
+export function Sidebar({ agencyName }: { agencyName: string | null }) {
   const pathname = usePathname()
   // Starts expanded to match server-rendered HTML (no window on the
   // server) — the saved preference is applied right after mount, in the
@@ -91,22 +68,13 @@ export function Sidebar({
           background:
             'radial-gradient(ellipse 70% 40% at 15% 0%, rgba(124,58,237,0.28) 0%, transparent 65%), radial-gradient(ellipse 60% 35% at 100% 25%, rgba(34,211,238,0.2) 0%, transparent 65%), var(--surface)',
         }}
-        className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[color:var(--border)] px-4 py-6 transition-[width] duration-200 ${
+        className={`fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden border-r border-[color:var(--border)] px-4 py-6 transition-[width] duration-200 ${
           expanded ? 'w-56' : 'w-16'
         } ${collapsed && hovering ? 'shadow-[8px_0_32px_rgba(0,0,0,0.5)]' : ''}`}
       >
-        <div className="mb-1 flex items-center justify-between px-2">
-          <Link href="/home" className="flex items-center gap-2">
-            <div className="gradient-bg-signature glow-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
-              <Image src="/logo-mark.png" alt="" width={18} height={18} className="h-[18px] w-[18px] shrink-0 rounded-full" />
-            </div>
-            {expanded && (
-              <span className="whitespace-nowrap font-semibold">
-                Omni<span className="gradient-text">Flow</span>
-              </span>
-            )}
-          </Link>
-          {!collapsed && (
+        {/* Logo now lives in the full-width TopBar above, not duplicated here. */}
+        {!collapsed && (
+          <div className="mb-1 flex items-center justify-end px-2">
             <button
               onClick={toggle}
               title="Réduire la barre latérale"
@@ -114,8 +82,8 @@ export function Sidebar({
             >
               <ChevronsLeft className="h-4 w-4" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {expanded && agencyName && (
           <p className="mb-6 truncate whitespace-nowrap px-2 text-xs text-[color:var(--foreground-muted)]">{agencyName}</p>
         )}
@@ -139,7 +107,7 @@ export function Sidebar({
                     : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
                 }`}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? '' : item.color}`} />
+                <Icon className="h-4 w-4 shrink-0" />
                 {expanded && item.label}
               </Link>
             )
@@ -156,7 +124,6 @@ export function Sidebar({
               <ChevronsLeft className="h-4 w-4 rotate-180" />
             </button>
           )}
-          {agencyId && <NotificationBell agencyId={agencyId} initialNotifications={initialNotifications} />}
           <SignOutButton />
         </div>
       </aside>
