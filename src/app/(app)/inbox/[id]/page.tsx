@@ -8,6 +8,7 @@ import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
 import { ConversationViewerBadge } from '@/components/app/inbox/TeamPresence'
 import { FanIntelligenceProvider, FanIntelligenceToggleButton, FanIntelligenceDrawer } from '@/components/app/inbox/FanIntelligenceDrawer'
+import { ModelDnaPanel } from '@/components/app/inbox/ModelDnaPanel'
 import { checkDueScriptRuns } from '@/lib/scripts/engine'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
@@ -60,6 +61,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     { data: lastEscalation },
     { data: offerRows },
     { data: sellableMedia },
+    { data: modelDna },
   ] = await Promise.all([
     supabase
       .from('messages')
@@ -127,6 +129,18 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       .eq('is_for_sale', true)
       .not('minimum_price', 'is', null)
       .order('created_at', { ascending: false }),
+    // Owner report: no way to adjust the AI's personality for this creator
+    // after creation (NewCreatorForm only writes creator_ai_profiles once,
+    // at creation time) — surfaced here, next to the conversation, since
+    // that's where an agent actually notices the tone is off.
+    supabase
+      .from('creator_ai_profiles')
+      .select('id, warmth, flirt_intensity, directness, sales_aggressiveness, message_length, emoji_style')
+      .eq('creator_id', creatorId)
+      .eq('status', 'published')
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
@@ -363,6 +377,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         </div>
         <FanIntelligenceDrawer>
           <div className="space-y-6 pr-1 lg:h-full lg:overflow-y-auto">
+            <ModelDnaPanel creatorId={creatorId} conversationId={id} creatorName={creator?.display_name ?? 'la créatrice'} dna={modelDna ?? null} />
             {fan && (
               <FanPanel
                 conversationId={id}
