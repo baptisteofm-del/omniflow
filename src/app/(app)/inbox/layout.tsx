@@ -1,6 +1,7 @@
 import { InboxSidebar, type InboxRow } from '@/components/app/inbox/InboxSidebar'
 import { InboxAutoSync } from '@/components/app/inbox/InboxAutoSync'
 import { InboxRealtimeSync } from '@/components/app/inbox/InboxRealtimeSync'
+import { InboxListPane, InboxDetailPane } from '@/components/app/inbox/InboxMobileVisibility'
 import { TeamPresenceProvider } from '@/components/app/inbox/TeamPresence'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 import { checkPageAccess } from '@/lib/permissions/check'
@@ -169,8 +170,10 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
         <InboxAutoSync />
         <InboxRealtimeSync />
-        <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
-        <div className="min-h-0 min-w-0">{children}</div>
+        <InboxListPane>
+          <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
+        </InboxListPane>
+        <InboxDetailPane>{children}</InboxDetailPane>
       </div>
     </TeamPresenceProvider>
   )

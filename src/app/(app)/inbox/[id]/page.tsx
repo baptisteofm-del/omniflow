@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanPanel } from '@/components/app/inbox/FanPanel'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
 import { ConversationViewerBadge } from '@/components/app/inbox/TeamPresence'
+import { FanIntelligenceProvider, FanIntelligenceToggleButton, FanIntelligenceDrawer } from '@/components/app/inbox/FanIntelligenceDrawer'
 import { checkDueScriptRuns } from '@/lib/scripts/engine'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
@@ -242,9 +245,20 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   })
 
   return (
+    <FanIntelligenceProvider>
     <div className="flex h-full flex-col">
       <div className="glass mb-4 flex shrink-0 items-center justify-between rounded-2xl px-5 py-3.5">
         <div className="flex items-center gap-3">
+          {/* Design handoff: on small screens the list and the open
+              conversation are separate views (InboxListPane/InboxDetailPane
+              in layout.tsx) — this is how you get back to the list. */}
+          <Link
+            href="/inbox"
+            title="Retour aux conversations"
+            className="flex shrink-0 items-center justify-center rounded-full border border-[color:var(--border-strong)] p-2 text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] lg:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <FanAvatar name={fan?.display_name ?? 'Fan'} avatarUrl={fan?.avatar_url} online={isRecentlyOnline} size={42} />
           <div>
             <div className="flex items-center gap-2">
@@ -266,13 +280,16 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             </p>
           </div>
         </div>
-        <AiModeToggle
-          conversationId={id}
-          aiMode={conversation.ai_mode}
-          defaultAiMode={commercialSettings?.default_ai_mode ?? 'copilot'}
-          fullAiEnabled={commercialSettings?.full_ai_enabled ?? false}
-          escalationReason={escalationReason}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <AiModeToggle
+            conversationId={id}
+            aiMode={conversation.ai_mode}
+            defaultAiMode={commercialSettings?.default_ai_mode ?? 'copilot'}
+            fullAiEnabled={commercialSettings?.full_ai_enabled ?? false}
+            escalationReason={escalationReason}
+          />
+          <FanIntelligenceToggleButton />
+        </div>
       </div>
 
       <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_340px]">
@@ -288,28 +305,31 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             sellableMedia={mediaWithUrls}
           />
         </div>
-        <div className="min-h-0 space-y-6 overflow-y-auto pr-1">
-          {fan && (
-            <FanPanel
-              conversationId={id}
-              fanId={fanId}
-              fan={fan}
-              flowStage={flowStage}
-              totalSpent={totalSpent}
-              purchaseCount={purchaseCount}
-              mediaSpend={mediaSpend}
-              tipsSpend={tipsSpend}
-              subscriptionSpend={subscriptionSpend}
-              lastPurchaseAt={lastPurchaseAt}
-              memories={memories ?? []}
-              scores={scores ?? null}
-              scoresAreStale={scoresAreStale}
-              notes={notes ?? []}
-              tags={tags}
-            />
-          )}
-        </div>
+        <FanIntelligenceDrawer>
+          <div className="space-y-6 pr-1 lg:h-full lg:overflow-y-auto">
+            {fan && (
+              <FanPanel
+                conversationId={id}
+                fanId={fanId}
+                fan={fan}
+                flowStage={flowStage}
+                totalSpent={totalSpent}
+                purchaseCount={purchaseCount}
+                mediaSpend={mediaSpend}
+                tipsSpend={tipsSpend}
+                subscriptionSpend={subscriptionSpend}
+                lastPurchaseAt={lastPurchaseAt}
+                memories={memories ?? []}
+                scores={scores ?? null}
+                scoresAreStale={scoresAreStale}
+                notes={notes ?? []}
+                tags={tags}
+              />
+            )}
+          </div>
+        </FanIntelligenceDrawer>
       </div>
     </div>
+    </FanIntelligenceProvider>
   )
 }
