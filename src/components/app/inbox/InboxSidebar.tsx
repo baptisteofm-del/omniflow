@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX } from 'lucide-react'
+import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
@@ -53,6 +53,7 @@ export function InboxSidebar({
   const [filter, setFilter] = useState<FilterKey>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [muted, setMuted] = useState(false)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     setMuted(isSoundMuted())
@@ -75,8 +76,9 @@ export function InboxSidebar({
           if (filter === 'to_reply') return r.awaitingReply
           if (filter === 'mine') return currentUserId && r.assignedUserId === currentUserId
           return true
-        }),
-    [rows, filter, activeTag, currentUserId]
+        })
+        .filter((r) => !query.trim() || r.fanName.toLowerCase().includes(query.trim().toLowerCase())),
+    [rows, filter, activeTag, currentUserId, query]
   )
 
   return (
@@ -91,6 +93,24 @@ export function InboxSidebar({
           >
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
+        </div>
+
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--foreground-muted)]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher un fan..."
+            className="w-full rounded-full border border-[color:var(--border)] bg-white/5 py-1.5 pl-8 pr-7 text-xs focus:border-[color:var(--border-strong)] focus:outline-none"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         {toReplyCount > 0 && !selectedId && (

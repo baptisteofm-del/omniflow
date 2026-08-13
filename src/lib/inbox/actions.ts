@@ -11,6 +11,7 @@ import { runFullAiDecision } from '@/lib/ai/fullAi'
 import { recordTransactionAndCommission } from '@/lib/billing/ledger'
 import { deliverOutboundMessage } from '@/lib/platforms/deliver'
 import { requirePermission } from '@/lib/permissions/check'
+import { validatePrice, PricingViolationError, PricingNotConfiguredError } from '@/lib/pricing/validator'
 
 // Fan Intelligence must stay current without a human clicking "Analyser"
 // (owner requirement). Scheduled via after() so it runs once the response
@@ -83,6 +84,79 @@ export async function sendHumanMessage(conversationId: string, text: string) {
     external_message_id: delivery.externalMessageId,
   })
   if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+  revalidatePath('/inbox')
+  scheduleAnalysis(conversationId)
+}
+
+// Sends a PPV built from the composer's media picker (Inbox V2 spec §14) —
+// the manual-send counterpart to the Script Engine's paid_media node
+// (src/lib/scripts/engine.ts): same Pricing Validator, same
+// deliverOutboundMessage() dispatcher, same offers-row shape, so it shows
+// up identically everywhere a script-sent offer would (status badge on the
+// message, PPV-pending badge on the conversation row, revenue attribution).
+export async function sendMediaOffer(conversationId: string, mediaAssetId: string, price: number, note: string) {
+  const { supabase, agencyId, appUser } = await getAgencyAndUser()
+
+  await requirePermission(supabase, agencyId, 'inbox.send', "Votre rôle ne permet pas d'envoyer des messages")
+
+  const { data: media, error: mediaError } = await supabase
+    .from('media_assets')
+    .select('id, title, minimum_price, is_for_sale')
+    .eq('id', mediaAssetId)
+    .single()
+  if (mediaError || !media) throw new Error('Média introuvable')
+
+  try {
+    validatePrice(price, media)
+  } catch (err) {
+    if (err instanceof PricingViolationError || err instanceof PricingNotConfiguredError) throw err
+    throw new Error('Prix invalide')
+  }
+
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('fan_id, creator_id')
+    .eq('id', conversationId)
+    .single()
+  if (!conversation) throw new Error('Conversation introuvable')
+
+  const text = note.trim() || `${media.title} — ${price}€`
+  const delivery = await deliverOutboundMessage(supabase, conversationId, text)
+
+  const { data: sentMessage, error: msgError } = await supabase
+    .from('messages')
+    .insert({
+      agency_id: agencyId,
+      conversation_id: conversationId,
+      direction: 'outbound',
+      sender_type: 'human',
+      sender_user_id: appUser.id,
+      text,
+      is_paid: true,
+      price_amount: price,
+      external_message_id: delivery.externalMessageId,
+    })
+    .select('id')
+    .single()
+  if (msgError || !sentMessage) throw new Error(msgError?.message || "Échec de l'envoi")
+
+  const { error: offerError } = await supabase.from('offers').insert({
+    agency_id: agencyId,
+    conversation_id: conversationId,
+    fan_id: conversation.fan_id,
+    creator_id: conversation.creator_id,
+    offer_type: 'out_of_script_media',
+    source_type: 'human',
+    media_asset_id: mediaAssetId,
+    initial_price: price,
+    final_price: price,
+    minimum_allowed_price: media.minimum_price,
+    status: 'sent',
+    sent_message_id: sentMessage.id,
+  })
+  if (offerError) throw new Error(offerError.message)
 
   revalidatePath(`/inbox/${conversationId}`)
   revalidatePath('/inbox')

@@ -55,6 +55,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     { data: activeRunRow },
     { data: lastEscalation },
     { data: offerRows },
+    { data: sellableMedia },
   ] = await Promise.all([
     supabase
       .from('messages')
@@ -111,11 +112,22 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       .select('sent_message_id, status, final_price, initial_price')
       .eq('conversation_id', id)
       .not('sent_message_id', 'is', null),
+    // Composer's Média/PPV picker (Inbox V2 §14) — only assets this
+    // creator can actually sell (same guard the Script Builder uses when
+    // populating a paid_media step's dropdown).
+    supabase
+      .from('media_assets')
+      .select('id, title, media_type, target_price, minimum_price, currency, storage_key')
+      .eq('creator_id', creatorId)
+      .eq('status', 'active')
+      .eq('is_for_sale', true)
+      .not('minimum_price', 'is', null)
+      .order('created_at', { ascending: false }),
   ])
 
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
 
-  const [{ data: purchaseMessages }, activeRun] = await Promise.all([
+  const [{ data: purchaseMessages }, activeRun, mediaWithUrls] = await Promise.all([
     conversationIds.length
       ? supabase.from('messages').select('price_amount').in('conversation_id', conversationIds).eq('message_type', 'purchase_confirmation')
       : Promise.resolve({ data: [] as { price_amount: number | null }[] }),
@@ -137,6 +149,20 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         scheduledAt: activeRunRow.scheduled_at as string | null,
       }
     })(),
+    Promise.all(
+      (sellableMedia ?? []).map(async (m) => {
+        const { data } = await supabase.storage.from('media').createSignedUrl(m.storage_key, 3600)
+        return {
+          id: m.id as string,
+          title: m.title as string,
+          mediaType: m.media_type as string,
+          targetPrice: m.target_price as number | null,
+          minimumPrice: m.minimum_price as number,
+          currency: (m.currency as string) ?? 'EUR',
+          signedUrl: data?.signedUrl ?? null,
+        }
+      })
+    ),
   ])
 
   const totalSpent = (purchaseMessages ?? []).reduce((sum, m) => sum + (m.price_amount ?? 0), 0)
@@ -232,6 +258,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
             isMockConversation={isMockConversation}
             activeScriptRun={activeRun}
             availableScripts={availableScripts}
+            sellableMedia={mediaWithUrls}
           />
         </div>
         <div className="min-h-0 space-y-6 overflow-y-auto pr-1">

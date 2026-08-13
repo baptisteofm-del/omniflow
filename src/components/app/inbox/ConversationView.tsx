@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -15,6 +15,7 @@ import type { QuickAction } from '@/lib/ai/tasks'
 import { playNotificationSound, playSaleSound } from '@/lib/utils/notificationSound'
 import { formatMessageTime, formatDaySeparator } from '@/lib/utils/relativeTime'
 import { ScriptRunPanel, type ActiveRun, type AvailableScript } from '@/components/app/inbox/ScriptRunPanel'
+import { MediaPickerDrawer, type SellableMedia } from '@/components/app/inbox/MediaPickerDrawer'
 
 interface Offer {
   status: string
@@ -110,6 +111,7 @@ export function ConversationView({
   isMockConversation,
   activeScriptRun,
   availableScripts,
+  sellableMedia,
 }: {
   conversationId: string
   initialMessages: Message[]
@@ -118,14 +120,26 @@ export function ConversationView({
   isMockConversation: boolean
   activeScriptRun: ActiveRun | null
   availableScripts: AvailableScript[]
+  sellableMedia: SellableMedia[]
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [reply, setReply] = useState(pendingSuggestion?.suggested_text ?? '')
   const [fanDraft, setFanDraft] = useState('')
   const [showMockPanel, setShowMockPanel] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const isCopilot = aiMode === 'copilot'
   const isFullAi = aiMode === 'full_ai'
+
+  // Optimistic send (Inbox V2 spec §38): the message appears the instant
+  // "Envoyer" is clicked, tagged "sending" via its temp- id, instead of
+  // waiting for the round trip. React discards the optimistic entry and
+  // falls back to initialMessages automatically if the transition throws —
+  // the catch below then restores the draft text so nothing typed is lost.
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
+    initialMessages,
+    (state, newMessage: Message) => [...state, newMessage]
+  )
 
   // Only newly-arrived messages get the entrance animation — not the whole
   // history on first open. null on first render means "don't know yet,
@@ -199,7 +213,7 @@ export function ConversationView({
     })
   }
 
-  const thread = buildThread(initialMessages)
+  const thread = buildThread(optimisticMessages)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -238,12 +252,13 @@ export function ConversationView({
 
           const isOutbound = m.direction === 'outbound'
           const isAi = m.sender_type === 'ai'
+          const isSending = m.id.startsWith('temp-')
           const clusterMargin = item.isClusterStart ? 'mt-3' : 'mt-0.5'
           const offerStatus = m.offer ? OFFER_STATUS[m.offer.status] : null
 
           return (
             <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} ${clusterMargin} ${animClass}`}>
-              <div className={`flex max-w-[75%] flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
+              <div className={`flex max-w-[75%] flex-col ${isOutbound ? 'items-end' : 'items-start'} ${isSending ? 'opacity-60' : ''}`}>
                 {item.isClusterStart && m.sender_type === 'human' && (
                   <span className="mb-1 px-1 text-[10px] font-medium text-[color:var(--foreground-muted)]">{senderLabel(m)}</span>
                 )}
@@ -277,7 +292,16 @@ export function ConversationView({
                   <p>{m.text}</p>
                 </div>
                 {item.isClusterEnd && (
-                  <span className="mt-1 px-1 text-[10px] text-[color:var(--foreground-muted)]">{formatMessageTime(m.sent_at)}</span>
+                  <span className="mt-1 flex items-center gap-1 px-1 text-[10px] text-[color:var(--foreground-muted)]">
+                    {m.id.startsWith('temp-') ? (
+                      <>
+                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                        Envoi...
+                      </>
+                    ) : (
+                      formatMessageTime(m.sent_at)
+                    )}
+                  </span>
                 )}
               </div>
             </div>
@@ -351,14 +375,35 @@ export function ConversationView({
             if (!reply.trim()) return
             const text = reply
             setReply('')
-            if (isCopilot && pendingSuggestion) {
-              runAction(() => sendCopilotSuggestion(conversationId, pendingSuggestion.id, text))
-            } else {
-              runAction(() => sendHumanMessage(conversationId, text))
-            }
+            setSendError(null)
+            startTransition(async () => {
+              addOptimisticMessage({
+                id: `temp-${Date.now()}`,
+                direction: 'outbound',
+                sender_type: 'human',
+                senderName: null,
+                text,
+                is_paid: false,
+                price_amount: null,
+                message_type: 'text',
+                sent_at: new Date().toISOString(),
+              })
+              try {
+                if (isCopilot && pendingSuggestion) {
+                  await sendCopilotSuggestion(conversationId, pendingSuggestion.id, text)
+                } else {
+                  await sendHumanMessage(conversationId, text)
+                }
+                router.refresh()
+              } catch (err) {
+                setReply(text)
+                setSendError(err instanceof Error ? err.message : "Échec de l'envoi — réessayez")
+              }
+            })
           }}
           className="mb-2 flex shrink-0 gap-2"
         >
+          <MediaPickerDrawer conversationId={conversationId} media={sellableMedia} />
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}
@@ -374,6 +419,7 @@ export function ConversationView({
           </button>
         </form>
       )}
+      {sendError && <p className="mb-2 shrink-0 text-xs text-[color:var(--danger)]">{sendError}</p>}
 
       {isCopilot && !pendingSuggestion && (
         <button

@@ -105,6 +105,17 @@ const INCOME_FREQUENCY_LABELS: Record<string, string> = {
   yearly: '/ an',
 }
 
+type FanPanelTab = 'overview' | 'memory' | 'ai' | 'notes'
+
+// Inbox V2 spec §20: "structurée en onglets/sections plutôt qu'en une très
+// longue page" — replaces the old flat stack of collapsible sections.
+const TABS: { key: FanPanelTab; label: string; icon: typeof UserRound }[] = [
+  { key: 'overview', label: 'Overview', icon: UserRound },
+  { key: 'memory', label: 'Mémoire', icon: Brain },
+  { key: 'ai', label: 'IA', icon: Sparkles },
+  { key: 'notes', label: 'Notes', icon: StickyNote },
+]
+
 export function FanPanel({
   conversationId,
   fanId,
@@ -137,6 +148,7 @@ export function FanPanel({
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingNote, setAddingNote] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
+  const [activeTab, setActiveTab] = useState<FanPanelTab>('overview')
 
   const runAction = (fn: () => Promise<void>) => {
     startTransition(async () => {
@@ -163,7 +175,28 @@ export function FanPanel({
   const activeMemories = memories.filter((m) => m.status === 'active')
 
   return (
-    <div className="glass space-y-5 rounded-2xl p-5">
+    <div className="glass rounded-2xl p-5">
+      {/* Structured in tabs, not one long scrolling page (Inbox V2 spec
+          §20: "onglets/sections plutôt qu'une très longue page"). */}
+      <div className="mb-4 flex gap-1 border-b border-[color:var(--border)]">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`flex items-center gap-1.5 border-b-2 px-2.5 py-2 text-xs font-medium transition-colors ${
+              activeTab === t.key
+                ? 'border-[color:var(--violet)] text-[color:var(--foreground)]'
+                : 'border-transparent text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+            }`}
+          >
+            <t.icon className="h-3.5 w-3.5" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="space-y-5">
       {/* Valeur Fan */}
       <CollapsibleSection icon={<Wallet className="h-4 w-4" />} title="Valeur Fan">
         <div className="grid grid-cols-2 gap-3 text-center">
@@ -184,31 +217,28 @@ export function FanPanel({
       <CollapsibleSection icon={<Sparkles className="h-4 w-4" />} title="Fan Flow">
         <FanFlowBar stage={flowStage} totalSpent={totalSpent} />
       </CollapsibleSection>
+        </div>
+      )}
 
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* AI Notes (scores + mémoires IA) */}
-      <CollapsibleSection
-        icon={<Brain className="h-4 w-4" />}
-        title="AI Notes"
-        right={
+      {activeTab === 'ai' && (
+        <div>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[10px] text-[color:var(--foreground-muted)]">
+            Mis à jour automatiquement par l&apos;IA après chaque message.
+          </p>
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
             title="Se met à jour automatiquement après chaque message — force une ré-analyse immédiate"
-            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
           >
             {isAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             Ré-analyser
           </button>
-        }
-      >
-        <p className="mb-3 text-[10px] text-[color:var(--foreground-muted)]">
-          Mis à jour automatiquement par l&apos;IA après chaque message.
-        </p>
+        </div>
         {analyzeError && <p className="mb-3 text-xs text-[color:var(--danger)]">{analyzeError}</p>}
 
-        <div className="mb-4 space-y-2">
+        <div className="space-y-2">
           {!editingScores ? (
             <>
               {SCORES.map((s) => (
@@ -286,7 +316,10 @@ export function FanPanel({
             </form>
           )}
         </div>
+        </div>
+      )}
 
+      {activeTab === 'memory' && (
         <div className="space-y-2">
           {activeMemories.length === 0 && (
             <p className="text-xs text-[color:var(--foreground-muted)]">Aucune mémoire enregistrée pour ce fan.</p>
@@ -391,8 +424,10 @@ export function FanPanel({
             </form>
           )}
         </div>
-      </CollapsibleSection>
+      )}
 
+      {activeTab === 'overview' && (
+        <div className="mt-5 space-y-5">
       <div className="h-px bg-[color:var(--border)]" />
 
       {/* Profil */}
@@ -567,11 +602,10 @@ export function FanPanel({
           </form>
         </div>
       </CollapsibleSection>
+        </div>
+      )}
 
-      <div className="h-px bg-[color:var(--border)]" />
-
-      {/* Notes humaines */}
-      <CollapsibleSection icon={<StickyNote className="h-4 w-4" />} title="Notes">
+      {activeTab === 'notes' && (
         <div className="space-y-2">
           {notes.length === 0 && <p className="text-xs text-[color:var(--foreground-muted)]">Aucune note.</p>}
           {notes.map((n) => (
@@ -648,7 +682,7 @@ export function FanPanel({
             </form>
           )}
         </div>
-      </CollapsibleSection>
+      )}
     </div>
   )
 }
