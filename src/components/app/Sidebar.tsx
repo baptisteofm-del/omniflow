@@ -22,15 +22,19 @@ interface Notification {
 // (owner request) — each is one real page with tabs inside it now
 // (/library, /settings), not a sidebar dropdown over the old separate
 // routes. The sidebar just links straight to each merged page.
+//
+// Owner report: the rail read as a flat black slab next to the Inbox's
+// color work — each item now gets its own accent color at rest (not just
+// on the active state) so the whole rail carries color, not only one pill.
 const NAV_ITEMS = [
-  { href: '/home', label: 'Dashboard', icon: Home, alsoActiveOn: [] as string[] },
-  { href: '/creators', label: 'Créatrices', icon: UserRound, alsoActiveOn: [] as string[] },
-  { href: '/inbox', label: 'Inbox', icon: MessageSquare, alsoActiveOn: [] as string[] },
+  { href: '/home', label: 'Dashboard', icon: Home, alsoActiveOn: [] as string[], color: 'text-[color:var(--cyan)]' },
+  { href: '/creators', label: 'Créatrices', icon: UserRound, alsoActiveOn: [] as string[], color: 'text-[color:var(--violet)]' },
+  { href: '/inbox', label: 'Inbox', icon: MessageSquare, alsoActiveOn: [] as string[], color: 'text-[color:var(--blue)]' },
   // /scripts/[id] and /media/new stay their own routes (see library/page.tsx)
   // but should still highlight Bibliothèque as the active section.
-  { href: '/library', label: 'Bibliothèque', icon: LibraryBig, alsoActiveOn: ['/scripts', '/media'] },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3, alsoActiveOn: [] as string[] },
-  { href: '/settings', label: 'Paramètres', icon: Settings, alsoActiveOn: [] as string[] },
+  { href: '/library', label: 'Bibliothèque', icon: LibraryBig, alsoActiveOn: ['/scripts', '/media'], color: 'text-[color:var(--cyan)]' },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, alsoActiveOn: [] as string[], color: 'text-[color:var(--success)]' },
+  { href: '/settings', label: 'Paramètres', icon: Settings, alsoActiveOn: [] as string[], color: 'text-[color:var(--warning)]' },
 ]
 
 const STORAGE_KEY = 'omniflow_sidebar_collapsed'
@@ -76,7 +80,18 @@ export function Sidebar({
       <aside
         onMouseEnter={() => collapsed && setHovering(true)}
         onMouseLeave={() => setHovering(false)}
-        className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[color:var(--border)] bg-[color:var(--background)] px-4 py-6 transition-[width] duration-200 ${
+        // Explicit inline background instead of stacking the .gradient-ambient
+        // class on top of a bg-* utility — both set the `background`
+        // property, and letting two separate stylesheet rules fight over
+        // shorthand vs longhand was exactly the kind of thing that could
+        // silently render as "still just black" depending on rule order.
+        // One shorthand value, guaranteed: two colored washes over the
+        // surface tone, not pure background black.
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 40% at 15% 0%, rgba(124,58,237,0.28) 0%, transparent 65%), radial-gradient(ellipse 60% 35% at 100% 25%, rgba(34,211,238,0.2) 0%, transparent 65%), var(--surface)',
+        }}
+        className={`fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-[color:var(--border)] px-4 py-6 transition-[width] duration-200 ${
           expanded ? 'w-56' : 'w-16'
         } ${collapsed && hovering ? 'shadow-[8px_0_32px_rgba(0,0,0,0.5)]' : ''}`}
       >
@@ -124,7 +139,7 @@ export function Sidebar({
                     : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? '' : item.color}`} />
                 {expanded && item.label}
               </Link>
             )
