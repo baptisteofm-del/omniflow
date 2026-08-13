@@ -17,9 +17,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // then agency_memberships) on every navigation, on top of auth.getUser()
   // and the notifications fetch below. The FK from agency_memberships to
   // users lets Postgres do that join in one query instead.
+  //
+  // BUG FIX (owner report: "Accès restreint" on every page after this
+  // shipped): agency_memberships has TWO foreign keys to users (user_id AND
+  // invited_by), so the embed below was ambiguous — Postgres couldn't tell
+  // which one to join on, silently returning no rows instead of an error.
+  // `!user_id` pins it to the right one.
   const { data: appUser } = await supabase
     .from('users')
-    .select('id, display_name, email, agency_memberships(agency_id, status, agencies(name))')
+    .select('id, display_name, email, agency_memberships!user_id(agency_id, status, agencies(name))')
     .eq('auth_user_id', authUser.id)
     .single()
 

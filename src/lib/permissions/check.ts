@@ -42,9 +42,12 @@ export async function checkPageAccess(key: string) {
   } = await supabase.auth.getUser()
   if (!authUser) return { supabase, agencyId: null as string | null, userId: null as string | null, allowed: false }
 
+  // `!user_id` disambiguates: agency_memberships has two FKs to users
+  // (user_id AND invited_by) — without pinning one, the embed is ambiguous
+  // and silently returns no rows instead of erroring (see (app)/layout.tsx).
   const { data: appUser } = await supabase
     .from('users')
-    .select('id, agency_memberships(agency_id, status)')
+    .select('id, agency_memberships!user_id(agency_id, status)')
     .eq('auth_user_id', authUser.id)
     .single()
   if (!appUser) return { supabase, agencyId: null as string | null, userId: null as string | null, allowed: false }
