@@ -441,6 +441,25 @@ export function ConversationView({
               )}
             </button>
           )}
+          {isCopilot && (
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() =>
+                pendingSuggestion
+                  ? runAction(() => regenerateCopilotSuggestion(conversationId, pendingSuggestion.id))
+                  : runAction(() => generateCopilotSuggestion(conversationId))
+              }
+              title={pendingSuggestion ? 'Régénérer la suggestion IA' : 'Suggestion IA'}
+              className={`flex shrink-0 items-center justify-center rounded-xl border px-3 transition-colors disabled:opacity-50 ${
+                pendingSuggestion
+                  ? 'border-[color:var(--violet)] bg-[color:var(--violet)]/10 text-[color:var(--violet)]'
+                  : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+              }`}
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            </button>
+          )}
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}
@@ -457,18 +476,6 @@ export function ConversationView({
         </form>
       )}
       {sendError && <p className="mb-2 shrink-0 text-xs text-[color:var(--danger)]">{sendError}</p>}
-
-      {isCopilot && !pendingSuggestion && (
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() => runAction(() => generateCopilotSuggestion(conversationId))}
-          className="mb-4 flex shrink-0 items-center gap-1.5 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
-        >
-          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-          Générer une suggestion
-        </button>
-      )}
 
       {isMockConversation && (
       <button

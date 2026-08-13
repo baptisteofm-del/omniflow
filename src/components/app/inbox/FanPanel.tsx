@@ -16,6 +16,8 @@ import {
   Sparkles,
   CreditCard,
   UserRound,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react'
 import {
   addFanMemory,
@@ -130,6 +132,7 @@ export function FanPanel({
   lastPurchaseAt,
   memories,
   scores,
+  scoresAreStale,
   notes,
   tags,
 }: {
@@ -145,6 +148,7 @@ export function FanPanel({
   lastPurchaseAt: string | null
   memories: Memory[]
   scores: Scores
+  scoresAreStale: boolean
   notes: FanNote[]
   tags: FanTagAssignment[]
 }) {
@@ -255,9 +259,26 @@ export function FanPanel({
       {activeTab === 'ai' && (
         <div>
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[10px] text-[color:var(--foreground-muted)]">
-            Mis à jour automatiquement par l&apos;IA après chaque message.
-          </p>
+          {/* Design handoff: "ne jamais simuler indéfiniment une analyse en
+              cours" — say plainly whether these numbers reflect the fan's
+              latest message or predate it, instead of presenting them as
+              always-current. */}
+          {!scores ? (
+            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--foreground-muted)]">
+              <Clock className="h-3 w-3" />
+              Pas encore analysé
+            </p>
+          ) : scoresAreStale ? (
+            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--warning)]">
+              <Clock className="h-3 w-3" />
+              Nouveau message depuis la dernière analyse
+            </p>
+          ) : (
+            <p className="flex items-center gap-1.5 text-[10px] text-[color:var(--success)]">
+              <CheckCircle2 className="h-3 w-3" />
+              À jour
+            </p>
+          )}
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}

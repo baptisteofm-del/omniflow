@@ -71,7 +71,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     supabase
       .from('fan_scores')
       .select(
-        'purchase_intent, relationship_score, spending_potential, engagement_score, churn_risk, omni_score, reasons, computed_by, version'
+        'purchase_intent, relationship_score, spending_potential, engagement_score, churn_risk, omni_score, reasons, computed_by, version, updated_at'
       )
       .eq('fan_id', fanId)
       .maybeSingle(),
@@ -226,6 +226,13 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const escalationReason = conversation.ai_mode === 'paused' ? (lastEscalation?.validator_outcome ?? null) : null
 
+  // Design handoff: "ne jamais simuler indéfiniment une analyse en cours" —
+  // instead of presenting stored scores as if they were always current, tell
+  // the truth: a fan message that arrived after the last analysis run means
+  // the scores on screen predate it and haven't caught up yet.
+  const lastMessageAt = messages && messages.length > 0 ? (messages[messages.length - 1].sent_at as string) : null
+  const scoresAreStale = !!scores && !!lastMessageAt && new Date(scores.updated_at as string) < new Date(lastMessageAt)
+
   // Owner request: show which team member actually sent each message, not
   // just the generic "human" sender_type.
   const messagesWithSender = (messages ?? []).map((m) => {
@@ -296,6 +303,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
               lastPurchaseAt={lastPurchaseAt}
               memories={memories ?? []}
               scores={scores ?? null}
+              scoresAreStale={scoresAreStale}
               notes={notes ?? []}
               tags={tags}
             />

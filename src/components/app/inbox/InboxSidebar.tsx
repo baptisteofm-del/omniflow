@@ -7,8 +7,13 @@ import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X, Wi
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
-import { isSoundMuted, setSoundMuted } from '@/lib/utils/notificationSound'
+import { isCategoryMuted, setCategoryMuted, type SoundCategory } from '@/lib/utils/notificationSound'
 import { ConversationViewerBadge } from '@/components/app/inbox/TeamPresence'
+
+const SOUND_CATEGORIES: { key: SoundCategory; label: string }[] = [
+  { key: 'message', label: 'Nouveaux messages' },
+  { key: 'sale', label: 'Ventes' },
+]
 
 export interface InboxRow {
   id: string
@@ -53,20 +58,24 @@ export function InboxSidebar({
 
   const [filter, setFilter] = useState<FilterKey>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
-  const [muted, setMuted] = useState(false)
+  const [mutedCategories, setMutedCategories] = useState<Record<SoundCategory, boolean>>({ message: false, sale: false })
+  const [showSoundMenu, setShowSoundMenu] = useState(false)
   const [query, setQuery] = useState('')
   const [onlineOnly, setOnlineOnly] = useState(false)
 
   useEffect(() => {
-    setMuted(isSoundMuted())
+    setMutedCategories({ message: isCategoryMuted('message'), sale: isCategoryMuted('sale') })
   }, [])
 
-  const toggleMute = () => {
-    setMuted((m) => {
-      setSoundMuted(!m)
-      return !m
+  const toggleCategoryMute = (category: SoundCategory) => {
+    setMutedCategories((prev) => {
+      const next = { ...prev, [category]: !prev[category] }
+      setCategoryMuted(category, next[category])
+      return next
     })
   }
+
+  const allSoundsMuted = mutedCategories.message && mutedCategories.sale
 
   const toReplyCount = useMemo(() => rows.filter((r) => r.awaitingReply).length, [rows])
   const onlineCount = useMemo(() => rows.filter((r) => r.isRecentlyOnline).length, [rows])
@@ -88,15 +97,36 @@ export function InboxSidebar({
   return (
     <div className="glass flex h-full flex-col overflow-hidden rounded-2xl">
       <div className="shrink-0 space-y-3 border-b border-[color:var(--border)] p-4">
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
           <h1 className="text-sm font-semibold">Inbox</h1>
           <button
-            onClick={toggleMute}
-            title={muted ? 'Activer les sons' : 'Couper les sons'}
+            onClick={() => setShowSoundMenu((v) => !v)}
+            title="Réglages des sons"
             className="text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
           >
-            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            {allSoundsMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
+          {showSoundMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowSoundMenu(false)} />
+              <div className="glass absolute right-0 top-6 z-20 w-48 space-y-1 rounded-xl p-2">
+                {SOUND_CATEGORIES.map((c) => (
+                  <label
+                    key={c.key}
+                    className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white/5"
+                  >
+                    {c.label}
+                    <input
+                      type="checkbox"
+                      checked={!mutedCategories[c.key]}
+                      onChange={() => toggleCategoryMute(c.key)}
+                      className="accent-[color:var(--violet)]"
+                    />
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="relative">
