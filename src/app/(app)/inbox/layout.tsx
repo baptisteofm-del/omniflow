@@ -83,7 +83,9 @@ export default async function InboxLayout({ children }: { children: React.ReactN
             .in('conversation_id', conversationIds)
             .order('sent_at', { ascending: false })
         : Promise.resolve({ data: [] }),
-      fanIds.length ? supabase.from('fan_scores').select('fan_id, purchase_intent').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+      fanIds.length
+        ? supabase.from('fan_scores').select('fan_id, purchase_intent, churn_risk').in('fan_id', fanIds)
+        : Promise.resolve({ data: [] }),
       assignedUserIds.length
         ? supabase.from('users').select('id, display_name, email').in('id', assignedUserIds)
         : Promise.resolve({ data: [] }),
@@ -122,6 +124,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   }
 
   const purchaseIntentByFan = new Map((scoresRows ?? []).map((s) => [s.fan_id as string, s.purchase_intent as number]))
+  const churnRiskByFan = new Map((scoresRows ?? []).map((s) => [s.fan_id as string, s.churn_risk as number]))
   const userNameById = new Map((assignedUsers ?? []).map((u) => [u.id as string, (u.display_name as string) || (u.email as string)]))
   const conversationsWithPendingOffer = new Set((pendingOfferRows ?? []).map((o) => o.conversation_id as string))
 
@@ -130,11 +133,20 @@ export default async function InboxLayout({ children }: { children: React.ReactN
     const lastInbound = c.last_inbound_at as string | null
     const lastOutbound = c.last_outbound_at as string | null
     const awaitingReply = !!lastInbound && (!lastOutbound || lastInbound > lastOutbound)
+    const purchaseIntent = purchaseIntentByFan.get(fanId) ?? null
+    const churnRisk = churnRiskByFan.get(fanId) ?? null
     const flowStage = computeFanFlowStage({
       totalSpent: totalSpentByFan.get(fanId) ?? 0,
       messageCount: messageCountByConv.get(c.id) ?? 0,
-      purchaseIntent: purchaseIntentByFan.get(fanId) ?? null,
+      purchaseIntent,
     })
+    // Same thresholds as analyzeConversationWithAI()'s notification triggers
+    // (churn_risk >= 70 / purchase_intent >= 80) — reusing the exact signal
+    // that already drives a real notification, not a new invented cutoff,
+    // surfaced here as a row badge (matches the reference's "Risque"/
+    // "Opportunité" tags).
+    const signal: 'risk' | 'opportunity' | null =
+      churnRisk !== null && churnRisk >= 70 ? 'risk' : purchaseIntent !== null && purchaseIntent >= 80 ? 'opportunity' : null
     const creator = c.creators as unknown as { display_name: string } | null
     const fan = c.fans as unknown as {
       display_name: string
@@ -159,6 +171,7 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       lastMessage: lastMessageByConv.get(c.id) ?? null,
       totalSpent: totalSpentByFan.get(fanId) ?? 0,
       flowStage,
+      signal,
       awaitingReply,
       hasPendingOffer: conversationsWithPendingOffer.has(c.id as string),
       assignedUserId: (c.assigned_user_id as string | null) ?? null,

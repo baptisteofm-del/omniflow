@@ -429,16 +429,15 @@ export function ConversationView({
               type="button"
               onClick={() => setShowScripts((v) => !v)}
               title="Scripts"
-              className={`flex shrink-0 items-center justify-center rounded-xl border px-3 transition-colors ${
+              className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors ${
                 showScripts
-                  ? 'border-[color:var(--violet)] text-[color:var(--violet)]'
-                  : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+                  ? 'border-[color:var(--violet)] bg-[color:var(--violet)]/10 text-[color:var(--violet)]'
+                  : 'border-[color:var(--violet)]/30 text-[color:var(--violet)] hover:border-[color:var(--violet)]/60 hover:bg-[color:var(--violet)]/10'
               }`}
             >
-              <Workflow className="h-4 w-4" />
-              {activeScriptRun && (
-                <span className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--violet)]" />
-              )}
+              <Workflow className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Scripts</span>
+              {activeScriptRun && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--violet)]" />}
             </button>
           )}
           {isCopilot && (
@@ -451,13 +450,14 @@ export function ConversationView({
                   : runAction(() => generateCopilotSuggestion(conversationId))
               }
               title={pendingSuggestion ? 'Régénérer la suggestion IA' : 'Suggestion IA'}
-              className={`flex shrink-0 items-center justify-center rounded-xl border px-3 transition-colors disabled:opacity-50 ${
+              className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors disabled:opacity-50 ${
                 pendingSuggestion
                   ? 'border-[color:var(--violet)] bg-[color:var(--violet)]/10 text-[color:var(--violet)]'
-                  : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+                  : 'border-[color:var(--violet)]/30 text-[color:var(--violet)] hover:border-[color:var(--violet)]/60 hover:bg-[color:var(--violet)]/10'
               }`}
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {isPending ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Sparkles className="h-4 w-4 shrink-0" />}
+              <span className="hidden sm:inline">Suggestion IA</span>
             </button>
           )}
           <input

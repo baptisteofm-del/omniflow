@@ -142,20 +142,43 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     supabase.from('transactions').select('transaction_type, gross_amount, occurred_at').eq('fan_id', fanId).eq('status', 'confirmed'),
     (async () => {
       if (!activeRunRow) return null
-      const [{ data: version }, { data: node }] = await Promise.all([
+      const [{ data: version }, { data: node }, { data: allNodes }] = await Promise.all([
         supabase.from('script_versions').select('script_id').eq('id', activeRunRow.script_version_id).single(),
         activeRunRow.current_node_id
-          ? supabase.from('script_nodes').select('title, node_type').eq('id', activeRunRow.current_node_id).single()
-          : Promise.resolve({ data: null as { title: string | null; node_type: string } | null }),
+          ? supabase.from('script_nodes').select('title, node_type, sequence_order').eq('id', activeRunRow.current_node_id).single()
+          : Promise.resolve({ data: null as { title: string | null; node_type: string; sequence_order: number } | null }),
+        // Real step list for the Fan Intelligence "Progression Script"
+        // stepper (design handoff) — sequence_order already exists on every
+        // node, so this is exact schema data, not an approximation of one.
+        supabase
+          .from('script_nodes')
+          .select('id, title, node_type, sequence_order')
+          .eq('script_version_id', activeRunRow.script_version_id)
+          .order('sequence_order', { ascending: true }),
       ])
       const { data: scriptRow } = version
         ? await supabase.from('scripts').select('name').eq('id', version.script_id).single()
         : { data: null }
+      const NODE_TYPE_FALLBACK: Record<string, string> = { start: 'Début', message: 'Message', paid_media: 'Offre', end: 'Fin' }
+      const steps = (allNodes ?? [])
+        .filter((n) => n.node_type !== 'start' && n.node_type !== 'end')
+        .map((n) => ({
+          id: n.id as string,
+          title: (n.title as string | null) || NODE_TYPE_FALLBACK[n.node_type as string] || 'Étape',
+          status: (!node
+            ? 'upcoming'
+            : (n.sequence_order as number) < (node.sequence_order as number)
+              ? 'done'
+              : n.id === activeRunRow.current_node_id
+                ? 'current'
+                : 'upcoming') as 'done' | 'current' | 'upcoming',
+        }))
       return {
         id: activeRunRow.id as string,
         scriptName: scriptRow?.name ?? 'Script',
         currentNodeTitle: node ? node.title || (node.node_type === 'paid_media' ? 'Offre en attente' : null) : null,
         scheduledAt: activeRunRow.scheduled_at as string | null,
+        steps,
       }
     })(),
     Promise.all(
@@ -322,6 +345,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
                 memories={memories ?? []}
                 scores={scores ?? null}
                 scoresAreStale={scoresAreStale}
+                scriptProgress={activeRun ? { scriptName: activeRun.scriptName, steps: activeRun.steps } : null}
                 notes={notes ?? []}
                 tags={tags}
               />

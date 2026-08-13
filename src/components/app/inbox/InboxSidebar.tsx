@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X, Wifi, UserCheck } from 'lucide-react'
+import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X, Wifi, UserCheck, ShieldAlert, TrendingUp } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
@@ -27,6 +27,7 @@ export interface InboxRow {
   lastMessage: { text: string; sent_at: string } | null
   totalSpent: number
   flowStage: FanFlowStage
+  signal: 'risk' | 'opportunity' | null
   awaitingReply: boolean
   hasPendingOffer: boolean
   assignedUserId: string | null
@@ -281,6 +282,28 @@ export function InboxSidebar({
                   <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${FAN_FLOW_BADGE_CLASSES[r.flowStage]}`}>
                     {FAN_FLOW_LABELS[r.flowStage]}
                   </span>
+                  {/* Same churn_risk/purchase_intent thresholds that already
+                      drive a real notification (analyzeConversationWithAI) —
+                      surfaced here too so the signal is visible without
+                      opening every conversation. */}
+                  {r.signal === 'risk' && (
+                    <span
+                      title="Risque de churn élevé détecté par l'IA"
+                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--danger)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--danger)]"
+                    >
+                      <ShieldAlert className="h-2.5 w-2.5" />
+                      Risque
+                    </span>
+                  )}
+                  {r.signal === 'opportunity' && (
+                    <span
+                      title="Forte intention d'achat détectée par l'IA"
+                      className="flex items-center gap-0.5 rounded-full bg-[color:var(--warning)]/15 px-1.5 py-0.5 text-[9px] text-[color:var(--warning)]"
+                    >
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      Opportunité
+                    </span>
+                  )}
                   {r.hasPendingOffer && (
                     <span
                       title="Offre envoyée, en attente de réponse"

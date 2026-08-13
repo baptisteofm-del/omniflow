@@ -22,6 +22,8 @@ import {
   Heart,
   Flame,
   ShieldAlert,
+  Workflow,
+  Circle,
 } from 'lucide-react'
 import {
   addFanMemory,
@@ -134,6 +136,29 @@ function scoreLabel(key: (typeof SCORES)[number]['key'], value: number): string 
   return SCORE_QUALITATIVE[key][bucket]
 }
 
+// Fixed per-score-type icon color (independent of the value's tone) —
+// matches the reference's colorful icon chips even before any score is
+// computed. Every color here is one of the existing functional tokens
+// (success/violet/cyan/warning/danger), no new palette introduced.
+const SCORE_ICON_CLASSES: Record<(typeof SCORES)[number]['key'], { bg: string; text: string }> = {
+  purchase_intent: { bg: 'bg-[color:var(--success)]/15', text: 'text-[color:var(--success)]' },
+  spending_potential: { bg: 'bg-[color:var(--violet)]/15', text: 'text-[color:var(--violet)]' },
+  relationship_score: { bg: 'bg-[color:var(--cyan)]/15', text: 'text-[color:var(--cyan)]' },
+  engagement_score: { bg: 'bg-[color:var(--warning)]/15', text: 'text-[color:var(--warning)]' },
+  churn_risk: { bg: 'bg-[color:var(--danger)]/15', text: 'text-[color:var(--danger)]' },
+}
+
+interface ScriptStep {
+  id: string
+  title: string
+  status: 'done' | 'current' | 'upcoming'
+}
+
+interface ScriptProgress {
+  scriptName: string
+  steps: ScriptStep[]
+}
+
 const INCOME_FREQUENCY_LABELS: Record<string, string> = {
   weekly: '/ semaine',
   monthly: '/ mois',
@@ -169,6 +194,7 @@ export function FanPanel({
   memories,
   scores,
   scoresAreStale,
+  scriptProgress,
   notes,
   tags,
 }: {
@@ -185,6 +211,7 @@ export function FanPanel({
   memories: Memory[]
   scores: Scores
   scoresAreStale: boolean
+  scriptProgress: ScriptProgress | null
   notes: FanNote[]
   tags: FanTagAssignment[]
 }) {
@@ -222,6 +249,7 @@ export function FanPanel({
   }
 
   const activeMemories = memories.filter((m) => m.status === 'active')
+  const preferenceMemories = activeMemories.filter((m) => m.category === 'preference')
 
   return (
     <div className="glass rounded-2xl p-5">
@@ -291,12 +319,13 @@ export function FanPanel({
                   {SCORES.map((s) => {
                     const value = scores ? scores[s.key] : null
                     const tone = value !== null ? scoreTone(s.key, value) : null
+                    const iconClasses = SCORE_ICON_CLASSES[s.key]
                     return (
                       <div key={s.key} className="rounded-xl border border-[color:var(--border)] p-3">
-                        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-[color:var(--foreground-muted)]">
-                          <s.icon className="h-3 w-3 shrink-0" />
-                          {s.label}
+                        <div className={`mb-2 flex h-7 w-7 items-center justify-center rounded-full ${iconClasses.bg}`}>
+                          <s.icon className={`h-3.5 w-3.5 ${iconClasses.text}`} />
                         </div>
+                        <p className="text-[10px] text-[color:var(--foreground-muted)]">{s.label}</p>
                         <p className={`text-lg font-semibold ${tone ? TONE_CLASSES[tone] : 'text-[color:var(--foreground-muted)]'}`}>
                           {value ?? '—'}
                         </p>
@@ -307,7 +336,21 @@ export function FanPanel({
                     )
                   })}
                 </div>
-                {scores?.reasons && <p className="mt-2 text-xs text-[color:var(--foreground-muted)]">{scores.reasons}</p>}
+                {/* Note IA — the AI's existing free-text "reasons" signal,
+                    given a real card instead of a buried caption. No fake
+                    live-analysis animation (waveform, spinner) here — the
+                    handoff explicitly warns against simulating an ongoing
+                    analysis that isn't actually happening; this is a static
+                    note tied to the freshness state shown above. */}
+                {scores?.reasons && (
+                  <div className="mt-2 rounded-xl border border-[color:var(--violet)]/30 bg-[color:var(--violet)]/5 p-3">
+                    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium text-[color:var(--violet)]">
+                      <Sparkles className="h-3 w-3" />
+                      Note IA
+                    </div>
+                    <p className="text-xs text-[color:var(--foreground-muted)]">{scores.reasons}</p>
+                  </div>
+                )}
                 <div className="mt-2 flex items-center justify-between">
                   <button
                     onClick={() => setEditingScores(true)}
@@ -408,6 +451,26 @@ export function FanPanel({
               </div>
             </div>
           </CollapsibleSection>
+
+          {/* Préférences — reuses fan_memories entries already collected
+              under the "preference" category (the memory tab's own data,
+              just surfaced here too) instead of inventing structured fields
+              (heures actives, budget moyen...) the schema doesn't have. */}
+          {preferenceMemories.length > 0 && (
+            <>
+              <div className="h-px bg-[color:var(--border)]" />
+              <CollapsibleSection icon={<Heart className="h-4 w-4" />} title="Préférences">
+                <div className="space-y-1.5 text-xs">
+                  {preferenceMemories.map((m) => (
+                    <p key={m.id}>
+                      <span className="text-[color:var(--foreground-muted)]">{m.label} : </span>
+                      <span className="text-[color:var(--foreground)]">{m.value}</span>
+                    </p>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </>
+          )}
 
           <div className="h-px bg-[color:var(--border)]" />
 
@@ -583,6 +646,41 @@ export function FanPanel({
               </form>
             </div>
           </CollapsibleSection>
+
+          {/* Progression Script — real step list from script_nodes
+              (sequence_order), not an approximation: only rendered when a
+              script is actually running on this conversation. */}
+          {scriptProgress && scriptProgress.steps.length > 0 && (
+            <>
+              <div className="h-px bg-[color:var(--border)]" />
+              <CollapsibleSection icon={<Workflow className="h-4 w-4" />} title={`Script — ${scriptProgress.scriptName}`}>
+                <div className="space-y-2">
+                  {scriptProgress.steps.map((step) => (
+                    <div key={step.id} className="flex items-center gap-2 text-xs">
+                      {step.status === 'done' ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[color:var(--success)]" />
+                      ) : step.status === 'current' ? (
+                        <Circle className="h-4 w-4 shrink-0 fill-[color:var(--violet)]/20 text-[color:var(--violet)]" />
+                      ) : (
+                        <Circle className="h-4 w-4 shrink-0 text-[color:var(--border-strong)]" />
+                      )}
+                      <span
+                        className={
+                          step.status === 'current'
+                            ? 'font-medium text-[color:var(--foreground)]'
+                            : step.status === 'done'
+                              ? 'text-[color:var(--foreground)]'
+                              : 'text-[color:var(--foreground-muted)]'
+                        }
+                      >
+                        {step.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            </>
+          )}
         </div>
       )}
 

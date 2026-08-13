@@ -68,9 +68,10 @@ export function MediaPickerDrawer({ conversationId, media }: { conversationId: s
         type="button"
         onClick={() => setIsOpen(true)}
         title="Envoyer un média payant"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--border)] text-[color:var(--foreground-muted)] transition-colors hover:border-[color:var(--border-strong)] hover:text-[color:var(--foreground)]"
+        className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-[color:var(--cyan)]/30 px-3 text-xs font-medium text-[color:var(--cyan)] transition-colors hover:border-[color:var(--cyan)]/60 hover:bg-[color:var(--cyan)]/10"
       >
-        <Paperclip className="h-4 w-4" />
+        <Paperclip className="h-4 w-4 shrink-0" />
+        <span className="hidden sm:inline">Médias</span>
       </button>
 
       {isOpen && (
