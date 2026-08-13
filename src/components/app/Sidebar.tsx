@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, UserRound, MessageSquare, LibraryBig, BarChart3, Settings, ChevronsLeft } from 'lucide-react'
+import { Home, UserRound, MessageSquare, LibraryBig, BarChart3, Settings, ChevronsLeft, TrendingUp, TrendingDown } from 'lucide-react'
 import { SignOutButton } from '@/components/app/SignOutButton'
+import { formatEuro } from '@/lib/format'
 
 // "Paramétrer" and "Scripts"/"Médias" are not top-level categories anymore
 // (owner request) — each is one real page with tabs inside it now
@@ -24,7 +25,13 @@ const NAV_ITEMS = [
 
 const STORAGE_KEY = 'omniflow_sidebar_collapsed'
 
-export function Sidebar({ agencyName }: { agencyName: string | null }) {
+export function Sidebar({
+  agencyName,
+  revenue30d,
+}: {
+  agencyName: string | null
+  revenue30d: { total: number; changePercent: number | null; points: { revenue: number }[] } | null
+}) {
   const pathname = usePathname()
   // Starts expanded to match server-rendered HTML (no window on the
   // server) — the saved preference is applied right after mount, in the
@@ -113,6 +120,53 @@ export function Sidebar({ agencyName }: { agencyName: string | null }) {
             )
           })}
         </nav>
+
+        {/* Revenus (30j) — design handoff reference. Real numbers only:
+            revenue30d comes from the same getRevenueMetrics()/
+            getRevenueTimeSeries() the Dashboard's own chart uses (see
+            (app)/layout.tsx), never a placeholder figure. Hidden entirely
+            while collapsed — there's no room to show it honestly at 64px. */}
+        {expanded && revenue30d && (
+          <div className="mb-3 shrink-0 rounded-2xl border border-[color:var(--border)] bg-white/[0.03] p-3">
+            <p className="text-[10px] text-[color:var(--foreground-muted)]">Revenus (30j)</p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="text-lg font-semibold">{formatEuro(revenue30d.total)}</span>
+              {revenue30d.changePercent !== null && (
+                <span
+                  className={`flex items-center gap-0.5 text-[10px] font-medium ${
+                    revenue30d.changePercent >= 0 ? 'text-[color:var(--success)]' : 'text-[color:var(--danger)]'
+                  }`}
+                >
+                  {revenue30d.changePercent >= 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+                  {Math.abs(Math.round(revenue30d.changePercent * 10) / 10)}%
+                </span>
+              )}
+            </div>
+            {revenue30d.points.length > 1 && (
+              <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="mt-2 h-7 w-full">
+                <polyline
+                  fill="none"
+                  stroke="var(--cyan)"
+                  strokeWidth="2"
+                  points={revenue30d.points
+                    .map((p, i) => {
+                      const max = Math.max(...revenue30d.points.map((q) => q.revenue), 1)
+                      const x = (i / (revenue30d.points.length - 1)) * 100
+                      const y = 26 - (p.revenue / max) * 24
+                      return `${x},${y}`
+                    })
+                    .join(' ')}
+                />
+              </svg>
+            )}
+            <Link
+              href="/analytics"
+              className="mt-2 block rounded-full border border-[color:var(--border-strong)] py-1.5 text-center text-[10px] font-medium text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]"
+            >
+              Voir analytics
+            </Link>
+          </div>
+        )}
 
         <div className="space-y-1 overflow-hidden border-t border-[color:var(--border)] px-2 pt-4">
           {collapsed && !hovering && (
