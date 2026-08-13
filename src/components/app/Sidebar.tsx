@@ -82,7 +82,9 @@ export function Sidebar({
       >
         <div className="mb-1 flex items-center justify-between px-2">
           <Link href="/home" className="flex items-center gap-2">
-            <Image src="/logo-mark.png" alt="" width={24} height={24} className="h-6 w-6 shrink-0 rounded-full" />
+            <div className="gradient-bg-signature glow-sm flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+              <Image src="/logo-mark.png" alt="" width={18} height={18} className="h-[18px] w-[18px] shrink-0 rounded-full" />
+            </div>
             {expanded && (
               <span className="whitespace-nowrap font-semibold">
                 Omni<span className="gradient-text">Flow</span>
@@ -116,9 +118,9 @@ export function Sidebar({
                 key={item.href}
                 href={item.href}
                 title={expanded ? undefined : item.label}
-                className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${
+                className={`flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-[color:var(--surface-elevated)] text-[color:var(--foreground)]'
+                    ? 'gradient-bg-signature text-white shadow-[0_2px_12px_rgba(124,58,237,0.3)]'
                     : 'text-[color:var(--foreground-muted)] hover:bg-white/5 hover:text-[color:var(--foreground)]'
                 }`}
               >
