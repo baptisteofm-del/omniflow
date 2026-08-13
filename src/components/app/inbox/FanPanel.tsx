@@ -31,6 +31,7 @@ import {
 import { analyzeConversationWithAI } from '@/lib/ai/actions'
 import { FanFlowBar } from '@/components/app/inbox/FanFlowBar'
 import { CollapsibleSection } from '@/components/app/inbox/CollapsibleSection'
+import { relativeTimeFr } from '@/lib/utils/relativeTime'
 import type { FanFlowStage } from '@/lib/fans/fanFlow'
 
 interface Memory {
@@ -123,6 +124,10 @@ export function FanPanel({
   flowStage,
   totalSpent,
   purchaseCount,
+  mediaSpend,
+  tipsSpend,
+  subscriptionSpend,
+  lastPurchaseAt,
   memories,
   scores,
   notes,
@@ -134,6 +139,10 @@ export function FanPanel({
   flowStage: FanFlowStage
   totalSpent: number
   purchaseCount: number
+  mediaSpend: number
+  tipsSpend: number
+  subscriptionSpend: number
+  lastPurchaseAt: string | null
   memories: Memory[]
   scores: Scores
   notes: FanNote[]
@@ -202,16 +211,34 @@ export function FanPanel({
 
       {activeTab === 'overview' && (
         <div className="space-y-5">
-      {/* Valeur Fan */}
+      {/* Valeur Fan — grille dense façon MyFeed : dépense totale, nombre
+          d'achats, puis répartition réelle par type de transaction (schéma
+          transactions.transaction_type), plus la date du dernier achat. */}
       <CollapsibleSection icon={<Wallet className="h-4 w-4" />} title="Valeur Fan">
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="rounded-xl border border-[color:var(--border)] py-3">
-            <p className="text-lg font-semibold gradient-text">{totalSpent}€</p>
-            <p className="text-[10px] text-[color:var(--foreground-muted)]">Dépensé</p>
+        <div className="grid grid-cols-2 gap-2 text-center">
+          <div className="col-span-2 rounded-xl border border-[color:var(--border-strong)] bg-white/[0.03] py-3">
+            <p className="text-xl font-semibold gradient-text">{totalSpent}€</p>
+            <p className="text-[10px] text-[color:var(--foreground-muted)]">Dépensé au total</p>
           </div>
-          <div className="rounded-xl border border-[color:var(--border)] py-3">
-            <p className="text-lg font-semibold">{purchaseCount}</p>
-            <p className="text-[10px] text-[color:var(--foreground-muted)]">Achats</p>
+          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+            <p className="text-sm font-semibold">{purchaseCount}</p>
+            <p className="text-[9px] text-[color:var(--foreground-muted)]">Achats</p>
+          </div>
+          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+            <p className="text-sm font-semibold">{lastPurchaseAt ? relativeTimeFr(lastPurchaseAt) : 'Jamais'}</p>
+            <p className="text-[9px] text-[color:var(--foreground-muted)]">Dernier achat</p>
+          </div>
+          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+            <p className="text-sm font-semibold">{mediaSpend}€</p>
+            <p className="text-[9px] text-[color:var(--foreground-muted)]">Média / PPV</p>
+          </div>
+          <div className="rounded-xl border border-[color:var(--border)] py-2.5">
+            <p className="text-sm font-semibold">{tipsSpend}€</p>
+            <p className="text-[9px] text-[color:var(--foreground-muted)]">Tips</p>
+          </div>
+          <div className="col-span-2 rounded-xl border border-[color:var(--border)] py-2.5">
+            <p className="text-sm font-semibold">{subscriptionSpend}€</p>
+            <p className="text-[9px] text-[color:var(--foreground-muted)]">Abonnement</p>
           </div>
         </div>
       </CollapsibleSection>

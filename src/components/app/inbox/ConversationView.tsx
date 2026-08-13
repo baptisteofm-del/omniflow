@@ -2,7 +2,7 @@
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot } from 'lucide-react'
+import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot, Workflow } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendHumanMessage, simulateFanMessage, simulatePurchase, simulateDecline } from '@/lib/inbox/actions'
 import {
@@ -128,6 +128,7 @@ export function ConversationView({
   const [fanDraft, setFanDraft] = useState('')
   const [showMockPanel, setShowMockPanel] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [showScripts, setShowScripts] = useState(!!activeScriptRun)
   const isCopilot = aiMode === 'copilot'
   const isFullAi = aiMode === 'full_ai'
 
@@ -300,20 +301,28 @@ export function ConversationView({
                       )}
                     </span>
                   )}
-                  <p>{m.text}</p>
+                  {/* Timestamp sits inline at the end of the text (WhatsApp-
+                      style float), not on its own line below the bubble —
+                      denser, closer to the MyFeed reference than a separate
+                      caption row. */}
+                  <p>
+                    {m.text}
+                    <span
+                      className={`float-right ml-2 mt-1 flex items-center gap-1 text-[10px] ${
+                        isOutbound && !isAi ? 'text-white/70' : 'text-[color:var(--foreground-muted)]'
+                      }`}
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          Envoi...
+                        </>
+                      ) : (
+                        formatMessageTime(m.sent_at)
+                      )}
+                    </span>
+                  </p>
                 </div>
-                {item.isClusterEnd && (
-                  <span className="mt-1 flex items-center gap-1 px-1 text-[10px] text-[color:var(--foreground-muted)]">
-                    {m.id.startsWith('temp-') ? (
-                      <>
-                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                        Envoi...
-                      </>
-                    ) : (
-                      formatMessageTime(m.sent_at)
-                    )}
-                  </span>
-                )}
               </div>
             </div>
           )
@@ -325,7 +334,7 @@ export function ConversationView({
           composer (brief §17: "tout ce qui sert directement à construire ou
           envoyer un message") — not tucked away in the right-hand fan panel,
           which is reserved for understanding the fan, not sending to them. */}
-      {(activeScriptRun || availableScripts.length > 0) && (
+      {(activeScriptRun || availableScripts.length > 0) && showScripts && (
         <div className="mb-2 shrink-0">
           <ScriptRunPanel conversationId={conversationId} activeRun={activeScriptRun} availableScripts={availableScripts} />
         </div>
@@ -415,6 +424,23 @@ export function ConversationView({
           className="mb-2 flex shrink-0 gap-2"
         >
           <MediaPickerDrawer conversationId={conversationId} media={sellableMedia} />
+          {(activeScriptRun || availableScripts.length > 0) && (
+            <button
+              type="button"
+              onClick={() => setShowScripts((v) => !v)}
+              title="Scripts"
+              className={`flex shrink-0 items-center justify-center rounded-xl border px-3 transition-colors ${
+                showScripts
+                  ? 'border-[color:var(--violet)] text-[color:var(--violet)]'
+                  : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+              }`}
+            >
+              <Workflow className="h-4 w-4" />
+              {activeScriptRun && (
+                <span className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--violet)]" />
+              )}
+            </button>
+          )}
           <input
             value={reply}
             onChange={(e) => setReply(e.target.value)}

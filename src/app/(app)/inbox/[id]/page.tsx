@@ -128,10 +128,15 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
 
-  const [{ data: purchaseMessages }, activeRun, mediaWithUrls] = await Promise.all([
+  const [{ data: purchaseMessages }, { data: fanTransactions }, activeRun, mediaWithUrls] = await Promise.all([
     conversationIds.length
       ? supabase.from('messages').select('price_amount').in('conversation_id', conversationIds).eq('message_type', 'purchase_confirmation')
       : Promise.resolve({ data: [] as { price_amount: number | null }[] }),
+    // Real breakdown for the Overview stat grid (spec: match MyFeed's
+    // density without inventing figures the schema doesn't actually
+    // have) — transactions.transaction_type already distinguishes
+    // media/tip/subscription/etc, so this is real data, not a guess.
+    supabase.from('transactions').select('transaction_type, gross_amount, occurred_at').eq('fan_id', fanId).eq('status', 'confirmed'),
     (async () => {
       if (!activeRunRow) return null
       const [{ data: version }, { data: node }] = await Promise.all([
@@ -168,6 +173,18 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const totalSpent = (purchaseMessages ?? []).reduce((sum, m) => sum + (m.price_amount ?? 0), 0)
   const purchaseCount = (purchaseMessages ?? []).length
+
+  const mediaSpend = (fanTransactions ?? [])
+    .filter((t) => t.transaction_type === 'media_purchase' || t.transaction_type === 'message_purchase')
+    .reduce((sum, t) => sum + (t.gross_amount ?? 0), 0)
+  const tipsSpend = (fanTransactions ?? []).filter((t) => t.transaction_type === 'tip').reduce((sum, t) => sum + (t.gross_amount ?? 0), 0)
+  const subscriptionSpend = (fanTransactions ?? [])
+    .filter((t) => t.transaction_type === 'subscription')
+    .reduce((sum, t) => sum + (t.gross_amount ?? 0), 0)
+  const lastPurchaseAt = (fanTransactions ?? []).reduce<string | null>(
+    (latest, t) => (!latest || (t.occurred_at as string) > latest ? (t.occurred_at as string) : latest),
+    null
+  )
 
   const creator = conversation.creators as unknown as { display_name: string } | null
   const fan = conversation.fans as unknown as {
@@ -273,6 +290,10 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
               flowStage={flowStage}
               totalSpent={totalSpent}
               purchaseCount={purchaseCount}
+              mediaSpend={mediaSpend}
+              tipsSpend={tipsSpend}
+              subscriptionSpend={subscriptionSpend}
+              lastPurchaseAt={lastPurchaseAt}
               memories={memories ?? []}
               scores={scores ?? null}
               notes={notes ?? []}

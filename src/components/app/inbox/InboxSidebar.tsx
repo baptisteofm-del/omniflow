@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X } from 'lucide-react'
+import { MessageSquare, Tag, ArrowRight, Clock3, Volume2, VolumeX, Search, X, Wifi, UserCheck } from 'lucide-react'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
@@ -30,10 +30,10 @@ export interface InboxRow {
 
 type FilterKey = 'all' | 'to_reply' | 'mine'
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'Toutes' },
-  { key: 'to_reply', label: 'À répondre' },
-  { key: 'mine', label: 'Assignées à moi' },
+const FILTERS: { key: FilterKey; label: string; icon: typeof MessageSquare | null }[] = [
+  { key: 'all', label: 'Toutes', icon: null },
+  { key: 'to_reply', label: 'À répondre', icon: MessageSquare },
+  { key: 'mine', label: 'Assignées à moi', icon: UserCheck },
 ]
 
 export function InboxSidebar({
@@ -55,6 +55,7 @@ export function InboxSidebar({
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [muted, setMuted] = useState(false)
   const [query, setQuery] = useState('')
+  const [onlineOnly, setOnlineOnly] = useState(false)
 
   useEffect(() => {
     setMuted(isSoundMuted())
@@ -68,6 +69,7 @@ export function InboxSidebar({
   }
 
   const toReplyCount = useMemo(() => rows.filter((r) => r.awaitingReply).length, [rows])
+  const onlineCount = useMemo(() => rows.filter((r) => r.isRecentlyOnline).length, [rows])
 
   const filteredRows = useMemo(
     () =>
@@ -78,8 +80,9 @@ export function InboxSidebar({
           if (filter === 'mine') return currentUserId && r.assignedUserId === currentUserId
           return true
         })
+        .filter((r) => !onlineOnly || r.isRecentlyOnline)
         .filter((r) => !query.trim() || r.fanName.toLowerCase().includes(query.trim().toLowerCase())),
-    [rows, filter, activeTag, currentUserId, query]
+    [rows, filter, activeTag, currentUserId, query, onlineOnly]
   )
 
   return (
@@ -132,20 +135,42 @@ export function InboxSidebar({
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 filter === f.key
                   ? 'border-[color:var(--border-strong)] bg-white/5 text-[color:var(--foreground)]'
                   : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
               }`}
             >
+              {f.icon && <f.icon className="h-3 w-3 shrink-0" />}
               {f.label}
               {f.key === 'to_reply' && toReplyCount > 0 && (
-                <span className="ml-1 rounded-full bg-[color:var(--danger)]/20 px-1.5 py-0.5 text-[9px] text-[color:var(--danger)]">
+                <span className="rounded-full bg-[color:var(--danger)]/20 px-1.5 py-0.5 text-[9px] text-[color:var(--danger)]">
                   {toReplyCount}
                 </span>
               )}
             </button>
           ))}
+          <button
+            onClick={() => setOnlineOnly((v) => !v)}
+            title="Fans en ligne récemment"
+            className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              onlineOnly
+                ? 'border-[color:var(--success)]/50 bg-[color:var(--success)]/10 text-[color:var(--success)]'
+                : 'border-[color:var(--border)] text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
+            }`}
+          >
+            <Wifi className="h-3 w-3 shrink-0" />
+            En ligne
+            {onlineCount > 0 && (
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[9px] ${
+                  onlineOnly ? 'bg-[color:var(--success)]/25 text-[color:var(--success)]' : 'bg-white/10 text-[color:var(--foreground-muted)]'
+                }`}
+              >
+                {onlineCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {allTags.length > 0 && (
