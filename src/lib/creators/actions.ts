@@ -168,3 +168,37 @@ export async function updateCreatorAvatar(creatorId: string, avatarUrl: string) 
   revalidatePath(`/creators/${creatorId}`)
   revalidatePath('/creators')
 }
+
+// Owner report: no way to adjust the AI's personality for a creator after
+// creation — NewCreatorForm only writes creator_ai_profiles once, at
+// creation time, and nothing else in the app ever updates it. Updates the
+// existing published profile in place (Simple Mode has no draft/review
+// workflow yet — see creator_ai_profiles.status/version — so this is the
+// pragmatic "just save it" path, not a new versioned publish).
+export async function updateCreatorModelDna(creatorId: string, conversationId: string, formData: FormData) {
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'creator.manage')
+
+  const numeric = (key: string, fallback: number) => {
+    const raw = formData.get(key)
+    const n = raw != null ? Number(raw) : NaN
+    return Number.isFinite(n) ? n : fallback
+  }
+
+  const { error } = await supabase
+    .from('creator_ai_profiles')
+    .update({
+      warmth: numeric('warmth', 50),
+      flirt_intensity: numeric('flirt_intensity', 50),
+      directness: numeric('directness', 50),
+      sales_aggressiveness: numeric('sales_aggressiveness', 50),
+      message_length: String(formData.get('message_length') || 'medium'),
+      emoji_style: String(formData.get('emoji_style') || 'medium'),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('creator_id', creatorId)
+    .eq('status', 'published')
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/inbox/${conversationId}`)
+}

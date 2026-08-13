@@ -63,9 +63,19 @@ body {
   box-shadow: 0 0 24px rgba(124, 58, 237, 0.18);
 }
 
-/* Glass surface for cards/panels */
+/* Glass surface for cards/panels.
+   Owner report: "tout est noir, tout est fade" — every panel across the
+   app (Inbox columns, cards, dropdowns) used this one flat, colorless
+   background. Layering the same brand violet/cyan wash already used on
+   the Sidebar and hero sections (see .gradient-ambient) directly into
+   .glass fixes it everywhere at once instead of one component at a time —
+   kept subtle (low alpha) since this runs on small elements too, not just
+   big containers. */
 .glass {
-  background: rgba(20, 20, 28, 0.6);
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(124, 58, 237, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(34, 211, 238, 0.16) 0%, transparent 60%),
+    rgba(20, 20, 28, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
