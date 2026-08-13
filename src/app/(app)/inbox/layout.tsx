@@ -73,16 +73,19 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   // Wave 2: each only needs fanIds/conversationIds/assignedUserIds from
   // wave 1, not each other's results.
-  const [{ data: fanTagRows }, { data: allMessages }, { data: scoresRows }, { data: assignedUsers }, { data: pendingOfferRows }] =
+  const [{ data: fanTagRows }, { data: conversationSummaries }, { data: scoresRows }, { data: assignedUsers }, { data: pendingOfferRows }] =
     await Promise.all([
       fanIds.length ? supabase.from('fan_tags').select('fan_id, tags(name)').in('fan_id', fanIds) : Promise.resolve({ data: [] }),
+      // Owner report: "chargement très long" with real production data (117
+      // conversations) — this used to fetch every message across every
+      // conversation just to compute a preview/count/total in application
+      // code. inbox_conversation_summaries (0028_inbox_perf.sql) does that
+      // aggregation in Postgres instead, returning one row per conversation.
       conversationIds.length
-        ? supabase
-            .from('messages')
-            .select('conversation_id, text, message_type, price_amount, sent_at')
-            .in('conversation_id', conversationIds)
-            .order('sent_at', { ascending: false })
-        : Promise.resolve({ data: [] }),
+        ? supabase.rpc('inbox_conversation_summaries', { conv_ids: conversationIds })
+        : Promise.resolve({
+            data: [] as { conversation_id: string; last_text: string | null; last_sent_at: string | null; message_count: number; purchase_total: number }[],
+          }),
       fanIds.length
         ? supabase.from('fan_scores').select('fan_id, purchase_intent, churn_risk').in('fan_id', fanIds)
         : Promise.resolve({ data: [] }),
@@ -111,15 +114,16 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   const convToFan = new Map(conversations.map((c) => [c.id, c.fan_id as string]))
   const totalSpentByFan = new Map<string, number>()
 
-  for (const m of allMessages ?? []) {
-    const convId = m.conversation_id as string
-    messageCountByConv.set(convId, (messageCountByConv.get(convId) ?? 0) + 1)
-    if (!lastMessageByConv.has(convId)) {
-      lastMessageByConv.set(convId, { text: m.text as string, sent_at: m.sent_at as string })
+  for (const s of conversationSummaries ?? []) {
+    const convId = s.conversation_id
+    messageCountByConv.set(convId, Number(s.message_count))
+    if (s.last_text !== null && s.last_sent_at !== null) {
+      lastMessageByConv.set(convId, { text: s.last_text, sent_at: s.last_sent_at })
     }
-    if (m.message_type === 'purchase_confirmation') {
+    const purchaseTotal = Number(s.purchase_total ?? 0)
+    if (purchaseTotal > 0) {
       const fanId = convToFan.get(convId)
-      if (fanId) totalSpentByFan.set(fanId, (totalSpentByFan.get(fanId) ?? 0) + ((m.price_amount as number) ?? 0))
+      if (fanId) totalSpentByFan.set(fanId, (totalSpentByFan.get(fanId) ?? 0) + purchaseTotal)
     }
   }
 

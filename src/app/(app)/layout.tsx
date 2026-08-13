@@ -12,24 +12,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/login')
   }
 
+  // Owner report: "partout c'est lent" — this layout wraps every single
+  // page in the app, and used to make 2 sequential round-trips here (users,
+  // then agency_memberships) on every navigation, on top of auth.getUser()
+  // and the notifications fetch below. The FK from agency_memberships to
+  // users lets Postgres do that join in one query instead.
   const { data: appUser } = await supabase
     .from('users')
-    .select('id, display_name, email')
+    .select('id, display_name, email, agency_memberships(agency_id, status, agencies(name))')
     .eq('auth_user_id', authUser.id)
     .single()
 
   let agencyName: string | null = null
   let agencyId: string | null = null
   if (appUser) {
-    const { data: membership } = await supabase
-      .from('agency_memberships')
-      .select('agency_id, agencies(name)')
-      .eq('user_id', appUser.id)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle()
-    agencyName = (membership?.agencies as unknown as { name: string } | null)?.name ?? null
-    agencyId = (membership?.agency_id as string | undefined) ?? null
+    const memberships = (appUser.agency_memberships ?? []) as unknown as {
+      agency_id: string
+      status: string
+      agencies: { name: string } | null
+    }[]
+    const membership = memberships.find((m) => m.status === 'active') ?? null
+    agencyName = membership?.agencies?.name ?? null
+    agencyId = membership?.agency_id ?? null
   }
 
   const { data: notifications } = agencyId
