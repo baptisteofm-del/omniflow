@@ -169,7 +169,15 @@ export function Sidebar({
         )}
 
         <div className="space-y-1 overflow-hidden border-t border-[color:var(--border)] px-2 pt-4">
-          {collapsed && !hovering && (
+          {/* BUG FIX (owner report: "je ne peux pas la laisser ouverte") —
+              this button used to require `!hovering` to render, but hovering
+              becomes true the instant the mouse enters the rail to reach it,
+              which unmounted the button before a click could land on it.
+              There was no way to permanently pin the sidebar open by mouse.
+              Keeping it mounted whenever collapsed (hovering or not) fixes
+              that — it now shows for real, even during the hover-expanded
+              overlay. */}
+          {collapsed && (
             <button
               onClick={toggle}
               title="Ouvrir la barre latérale"
