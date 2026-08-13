@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/app/Sidebar'
+import { TopBar } from '@/components/app/TopBar'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -51,12 +52,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         .limit(30)
     : { data: [] }
 
+  const userName = appUser?.display_name || appUser?.email || 'Membre'
+
   return (
-    <div className="flex min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)]">
-      <Sidebar agencyName={agencyName} agencyId={agencyId} initialNotifications={notifications ?? []} />
-      <main className="flex-1 overflow-y-auto px-6 py-10">
-        <div className="mx-auto max-w-7xl">{children}</div>
-      </main>
+    <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--foreground)]">
+      <TopBar agencyId={agencyId} initialNotifications={notifications ?? []} userName={userName} userRole={null} />
+      {/* pt-14: TopBar is fixed (h-14), so the row below needs the same
+          top offset reserved in normal flow — Sidebar itself is also
+          fixed and starts its own box at top-14 to match. */}
+      <div className="flex pt-14">
+        <Sidebar agencyName={agencyName} />
+        <main className="flex-1 overflow-y-auto px-6 py-10">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </div>
     </div>
   )
 }
