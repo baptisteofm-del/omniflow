@@ -113,7 +113,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     // message that announced it via offers.sent_message_id.
     supabase
       .from('offers')
-      .select('sent_message_id, status, final_price, initial_price')
+      .select('sent_message_id, status, final_price, initial_price, media_asset_id')
       .eq('conversation_id', id)
       .not('sent_message_id', 'is', null),
     // Composer's Média/PPV picker (Inbox V2 §14) — only assets this
@@ -131,7 +131,9 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   const conversationIds = (fanConversations ?? []).map((c) => c.id)
 
-  const [{ data: purchaseMessages }, { data: fanTransactions }, activeRun, mediaWithUrls] = await Promise.all([
+  const offerMediaAssetIds = [...new Set((offerRows ?? []).map((o) => o.media_asset_id).filter(Boolean))] as string[]
+
+  const [{ data: purchaseMessages }, { data: fanTransactions }, activeRun, mediaWithUrls, offerMediaById] = await Promise.all([
     conversationIds.length
       ? supabase.from('messages').select('price_amount').in('conversation_id', conversationIds).eq('message_type', 'purchase_confirmation')
       : Promise.resolve({ data: [] as { price_amount: number | null }[] }),
@@ -195,6 +197,21 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         }
       })
     ),
+    // PPV cards in the thread need the actual media (thumbnail + title) an
+    // offer points to — offers.media_asset_id already links to it, this was
+    // simply never joined before, so every paid message rendered as a bare
+    // price badge instead of the reference's illustrated card.
+    (async () => {
+      if (offerMediaAssetIds.length === 0) return new Map<string, { title: string; mediaType: string; signedUrl: string | null }>()
+      const { data: assets } = await supabase.from('media_assets').select('id, title, media_type, storage_key').in('id', offerMediaAssetIds)
+      const entries = await Promise.all(
+        (assets ?? []).map(async (a) => {
+          const { data } = await supabase.storage.from('media').createSignedUrl(a.storage_key as string, 3600)
+          return [a.id as string, { title: a.title as string, mediaType: a.media_type as string, signedUrl: data?.signedUrl ?? null }] as const
+        })
+      )
+      return new Map(entries)
+    })(),
   ])
 
   const totalSpent = (purchaseMessages ?? []).reduce((sum, m) => sum + (m.price_amount ?? 0), 0)
@@ -229,10 +246,19 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const isRecentlyOnline = !!fan?.last_seen_at && Date.now() - new Date(fan.last_seen_at).getTime() < 15 * 60 * 1000
 
   const offersByMessageId = new Map(
-    (offerRows ?? []).map((o) => [
-      o.sent_message_id as string,
-      { status: o.status as string, price: (o.final_price as number | null) ?? (o.initial_price as number) },
-    ])
+    (offerRows ?? []).map((o) => {
+      const media = o.media_asset_id ? offerMediaById.get(o.media_asset_id as string) : undefined
+      return [
+        o.sent_message_id as string,
+        {
+          status: o.status as string,
+          price: (o.final_price as number | null) ?? (o.initial_price as number),
+          mediaTitle: media?.title ?? null,
+          mediaType: media?.mediaType ?? null,
+          thumbnailUrl: media?.signedUrl ?? null,
+        },
+      ]
+    })
   )
 
   const flowStage = computeFanFlowStage({

@@ -2,7 +2,8 @@
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot, Workflow } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { Send, FlaskConical, ShoppingBag, XCircle, Loader2, Sparkles, RotateCcw, Pencil, Bot, Workflow, Lock, Image as ImageIcon, Video } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendHumanMessage, simulateFanMessage, simulatePurchase, simulateDecline } from '@/lib/inbox/actions'
 import {
@@ -20,6 +21,9 @@ import { MediaPickerDrawer, type SellableMedia } from '@/components/app/inbox/Me
 interface Offer {
   status: string
   price: number
+  mediaTitle?: string | null
+  mediaType?: string | null
+  thumbnailUrl?: string | null
 }
 
 interface Message {
@@ -184,11 +188,21 @@ export function ConversationView({
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
           (payload) => {
-            const inserted = payload.new as { direction?: string; message_type?: string } | undefined
+            const inserted = payload.new as { direction?: string; message_type?: string; price_amount?: number | null } | undefined
             // A sale gets its own, more celebratory sound (brief: distinct
-            // from a plain new-message ping) regardless of direction.
-            if (inserted?.message_type === 'purchase_confirmation') playSaleSound()
-            else if (inserted?.direction === 'inbound') playNotificationSound()
+            // from a plain new-message ping) regardless of direction) plus a
+            // toast (the app's Toaster has been configured globally since
+            // Phase 2 but nothing was actually calling it — this is the
+            // first real trigger, reusing the exact same event as the
+            // sound instead of a separate detection path).
+            if (inserted?.message_type === 'purchase_confirmation') {
+              playSaleSound()
+              toast.success(inserted.price_amount ? `Vente confirmée +${inserted.price_amount}€` : 'Vente confirmée', {
+                style: { border: '1px solid rgba(34, 197, 94, 0.4)' },
+              })
+            } else if (inserted?.direction === 'inbound') {
+              playNotificationSound()
+            }
             router.refresh()
           }
         )
@@ -267,6 +281,13 @@ export function ConversationView({
           const isSending = m.id.startsWith('temp-')
           const clusterMargin = item.isClusterStart ? 'mt-3' : 'mt-0.5'
           const offerStatus = m.offer ? OFFER_STATUS[m.offer.status] : null
+          // A real illustrated PPV card only when we actually have the
+          // underlying media to show (offers.media_asset_id joined to
+          // media_assets — see [id]/page.tsx) — a paid message with no
+          // known media (e.g. a price on a message synced from MYM with no
+          // matching offer row) still falls back to the plain price badge
+          // below rather than a card with nothing real to illustrate.
+          const hasMediaCard = m.is_paid && !!m.price_amount && !!m.offer?.mediaTitle
 
           return (
             <div key={m.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'} ${clusterMargin} ${animClass}`}>
@@ -274,55 +295,93 @@ export function ConversationView({
                 {item.isClusterStart && m.sender_type === 'human' && (
                   <span className="mb-1 px-1 text-[10px] font-medium text-[color:var(--foreground-muted)]">{senderLabel(m)}</span>
                 )}
-                <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm transition-shadow ${
-                    isOutbound
-                      ? isAi
-                        ? 'border border-[color:var(--cyan)]/30 bg-[color:var(--cyan)]/10 rounded-br-sm text-[color:var(--foreground)] shadow-[0_4px_16px_rgba(34,211,238,0.12)]'
-                        : 'gradient-bg-signature rounded-br-sm text-white shadow-[0_4px_20px_rgba(124,58,237,0.25)]'
-                      : 'rounded-bl-sm bg-[color:var(--surface-elevated)]'
-                  }`}
-                >
-                  {isAi && isOutbound && (
-                    <span className="mb-1 flex items-center gap-1 text-[10px] font-medium text-[color:var(--cyan)]">
-                      <Bot className="h-3 w-3" />
-                      IA
-                    </span>
-                  )}
-                  {m.is_paid && m.price_amount && (
-                    <span className="mb-1 flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
-                        💰 {m.price_amount}€
-                      </span>
-                      {offerStatus && (
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${offerStatus.className}`}>
-                          {offerStatus.label}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                  {/* Timestamp sits inline at the end of the text (WhatsApp-
-                      style float), not on its own line below the bubble —
-                      denser, closer to the MyFeed reference than a separate
-                      caption row. */}
-                  <p>
-                    {m.text}
-                    <span
-                      className={`float-right ml-2 mt-1 flex items-center gap-1 text-[10px] ${
-                        isOutbound && !isAi ? 'text-white/70' : 'text-[color:var(--foreground-muted)]'
-                      }`}
-                    >
-                      {isSending ? (
-                        <>
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                          Envoi...
-                        </>
+                {hasMediaCard ? (
+                  <div className="w-60 overflow-hidden rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--surface-elevated)] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                    <div className="relative aspect-square bg-black/40">
+                      {m.offer?.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.offer.thumbnailUrl} alt={m.offer.mediaTitle ?? ''} className="h-full w-full object-cover" />
                       ) : (
-                        formatMessageTime(m.sent_at)
+                        <div className="flex h-full w-full items-center justify-center">
+                          {m.offer?.mediaType === 'video' ? (
+                            <Video className="h-8 w-8 text-[color:var(--foreground-muted)]" />
+                          ) : (
+                            <ImageIcon className="h-8 w-8 text-[color:var(--foreground-muted)]" />
+                          )}
+                        </div>
                       )}
-                    </span>
-                  </p>
-                </div>
+                      {m.offer?.status !== 'purchased' && (
+                        <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
+                          <Lock className="h-3.5 w-3.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="truncate text-sm font-medium">{m.offer?.mediaTitle}</p>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className="gradient-text text-sm font-semibold">{m.price_amount}€</span>
+                        {offerStatus && (
+                          <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${offerStatus.className}`}>
+                            {offerStatus.label}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-right text-[10px] text-[color:var(--foreground-muted)]">
+                        {isSending ? 'Envoi...' : formatMessageTime(m.sent_at)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 text-sm transition-shadow ${
+                      isOutbound
+                        ? isAi
+                          ? 'border border-[color:var(--cyan)]/30 bg-[color:var(--cyan)]/10 rounded-br-sm text-[color:var(--foreground)] shadow-[0_4px_16px_rgba(34,211,238,0.12)]'
+                          : 'gradient-bg-signature rounded-br-sm text-white shadow-[0_4px_20px_rgba(124,58,237,0.25)]'
+                        : 'rounded-bl-sm border border-white/[0.06] bg-white/[0.06]'
+                    }`}
+                  >
+                    {isAi && isOutbound && (
+                      <span className="mb-1 flex items-center gap-1 text-[10px] font-medium text-[color:var(--cyan)]">
+                        <Bot className="h-3 w-3" />
+                        IA
+                      </span>
+                    )}
+                    {m.is_paid && m.price_amount && (
+                      <span className="mb-1 flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
+                          💰 {m.price_amount}€
+                        </span>
+                        {offerStatus && (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${offerStatus.className}`}>
+                            {offerStatus.label}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {/* Timestamp sits inline at the end of the text
+                        (WhatsApp-style float), not on its own line below the
+                        bubble — denser, closer to the reference than a
+                        separate caption row. */}
+                    <p>
+                      {m.text}
+                      <span
+                        className={`float-right ml-2 mt-1 flex items-center gap-1 text-[10px] ${
+                          isOutbound && !isAi ? 'text-white/70' : 'text-[color:var(--foreground-muted)]'
+                        }`}
+                      >
+                        {isSending ? (
+                          <>
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            Envoi...
+                          </>
+                        ) : (
+                          formatMessageTime(m.sent_at)
+                        )}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )

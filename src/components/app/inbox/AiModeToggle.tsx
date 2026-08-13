@@ -77,7 +77,10 @@ export function AiModeToggle({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-white/10 px-3 py-1 text-xs">
+      {/* Violet = "IA, Copilot, analyse et automatisation" per the design
+          handoff's own color rules — was a plain white/gray outline before,
+          same visual weight as a disabled button. */}
+      <span className="gradient-bg-signature flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-white shadow-[0_2px_12px_rgba(124,58,237,0.3)]">
         <Bot className="h-3 w-3" />
         {aiMode === 'full_ai' ? 'Full AI actif' : 'Copilot actif'}
       </span>
