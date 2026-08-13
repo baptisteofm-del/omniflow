@@ -155,15 +155,18 @@ export async function analyzeConversationWithAI(conversationId: string) {
 
   const { data: existingScore } = await supabase.from('fan_scores').select('version').eq('fan_id', fanId).maybeSingle()
 
+  const purchaseIntent = clamp(scoringResult.purchase_intent)
+  const churnRisk = clamp(scoringResult.churn_risk)
+
   await supabase.from('fan_scores').upsert(
     {
       agency_id: agencyId,
       fan_id: fanId,
-      purchase_intent: clamp(scoringResult.purchase_intent),
+      purchase_intent: purchaseIntent,
       relationship_score: clamp(scoringResult.relationship_score),
       spending_potential: clamp(scoringResult.spending_potential),
       engagement_score: clamp(scoringResult.engagement_score),
-      churn_risk: clamp(scoringResult.churn_risk),
+      churn_risk: churnRisk,
       reasons: scoringResult.reasons?.trim() || null,
       computed_by: 'system',
       version: (existingScore?.version || 0) + 1,
@@ -172,6 +175,36 @@ export async function analyzeConversationWithAI(conversationId: string) {
     },
     { onConflict: 'fan_id' }
   )
+
+  // Owner request: notifications on AI-detected missed opportunities and
+  // unhappy fans, not just from Full AI's own decision loop (which only
+  // ever runs for full_ai-mode conversations — most conversations are
+  // Copilot/human, and this is the one place scoring happens for all of
+  // them). De-duped per conversation+type against any not-yet-read
+  // notification from the last 6h so a fan sitting at a high score doesn't
+  // spam a fresh notification after every single message.
+  const notifyIfNew = async (type: 'missed_opportunity' | 'unhappy_fan', title: string, body: string) => {
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+    const { data: recent } = await supabase
+      .from('agency_notifications')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('type', type)
+      .is('read_at', null)
+      .gte('created_at', sixHoursAgo)
+      .limit(1)
+      .maybeSingle()
+    if (recent) return
+    await supabase.from('agency_notifications').insert({ agency_id: agencyId, type, title, body, conversation_id: conversationId })
+  }
+
+  const fanName = fan?.display_name ?? 'Ce fan'
+  if (churnRisk >= 70) {
+    await notifyIfNew('unhappy_fan', 'Fan mécontent détecté', `${fanName} montre des signes d'insatisfaction élevés (risque de churn ${churnRisk}%).`)
+  }
+  if (purchaseIntent >= 80) {
+    await notifyIfNew('missed_opportunity', "Opportunité d'achat détectée", `${fanName} montre une forte intention d'achat (${purchaseIntent}%) — une offre pourrait convertir maintenant.`)
+  }
 
   revalidatePath(`/inbox/${conversationId}`)
 }

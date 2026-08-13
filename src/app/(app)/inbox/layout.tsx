@@ -1,5 +1,6 @@
 import { InboxSidebar, type InboxRow } from '@/components/app/inbox/InboxSidebar'
 import { InboxAutoSync } from '@/components/app/inbox/InboxAutoSync'
+import { TeamPresenceProvider } from '@/components/app/inbox/TeamPresence'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 import { checkPageAccess } from '@/lib/permissions/check'
 import { AccessRestricted } from '@/components/app/AccessRestricted'
@@ -19,7 +20,7 @@ export const maxDuration = 60
 // list). Filtering itself is client-side (InboxSidebar) since Next.js
 // layouts don't receive searchParams as a prop.
 export default async function InboxLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, userId, allowed } = await checkPageAccess('inbox.view')
+  const { supabase, agencyId, userId, allowed } = await checkPageAccess('inbox.view')
 
   if (!allowed) {
     return (
@@ -28,6 +29,9 @@ export default async function InboxLayout({ children }: { children: React.ReactN
       </div>
     )
   }
+
+  const { data: currentUser } = await supabase.from('users').select('display_name, email').eq('id', userId).single()
+  const currentUserName = currentUser?.display_name || currentUser?.email || 'Membre'
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -160,10 +164,12 @@ export default async function InboxLayout({ children }: { children: React.ReactN
   })
 
   return (
-    <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
-      <InboxAutoSync />
-      <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
-      <div className="min-h-0 min-w-0">{children}</div>
-    </div>
+    <TeamPresenceProvider agencyId={agencyId!} userId={userId!} userName={currentUserName}>
+      <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
+        <InboxAutoSync />
+        <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
+        <div className="min-h-0 min-w-0">{children}</div>
+      </div>
+    </TeamPresenceProvider>
   )
 }

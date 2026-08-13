@@ -4,6 +4,7 @@ import { ConversationView } from '@/components/app/inbox/ConversationView'
 import { FanPanel } from '@/components/app/inbox/FanPanel'
 import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { AiModeToggle } from '@/components/app/inbox/AiModeToggle'
+import { ConversationViewerBadge } from '@/components/app/inbox/TeamPresence'
 import { checkDueScriptRuns } from '@/lib/scripts/engine'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 
@@ -86,7 +87,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
       .maybeSingle(),
     supabase.from('conversations').select('id').eq('fan_id', fanId),
     supabase.from('scripts').select('id, name, creator_id').eq('status', 'active'),
-    supabase.from('creator_commercial_settings').select('full_ai_enabled').eq('creator_id', creatorId).maybeSingle(),
+    supabase.from('creator_commercial_settings').select('full_ai_enabled, default_ai_mode').eq('creator_id', creatorId).maybeSingle(),
     supabase
       .from('script_runs')
       .select('id, script_version_id, current_node_id, scheduled_at')
@@ -234,6 +235,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
                   {totalSpent}€ dépensé
                 </span>
               )}
+              <ConversationViewerBadge conversationId={id} />
             </div>
             <p className="text-xs text-[color:var(--foreground-muted)]">
               {creator?.display_name} {isRecentlyOnline && <span className="text-[color:var(--success)]">· en ligne</span>}
@@ -243,12 +245,13 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
         <AiModeToggle
           conversationId={id}
           aiMode={conversation.ai_mode}
+          defaultAiMode={commercialSettings?.default_ai_mode ?? 'copilot'}
           fullAiEnabled={commercialSettings?.full_ai_enabled ?? false}
           escalationReason={escalationReason}
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[1fr_340px]">
         <div className="min-h-0">
           <ConversationView
             conversationId={id}

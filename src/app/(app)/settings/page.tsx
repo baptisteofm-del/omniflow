@@ -69,7 +69,7 @@ async function AiTab() {
 
   const { data: creators } = await supabase
     .from('creators')
-    .select('id, display_name, creator_commercial_settings(full_ai_enabled)')
+    .select('id, display_name, creator_commercial_settings(full_ai_enabled, default_ai_mode)')
     .order('display_name', { ascending: true })
 
   const { data: switches } = await supabase
@@ -81,9 +81,17 @@ async function AiTab() {
   const agencySwitches = (switches ?? []).filter((s) => s.scope !== 'global')
 
   const creatorRows = (creators ?? []).map((c) => {
-    const settings = c.creator_commercial_settings as unknown as { full_ai_enabled: boolean }[] | { full_ai_enabled: boolean } | null
+    const settings = c.creator_commercial_settings as unknown as
+      | { full_ai_enabled: boolean; default_ai_mode: string }[]
+      | { full_ai_enabled: boolean; default_ai_mode: string }
+      | null
     const row = Array.isArray(settings) ? settings[0] : settings
-    return { id: c.id as string, displayName: c.display_name as string, fullAiEnabled: row?.full_ai_enabled ?? false }
+    return {
+      id: c.id as string,
+      displayName: c.display_name as string,
+      fullAiEnabled: row?.full_ai_enabled ?? false,
+      defaultAiMode: row?.default_ai_mode ?? 'copilot',
+    }
   })
 
   const killSwitchRows = agencySwitches.map((s) => ({

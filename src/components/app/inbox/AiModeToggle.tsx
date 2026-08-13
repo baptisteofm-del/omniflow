@@ -2,23 +2,24 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, ShieldAlert, Hand } from 'lucide-react'
+import { Loader2, ShieldAlert, Hand, Bot, Sparkles } from 'lucide-react'
 import { setConversationAiMode } from '@/lib/inbox/actions'
 
-const MODE_LABELS: Record<string, string> = {
-  human_takeover: 'Humain',
-  copilot: 'Copilot',
-  full_ai: 'Full AI',
-}
-
+// Owner request: no more per-conversation Human/Copilot/Full AI dropdown —
+// the mode an agency wants is set once per creator (Paramètres → IA →
+// "Mode par défaut", applied automatically to every new conversation via a
+// DB trigger). The only manual, per-conversation control left is a single
+// takeover/release button.
 export function AiModeToggle({
   conversationId,
   aiMode,
+  defaultAiMode,
   fullAiEnabled,
   escalationReason,
 }: {
   conversationId: string
   aiMode: string
+  defaultAiMode: string
   fullAiEnabled: boolean
   escalationReason?: string | null
 }) {
@@ -49,40 +50,45 @@ export function AiModeToggle({
     )
   }
 
-  if (aiMode === 'full_ai') {
+  if (aiMode === 'human_takeover') {
+    // No "Rendre à l'IA" button when the creator's own default is "Humain"
+    // — there's no AI mode configured to hand back to.
+    const canReturnToAi = defaultAiMode === 'copilot' || (defaultAiMode === 'full_ai' && fullAiEnabled)
+    const returnMode: 'copilot' | 'full_ai' = defaultAiMode === 'full_ai' && fullAiEnabled ? 'full_ai' : 'copilot'
     return (
       <div className="flex items-center gap-2">
-        <span className="rounded-full border border-[color:var(--border-strong)] bg-white/10 px-3 py-1 text-xs">Full AI actif</span>
-        <button
-          onClick={() => setMode('human_takeover')}
-          disabled={isPending}
-          className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
-        >
-          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Hand className="h-3 w-3" />}
-          Prendre le contrôle
-        </button>
+        <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-white/10 px-3 py-1 text-xs">
+          <Hand className="h-3 w-3" />
+          Humain
+        </span>
+        {canReturnToAi && (
+          <button
+            onClick={() => setMode(returnMode)}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Rendre à l&apos;IA
+          </button>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      {isPending && <Loader2 className="h-3 w-3 animate-spin text-[color:var(--foreground-muted)]" />}
-      <select
-        value={aiMode === 'copilot' ? 'copilot' : 'human_takeover'}
+    <div className="flex items-center gap-2">
+      <span className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] bg-white/10 px-3 py-1 text-xs">
+        <Bot className="h-3 w-3" />
+        {aiMode === 'full_ai' ? 'Full AI actif' : 'Copilot actif'}
+      </span>
+      <button
+        onClick={() => setMode('human_takeover')}
         disabled={isPending}
-        onChange={(e) => setMode(e.target.value as 'human_takeover' | 'copilot' | 'full_ai')}
-        className="rounded-full border border-[color:var(--border)] bg-transparent px-3 py-1 text-xs text-[color:var(--foreground-muted)] focus:border-[color:var(--border-strong)] focus:outline-none disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-full border border-[color:var(--border-strong)] px-3 py-1 text-xs text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] disabled:opacity-50"
       >
-        <option value="human_takeover">{MODE_LABELS.human_takeover}</option>
-        <option value="copilot">{MODE_LABELS.copilot}</option>
-        {fullAiEnabled && <option value="full_ai">{MODE_LABELS.full_ai}</option>}
-      </select>
-      {!fullAiEnabled && (
-        <a href="/settings?tab=ai" className="text-[10px] text-[color:var(--foreground-muted)] underline">
-          Activer Full AI
-        </a>
-      )}
+        {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Hand className="h-3 w-3" />}
+        Prendre le contrôle
+      </button>
     </div>
   )
 }

@@ -21,9 +21,18 @@ export function FanFlowBar({ stage, totalSpent }: { stage: FanFlowStage; totalSp
           </div>
         ))}
       </div>
-      <div className="mb-3 flex justify-between text-[9px] uppercase tracking-wide text-[color:var(--foreground-muted)]">
-        {STAGES.map((s) => (
-          <span key={s} className={s === stage ? 'font-semibold text-[color:var(--foreground)]' : ''}>
+      <div className="mb-3 flex text-[9px] uppercase tracking-wide text-[color:var(--foreground-muted)]">
+        {/* min-w-0 is load-bearing here — a flex item's default min-width is
+            "auto" (its content's intrinsic width), so without it a long
+            label like "CONNAISSANCE" refuses to shrink and pushes the row
+            past the panel's edge (the "hors du cadre" bug). */}
+        {STAGES.map((s, i) => (
+          <span
+            key={s}
+            className={`min-w-0 flex-1 truncate ${i > 0 ? 'text-center' : ''} ${i === STAGES.length - 1 ? 'text-right' : ''} ${
+              s === stage ? 'font-semibold text-[color:var(--foreground)]' : ''
+            }`}
+          >
             {FAN_FLOW_LABELS[s]}
           </span>
         ))}

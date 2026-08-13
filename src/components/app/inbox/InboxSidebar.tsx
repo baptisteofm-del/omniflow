@@ -8,6 +8,7 @@ import { FanAvatar } from '@/components/app/inbox/FanAvatar'
 import { FAN_FLOW_LABELS, FAN_FLOW_BADGE_CLASSES, type FanFlowStage } from '@/lib/fans/fanFlow'
 import { relativeTimeFr } from '@/lib/utils/relativeTime'
 import { isSoundMuted, setSoundMuted } from '@/lib/utils/notificationSound'
+import { ConversationViewerBadge } from '@/components/app/inbox/TeamPresence'
 
 export interface InboxRow {
   id: string
@@ -249,6 +250,7 @@ export function InboxSidebar({
                       {r.assignedName}
                     </span>
                   )}
+                  <ConversationViewerBadge conversationId={r.id} />
                 </div>
               </div>
             </Link>

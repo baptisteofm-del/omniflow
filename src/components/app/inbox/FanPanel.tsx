@@ -178,18 +178,23 @@ export function FanPanel({
     <div className="glass rounded-2xl p-5">
       {/* Structured in tabs, not one long scrolling page (Inbox V2 spec
           §20: "onglets/sections plutôt qu'une très longue page"). */}
-      <div className="mb-4 flex gap-1 border-b border-[color:var(--border)]">
+      {/* BUG FIX (owner report): 4 tabs at full label width didn't fit the
+          panel's ~320px, clipping "Notes" outside the visible frame.
+          overflow-x-auto is the safety net (never breaks layout even if
+          content is still too wide at some zoom level); the tightened
+          padding/gap is what actually makes all 4 fit at normal width. */}
+      <div className="mb-4 flex gap-0.5 overflow-x-auto border-b border-[color:var(--border)]">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex items-center gap-1.5 border-b-2 px-2.5 py-2 text-xs font-medium transition-colors ${
+            className={`flex shrink-0 items-center gap-1 border-b-2 px-2 py-2 text-[11px] font-medium transition-colors ${
               activeTab === t.key
                 ? 'border-[color:var(--violet)] text-[color:var(--foreground)]'
                 : 'border-transparent text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]'
             }`}
           >
-            <t.icon className="h-3.5 w-3.5" />
+            <t.icon className="h-3.5 w-3.5 shrink-0" />
             {t.label}
           </button>
         ))}

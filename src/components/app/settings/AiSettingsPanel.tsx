@@ -3,12 +3,19 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Power, Trash2 } from 'lucide-react'
-import { setCreatorFullAiEnabled, createKillSwitch, deleteKillSwitch } from '@/lib/ai/agencyAiSettingsActions'
+import { setCreatorFullAiEnabled, setCreatorDefaultAiMode, createKillSwitch, deleteKillSwitch } from '@/lib/ai/agencyAiSettingsActions'
 
 interface CreatorRow {
   id: string
   displayName: string
   fullAiEnabled: boolean
+  defaultAiMode: string
+}
+
+const MODE_LABELS: Record<string, string> = {
+  human_takeover: 'Humain (pas d’IA par défaut)',
+  copilot: 'Copilot',
+  full_ai: 'Full AI',
 }
 
 interface KillSwitchRow {
@@ -129,8 +136,9 @@ export function AiSettingsPanel({ creators, killSwitches }: { creators: CreatorR
       <div className="glass rounded-2xl p-5">
         <h2 className="mb-1 text-sm font-semibold">Par créatrice</h2>
         <p className="mb-3 text-xs text-[color:var(--foreground-muted)]">
-          Activer Full AI (nécessaire avant qu&apos;une conversation de cette créatrice puisse passer en Full AI), ou couper Full
-          AI juste pour elle.
+          Le mode par défaut s&apos;applique automatiquement à chaque nouvelle conversation de cette créatrice — un chatteur
+          n&apos;a ensuite qu&apos;à cliquer « Prendre le contrôle » sur une conversation précise s&apos;il veut intervenir,
+          plus besoin de choisir un mode fan par fan.
         </p>
         {creators.length === 0 ? (
           <p className="text-xs text-[color:var(--foreground-muted)]">Aucune créatrice.</p>
@@ -139,9 +147,24 @@ export function AiSettingsPanel({ creators, killSwitches }: { creators: CreatorR
             {creators.map((c) => {
               const creatorSwitch = killSwitches.find((s) => s.scope === 'creator' && s.creatorId === c.id)
               return (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border border-[color:var(--border)] px-3 py-2 text-xs">
-                  <span>{c.displayName}</span>
-                  <div className="flex items-center gap-3">
+                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[color:var(--border)] px-3 py-2 text-xs">
+                  <span className="shrink-0">{c.displayName}</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-1.5 text-[color:var(--foreground-muted)]">
+                      Mode par défaut
+                      <select
+                        value={c.defaultAiMode}
+                        disabled={isPending}
+                        onChange={(e) =>
+                          runAction(() => setCreatorDefaultAiMode(c.id, e.target.value as 'human_takeover' | 'copilot' | 'full_ai'))
+                        }
+                        className="rounded-lg border border-[color:var(--border)] bg-white/5 px-2 py-1 text-xs text-[color:var(--foreground)] focus:border-[color:var(--border-strong)] focus:outline-none"
+                      >
+                        <option value="human_takeover">{MODE_LABELS.human_takeover}</option>
+                        <option value="copilot">{MODE_LABELS.copilot}</option>
+                        {c.fullAiEnabled && <option value="full_ai">{MODE_LABELS.full_ai}</option>}
+                      </select>
+                    </label>
                     <label className="flex items-center gap-1.5">
                       <input
                         type="checkbox"

@@ -47,6 +47,35 @@ export async function setCreatorFullAiEnabled(creatorId: string, enabled: boolea
   revalidatePath('/settings')
 }
 
+// Owner request: the per-conversation mode dropdown forced a manual pick
+// for every fan — this is the one place it's chosen instead, once, per
+// creator. Every new conversation of hers starts here (see the
+// before_conversation_insert_set_ai_mode trigger, 0026); an existing
+// conversation is never touched by changing this.
+export async function setCreatorDefaultAiMode(creatorId: string, mode: 'human_takeover' | 'copilot' | 'full_ai') {
+  const { supabase, agencyId } = await getAgencyAndUser()
+  await requirePermission(supabase, agencyId, 'ai_settings.manage')
+
+  if (!['human_takeover', 'copilot', 'full_ai'].includes(mode)) throw new Error('Mode invalide')
+
+  if (mode === 'full_ai') {
+    const { data: settings } = await supabase
+      .from('creator_commercial_settings')
+      .select('full_ai_enabled')
+      .eq('creator_id', creatorId)
+      .maybeSingle()
+    if (!settings?.full_ai_enabled) throw new Error("Activez d'abord Full AI pour cette créatrice ci-dessous.")
+  }
+
+  const { error } = await supabase
+    .from('creator_commercial_settings')
+    .update({ default_ai_mode: mode, updated_at: new Date().toISOString() })
+    .eq('creator_id', creatorId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/settings')
+}
+
 export async function createKillSwitch(formData: FormData) {
   const { supabase, agencyId, appUser } = await getAgencyAndUser()
   await requirePermission(supabase, agencyId, 'ai_settings.manage')
