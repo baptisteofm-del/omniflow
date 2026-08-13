@@ -2,6 +2,7 @@ import { InboxSidebar, type InboxRow } from '@/components/app/inbox/InboxSidebar
 import { InboxAutoSync } from '@/components/app/inbox/InboxAutoSync'
 import { InboxRealtimeSync } from '@/components/app/inbox/InboxRealtimeSync'
 import { InboxListPane, InboxDetailPane } from '@/components/app/inbox/InboxMobileVisibility'
+import { OfflineBanner } from '@/components/app/inbox/OfflineBanner'
 import { TeamPresenceProvider } from '@/components/app/inbox/TeamPresence'
 import { computeFanFlowStage } from '@/lib/fans/fanFlow'
 import { checkPageAccess } from '@/lib/permissions/check'
@@ -167,9 +168,14 @@ export default async function InboxLayout({ children }: { children: React.ReactN
 
   return (
     <TeamPresenceProvider agencyId={agencyId!} userId={userId!} userName={currentUserName}>
+      <OfflineBanner />
+      {/* Logic-only (InboxAutoSync can render a visible banner on repeated
+          sync failure, InboxRealtimeSync never renders) — kept outside the
+          grid below so a rendered banner can't become an unwanted grid
+          item and shove the list/detail columns out of place. */}
+      <InboxAutoSync />
+      <InboxRealtimeSync />
       <div className="grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[320px_1fr]">
-        <InboxAutoSync />
-        <InboxRealtimeSync />
         <InboxListPane>
           <InboxSidebar rows={rows} allTags={allTags ?? []} currentUserId={userId} salesToday={salesToday} />
         </InboxListPane>
